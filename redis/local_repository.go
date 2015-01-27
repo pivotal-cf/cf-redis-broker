@@ -10,7 +10,7 @@ import (
 
 	"github.com/pivotal-cf/cf-redis-broker/broker"
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
-	"github.com/pivotal-cf/cf-redis-broker/redis/config"
+	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 )
 
 type LocalRepository struct {
@@ -179,7 +179,7 @@ func (repo *LocalRepository) WriteConfigFile(instance *Instance) error {
 	defaultConfigPath := repo.RedisConf.DefaultConfigPath
 	InstanceConfigPath := repo.InstanceConfigPath(instance.ID)
 
-	err := config.SaveRedisConfAdditions(defaultConfigPath, InstanceConfigPath, instance.ID)
+	err := redisconf.CopyWithSyslogAdditions(defaultConfigPath, InstanceConfigPath, instance.ID)
 	if err != nil {
 		return err
 	}

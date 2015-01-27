@@ -29,6 +29,11 @@ func Load(path string) (Conf, error) {
 	return decode(data)
 }
 
+func (conf Conf) Save(path string) error {
+	data := conf.Encode()
+	return ioutil.WriteFile(path, data, 0644)
+}
+
 func decode(data []byte) (Conf, error) {
 	conf := []Param{}
 
@@ -129,11 +134,6 @@ func (conf *Conf) Set(key string, value string) {
 	*conf = append(*conf, newParam)
 }
 
-func (conf Conf) Save(path string) error {
-	data := conf.Encode()
-	return ioutil.WriteFile(path, data, 0644)
-}
-
 func (conf Conf) Encode() []byte {
 	output := []byte{}
 
@@ -156,4 +156,22 @@ func parseParam(line string) (Param, error) {
 		Key:   words[0],
 		Value: words[1],
 	}, nil
+}
+
+func CopyWithSyslogAdditions(fromPath string, toPath string, syslogIdentSuffix string) error {
+	defaultConfig, err := Load(fromPath)
+	if err != nil {
+		return err
+	}
+
+	defaultConfig.Set("syslog-enabled", "yes")
+	defaultConfig.Set("syslog-ident", fmt.Sprintf("redis-server-%s", syslogIdentSuffix))
+	defaultConfig.Set("syslog-facility", "local0")
+
+	err = defaultConfig.Save(toPath)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

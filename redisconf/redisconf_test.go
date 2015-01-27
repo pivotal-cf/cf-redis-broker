@@ -1,6 +1,7 @@
 package redisconf_test
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -129,6 +130,7 @@ var _ = Describe("redisconf", func() {
 				Expect(conf.Get("daemonize")).To(Equal("no"))
 			})
 		})
+
 		Context("When the key does not exist", func() {
 			It("Inserts the new key/value pair", func() {
 				conf := redisconf.New(
@@ -139,6 +141,29 @@ var _ = Describe("redisconf", func() {
 				conf.Set("appendonly", "yes")
 				Expect(conf.Get("appendonly")).To(Equal("yes"))
 			})
+		})
+	})
+
+	Describe("CopyWithSyslogAdditions", func() {
+		It("writes the syslog configuration", func() {
+			fromPath, err := filepath.Abs(path.Join("assets", "redis.conf"))
+			Expect(err).ToNot(HaveOccurred())
+
+			dir, err := ioutil.TempDir("", "redisconf-test")
+			Expect(err).ToNot(HaveOccurred())
+			toPath := filepath.Join(dir, "redis.conf")
+
+			instanceID := "an-instance-id"
+
+			err = redisconf.CopyWithSyslogAdditions(fromPath, toPath, instanceID)
+			Ω(err).ToNot(HaveOccurred())
+
+			resultingConf, err := redisconf.Load(toPath)
+			Expect(err).ToNot(HaveOccurred())
+
+			Ω(resultingConf.Get("syslog-enabled")).Should(Equal("yes"))
+			Ω(resultingConf.Get("syslog-ident")).Should(Equal(fmt.Sprintf("redis-server-%s", instanceID)))
+			Ω(resultingConf.Get("syslog-facility")).Should(Equal("local0"))
 		})
 	})
 })
