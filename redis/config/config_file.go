@@ -1,4 +1,4 @@
-package redis
+package config
 
 import (
 	"bytes"
@@ -29,7 +29,7 @@ func (directive configDirective) String() string {
 	return fmt.Sprintf("%s %s", directive.keyword, strings.Join(directive.arguments, " "))
 }
 
-func SaveRedisConfAdditions(fromPath string, toPath string, instance *Instance) error {
+func SaveRedisConfAdditions(fromPath string, toPath string, syslogIdentSuffix string) error {
 	defaultConfig, err := os.Open(fromPath)
 	if err != nil {
 		return err
@@ -50,7 +50,7 @@ func SaveRedisConfAdditions(fromPath string, toPath string, instance *Instance) 
 		return err
 	}
 
-	redisConf := syslogConfig(instance)
+	redisConf := syslogConfig(syslogIdentSuffix)
 
 	_, err = newConfig.WriteString(redisConf)
 	if err != nil {
@@ -60,7 +60,7 @@ func SaveRedisConfAdditions(fromPath string, toPath string, instance *Instance) 
 	return nil
 }
 
-func syslogConfig(instance *Instance) string {
+func syslogConfig(syslogIdentSuffix string) string {
 	directives := configDirectives{
 		configDirective{
 			keyword: "syslog-enabled",
@@ -71,7 +71,7 @@ func syslogConfig(instance *Instance) string {
 		configDirective{
 			keyword: "syslog-ident",
 			arguments: []string{
-				fmt.Sprintf("redis-server-%s", instance.ID),
+				fmt.Sprintf("redis-server-%s", syslogIdentSuffix),
 			},
 		},
 		configDirective{
