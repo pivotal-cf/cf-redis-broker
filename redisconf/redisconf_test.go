@@ -15,38 +15,20 @@ import (
 var _ = Describe("redisconf", func() {
 	Describe("Encode", func() {
 		It("encodes the parameters correctly", func() {
-			input := redisconf.New(
-				redisconf.Param{Key: "client-output-buffer-limit", Value: "normal 0 0 0"},
-				redisconf.Param{Key: "save", Value: "900 1"},
-				redisconf.Param{Key: "save", Value: "300 10"},
-			)
+			path, err := filepath.Abs(path.Join("assets", "redis.conf"))
+			Expect(err).ToNot(HaveOccurred())
+			input, err := redisconf.Load(path)
+			Expect(err).ToNot(HaveOccurred())
 
-			expectedOutput := "client-output-buffer-limit normal 0 0 0\n" +
+			expectedOutput := "daemonize no\n" +
+				"pidfile /var/run/redis.pid\n" +
+				"port 6379\n" +
+				"appendonly yes\n" +
+				"client-output-buffer-limit normal 0 0 0\n" +
 				"save 900 1\n" +
 				"save 300 10\n"
 
 			Expect(string(input.Encode())).To(Equal(expectedOutput))
-		})
-	})
-
-	Describe("Decode", func() {
-		It("decodes the file correctly", func() {
-			input := "client-output-buffer-limit normal 0 0 0\n" +
-				"# This is a comment\n" +
-				"save 900 1\n" +
-				"\n" +
-				"\t\t\t   \n" +
-				"save 300 10\n"
-
-			expectedOutput := redisconf.New(
-				redisconf.Param{Key: "client-output-buffer-limit", Value: "normal 0 0 0"},
-				redisconf.Param{Key: "save", Value: "900 1"},
-				redisconf.Param{Key: "save", Value: "300 10"},
-			)
-
-			output, err := redisconf.Decode([]byte(input))
-			Expect(err).ToNot(HaveOccurred())
-			Expect(output).To(Equal(expectedOutput))
 		})
 	})
 
@@ -132,28 +114,6 @@ var _ = Describe("redisconf", func() {
 				_, err := redisconf.Load("/this/is/an/invalid/path")
 				Expect(err.Error()).To(Equal("open /this/is/an/invalid/path: no such file or directory"))
 			})
-		})
-	})
-
-	Describe("Decoding then encoding", func() {
-		It("does not lose data, other than comments and empty lines", func() {
-			input := "client-output-buffer-limit normal 0 0 0\n" +
-				"# This is a comment\n" +
-				"save 900 1\n" +
-				"\n" +
-				"\t\t\t   \n" +
-				"save 300 10\n" +
-				"# another comment"
-
-			expectedOutput := "client-output-buffer-limit normal 0 0 0\n" +
-				"save 900 1\n" +
-				"save 300 10\n"
-
-			conf, err := redisconf.Decode([]byte(input))
-			Expect(err).ToNot(HaveOccurred())
-
-			output := string(conf.Encode())
-			Expect(output).To(Equal(expectedOutput))
 		})
 	})
 

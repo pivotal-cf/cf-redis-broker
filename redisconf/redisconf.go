@@ -20,6 +20,50 @@ func New(params ...Param) Conf {
 	return Conf(params)
 }
 
+func Load(path string) (Conf, error) {
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	return decode(data)
+}
+
+func decode(data []byte) (Conf, error) {
+	conf := []Param{}
+
+	scanner := bufio.NewScanner(bytes.NewBuffer(data))
+
+	scanner.Split(bufio.ScanLines)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		if len(line) == 0 {
+			continue
+		}
+
+		switch line[:1] {
+		case "#":
+			continue
+		case " ":
+			continue
+		case "\t":
+			continue
+		case "\n":
+			continue
+		}
+
+		param, err := parseParam(line)
+		if err != nil {
+			return nil, err
+		}
+
+		conf = append(conf, param)
+	}
+
+	return conf, nil
+}
+
 func (conf Conf) Get(key string) string {
 	params := conf.getAll(key)
 	if len(params) < 1 {
@@ -85,15 +129,6 @@ func (conf *Conf) Set(key string, value string) {
 	*conf = append(*conf, newParam)
 }
 
-func Load(path string) (Conf, error) {
-	data, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-
-	return Decode(data)
-}
-
 func (conf Conf) Save(path string) error {
 	data := conf.Encode()
 	return ioutil.WriteFile(path, data, 0644)
@@ -108,41 +143,6 @@ func (conf Conf) Encode() []byte {
 	}
 
 	return output
-}
-
-func Decode(data []byte) (Conf, error) {
-	conf := []Param{}
-
-	scanner := bufio.NewScanner(bytes.NewBuffer(data))
-
-	scanner.Split(bufio.ScanLines)
-
-	for scanner.Scan() {
-		line := scanner.Text()
-		if len(line) == 0 {
-			continue
-		}
-
-		switch line[:1] {
-		case "#":
-			continue
-		case " ":
-			continue
-		case "\t":
-			continue
-		case "\n":
-			continue
-		}
-
-		param, err := parseParam(line)
-		if err != nil {
-			return nil, err
-		}
-
-		conf = append(conf, param)
-	}
-
-	return conf, nil
 }
 
 func parseParam(line string) (Param, error) {
