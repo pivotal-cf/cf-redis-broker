@@ -45,7 +45,7 @@ func main() {
 		})
 	}
 
-	conf, err := redisconf.Load(config.DefaultConfPath)
+	newConfig, err := redisconf.Load(config.DefaultConfPath)
 	if err != nil {
 		logger.Fatal("Error loading default redis.conf", err, lager.Data{
 			"path": config.DefaultConfPath,
@@ -60,12 +60,12 @@ func main() {
 			})
 		}
 
-		conf.Set("requirepass", existingConf.Get("requirepass"))
+		newConfig.Set("requirepass", existingConf.Get("requirepass"))
 	} else {
-		conf.Set("requirepass", uuid.NewRandom().String())
+		newConfig.Set("requirepass", uuid.NewRandom().String())
 	}
 
-	err = conf.Save(config.ConfPath)
+	err = newConfig.Save(config.ConfPath)
 	if err != nil {
 		logger.Fatal("Error saving redis.conf", err, lager.Data{
 			"path": config.ConfPath,
@@ -74,7 +74,7 @@ func main() {
 
 	logger.Info("Finished writing redis.conf", lager.Data{
 		"path": config.ConfPath,
-		"conf": conf,
+		"conf": newConfig,
 	})
 
 	redisResetter := resetter.New(config.DefaultConfPath, config.ConfPath, new(portChecker), new(RealShell), config.MonitExecutablePath)
