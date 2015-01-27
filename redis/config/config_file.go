@@ -1,86 +1,25 @@
 package config
 
 import (
-	"bytes"
 	"fmt"
-	"io"
-	"os"
-	"strings"
+
+	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 )
 
-type configDirectives []configDirective
-
-func (directives configDirectives) String() string {
-	lines := bytes.Buffer{}
-
-	for _, directive := range directives {
-		lines.WriteString(directive.String() + "\n")
-	}
-
-	return lines.String()
-}
-
-type configDirective struct {
-	keyword   string
-	arguments []string
-}
-
-func (directive configDirective) String() string {
-	return fmt.Sprintf("%s %s", directive.keyword, strings.Join(directive.arguments, " "))
-}
-
 func SaveRedisConfAdditions(fromPath string, toPath string, syslogIdentSuffix string) error {
-	defaultConfig, err := os.Open(fromPath)
-	if err != nil {
-		return err
-	}
-	defer defaultConfig.Close()
-
-	newConfig, err := os.Create(toPath)
-	if err != nil {
-		return err
-	}
-	defer newConfig.Close()
-
-	io.Copy(newConfig, defaultConfig)
-
-	// make sure we're starting on a new line
-	_, err = newConfig.WriteString("\n")
+	defaultConfig, err := redisconf.Load(fromPath)
 	if err != nil {
 		return err
 	}
 
-	redisConf := syslogConfig(syslogIdentSuffix)
+	defaultConfig.Set("syslog-enabled", "yes")
+	defaultConfig.Set("syslog-ident", fmt.Sprintf("redis-server-%s", syslogIdentSuffix))
+	defaultConfig.Set("syslog-facility", "local0")
 
-	_, err = newConfig.WriteString(redisConf)
+	err = defaultConfig.Save(toPath)
 	if err != nil {
 		return err
 	}
 
 	return nil
-}
-
-func syslogConfig(syslogIdentSuffix string) string {
-	directives := configDirectives{
-		configDirective{
-			keyword: "syslog-enabled",
-			arguments: []string{
-				"yes",
-			},
-		},
-		configDirective{
-			keyword: "syslog-ident",
-			arguments: []string{
-				fmt.Sprintf("redis-server-%s", syslogIdentSuffix),
-			},
-		},
-		configDirective{
-			keyword: "syslog-facility",
-			arguments: []string{
-				"local0",
-			},
-		},
-	}
-
-	return directives.String()
 }
