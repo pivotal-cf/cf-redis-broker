@@ -1,0 +1,21 @@
+#!/bin/bash
+
+set -e
+set -x
+
+ACTION=$1
+shift
+
+PROCESS_NAME=$1
+shift
+
+START_STACK=/tmp/fake_monit_start_stack
+STOP_STACK=/tmp/fake_monit_stop_stack
+
+case $ACTION in
+  start )
+    echo $PROCESS_NAME >> $START_STACK ;;
+  stop )
+    pkill redis-server
+    echo $PROCESS_NAME >> $STOP_STACK ;;
+esac

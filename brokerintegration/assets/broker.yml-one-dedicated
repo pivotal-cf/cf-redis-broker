@@ -1,0 +1,26 @@
+"redis":
+  "host": "localhost"
+  "redis_conf_path": "assets/redis.conf"
+  "process_check_interval": 1
+  "start_redis_timeout": 3
+  "data_directory": "/tmp/redis-data-dir"
+  "log_directory": "/tmp/redis-log-dir"
+  "service_instance_limit": 3
+  "backup":
+    "endpoint_url": "http://127.0.0.1:49309"
+    "bucket_name": "redis-backups"
+    "access_key_id": "ABCDEABCDEABCDEABCDE"
+    "secret_access_key": "ABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDE"
+    "security_token": "ABCDEFG"
+    "path": ""
+    "s3_region": "fake-region-1"
+    "bg_save_timeout": 600
+  "dedicated":
+    "nodes":
+    - "127.0.0.1"
+    "port": 6379
+    "statefile_path": "/tmp/redis-config-dir/statefile.json"
+"auth":
+  "password": "secret"
+  "username": "admin"
+"backend_port": "3000"

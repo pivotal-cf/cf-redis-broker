@@ -1,0 +1,3 @@
+default_conf_path: assets/redis.conf.default
+conf_path: assets/redis.conf.tmp
+monit_executable_path: assets/fake_monit

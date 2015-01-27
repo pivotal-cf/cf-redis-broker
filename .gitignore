@@ -1,0 +1,5 @@
+/out/*
+!/out/.gitkeep
+
+*.coverprofile
+*.test

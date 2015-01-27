@@ -1,0 +1,18 @@
+---
+redis:
+  host: localhost
+  data_directory: /tmp/redis-data-dir
+  redis_conf_path: assets/redis.conf.updated_maxmemory
+  log_directory: /tmp/redis-log-dir
+  process_check_interval: 1
+  start_redis_timeout: 3
+  service_instance_limit: 3
+  dedicated:
+    nodes: []
+    statefile_path: /tmp/redis-config-dir/statefile.json
+
+auth:
+  username: admin
+  password: secret
+
+backend_port: 3000

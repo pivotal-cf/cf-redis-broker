@@ -1,0 +1,29 @@
+---
+redis:
+  host: example.com
+  data_directory: /some/redis/data/directory
+  log_directory: /some/redis/log/directory
+  redis_conf_path: /path/to/redis/config.conf
+  process_check_interval: 5
+  service_instance_limit: 3
+  backup:
+    endpoint_url: http://s3url.com
+    bucket_name: redis-backups
+    access_key_id: ABCDEABCDEABCDEABCDE
+    secret_access_key: ABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDE
+    security_token: ABZEVEIEIEIE
+    s3_region: france
+    path: /home
+    bg_save_timeout: 600
+  dedicated:
+    nodes:
+      - 10.0.0.1
+      - 10.0.0.2
+      - 10.0.0.3
+    port: 6379
+    statefile_path: "/tmp/redis-config-dir/statefile.json"
+auth:
+  username: admin
+  password: secret
+
+backend_port: 3000

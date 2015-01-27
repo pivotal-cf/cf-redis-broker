@@ -1,0 +1,51 @@
+#!/bin/bash
+# vim: set ft=sh
+
+set -e
+set -o pipefail
+
+test_args=$@
+
+main() {
+  run_go_vet
+  run_golint
+  run_tests
+}
+
+run_go_vet() {
+  __message "Running go vet"
+  all_go_code_except_Godeps | xargs go tool vet
+}
+
+all_go_code_except_Godeps() {
+  find . -maxdepth 1 -type d -not -path "*/Godeps*" -a -not -path '*/.git*' -a -not -path '.'
+}
+
+__message() {
+  local _message=$1
+  echo -e "${_message}..."
+}
+
+run_golint() {
+  __message "Running golint"
+  golint_result=$(
+    all_go_code_except_Godeps \
+      | xargs golint \
+      | awk '! /should have comment.* or be unexported/ { print $0 }'
+  )
+
+  if [[ -n $golint_result ]]
+  then
+    echo "$golint_result"
+    exit 1
+  fi
+}
+
+run_tests() {
+  __message "Running tests"
+
+  GOPATH=$PWD/Godeps/_workspace:$GOPATH \
+    ginkgo -r -race --keepGoing -randomizeAllSpecs -skipMeasurements -failOnPending -cover -noColor -v $test_args
+}
+
+main
