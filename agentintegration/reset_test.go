@@ -25,6 +25,9 @@ var _ = Describe("DELETE /", func() {
 	var originalConf redisconf.Conf
 
 	BeforeEach(func() {
+		os.Remove("/tmp/fake_monit_start_stack")
+		os.Remove("/tmp/fake_monit_start_stop")
+
 		defaultConfPath, err := filepath.Abs(path.Join("assets", "redis.conf.default"))
 		Ω(err).ShouldNot(HaveOccurred())
 
