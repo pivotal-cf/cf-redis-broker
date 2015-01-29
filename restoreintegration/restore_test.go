@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -79,13 +80,24 @@ var _ = Describe("restore", func() {
 		redisSession, err = gexec.Start(redisCmd, GinkgoWriter, GinkgoWriter)
 		Expect(err).ToNot(HaveOccurred())
 
-		// wait for redis to write pid file
-		for {
-			if _, err := os.Stat(pidfilePath); !os.IsNotExist(err) {
-				break
+		pidFileWritten := make(chan bool)
+		go func(c chan<- bool) {
+			for {
+				if _, err := os.Stat(pidfilePath); !os.IsNotExist(err) {
+					c <- true
+					break
+				}
+				time.Sleep(50 * time.Millisecond)
 			}
-		}
+		}(pidFileWritten)
 
+		// wait for redis to write pid file
+		select {
+		case <-pidFileWritten:
+			break
+		case <-time.After(30 * time.Second):
+			Fail("Test timed out waiting for redis to write PID file.")
+		}
 	})
 
 	AfterEach(func() {
