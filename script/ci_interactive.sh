@@ -4,6 +4,8 @@ set -e
 
 echo "** TESTING Redis broker"
 
+docker logout
+
 docker run -i -t \
   -e "GOPATH=/Users/pivotal/go" \
   -v /Users/pivotal/go:/Users/pivotal/go \
