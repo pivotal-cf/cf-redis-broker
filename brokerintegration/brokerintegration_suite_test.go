@@ -322,12 +322,29 @@ func BuildRedisClient(port uint, host string, password string) redisclient.Conn 
 	return client
 }
 
-func ensurePortAvailable(port uint) {
+func portAvailableChecker(port uint) func() bool {
+	return func() bool {
+		return portAvailable(port)
+	}
+}
+
+func portAvailable(port uint) bool {
 	address, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("localhost:%d", port))
-	Ω(err).NotTo(HaveOccurred())
+	if err != nil {
+		return false
+	}
 
 	err = availability.Check(address, 10*time.Second)
-	Ω(err).NotTo(HaveOccurred())
+	if err != nil {
+		return false
+	}
+
+	return true
+}
+
+func ensurePortAvailable(port uint) {
+	success := portAvailable(port)
+	Ω(success).Should(BeTrue())
 }
 
 func killRedisProcess(instanceID string) {

@@ -82,12 +82,14 @@ var _ = Describe("restarting processes", func() {
 				Ω(err).ShouldNot(HaveOccurred())
 				lockFile.Close()
 
+				redisRunningCheck := portAvailableChecker(port)
+
+				Eventually(redisRunningCheck, time.Second*time.Duration(1)).Should(BeTrue())
+
 				killRedisProcess(instanceID)
 
-				allowTimeForProcessMonitorToRestartInstances()
-
-				_, err = redisclient.Dial("tcp", fmt.Sprintf("%s:%d", host, port))
-				Ω(err).Should(HaveOccurred())
+				Eventually(redisRunningCheck, time.Second*time.Duration(1)).Should(BeFalse())
+				Consistently(redisRunningCheck, durationForProcessMonitorToRestartInstance()).Should(BeFalse())
 			})
 		})
 
@@ -164,6 +166,10 @@ var _ = Describe("restarting processes", func() {
 	})
 })
 
+func durationForProcessMonitorToRestartInstance() time.Duration {
+	return time.Second * time.Duration(brokerConfig.RedisConfiguration.ProcessCheckIntervalSeconds+1)
+}
+
 func allowTimeForProcessMonitorToRestartInstances() {
-	time.Sleep(time.Second * time.Duration(brokerConfig.RedisConfiguration.ProcessCheckIntervalSeconds+1))
+	time.Sleep(durationForProcessMonitorToRestartInstance())
 }
