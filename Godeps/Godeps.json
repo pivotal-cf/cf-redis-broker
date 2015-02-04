@@ -59,7 +59,7 @@
 		},
 		{
 			"ImportPath": "github.com/pivotal-cf/brokerapi",
-			"Rev": "73e1bd17a3c12ed01b575926ad6cad58f477f2a4"
+			"Rev": "7c1d178ac94cb11c69fea8e15253520cb3c0dda3"
 		},
 		{
 			"ImportPath": "github.com/pivotal-golang/lager",
