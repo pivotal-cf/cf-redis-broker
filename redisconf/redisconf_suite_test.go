@@ -2,6 +2,7 @@ package redisconf_test
 
 import (
 	. "github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
 
 	"testing"
@@ -9,5 +10,6 @@ import (
 
 func TestRedisconf(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Redisconf Suite")
+	junitReporter := reporters.NewJUnitReporter("junit_redisconf.xml")
+	RunSpecsWithDefaultAndCustomReporters(t, "Redisconf Suite", []Reporter{junitReporter})
 }

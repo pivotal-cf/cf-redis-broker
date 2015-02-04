@@ -30,6 +30,7 @@ import (
 	"github.com/pivotal-cf/cf-redis-broker/process"
 
 	. "github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 )
@@ -46,7 +47,8 @@ var fakeAgent *httptest.Server
 
 func TestBrokerintegration(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Broker Integration Suite")
+	junitReporter := reporters.NewJUnitReporter("junit_brokerintegration.xml")
+	RunSpecsWithDefaultAndCustomReporters(t, "Brokerintegration Suite", []Reporter{junitReporter})
 }
 
 func safelyResetAllDirectories() {

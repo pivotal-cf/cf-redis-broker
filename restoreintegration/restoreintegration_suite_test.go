@@ -5,6 +5,7 @@ import (
 	"os"
 
 	. "github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 
@@ -13,7 +14,8 @@ import (
 
 func TestRestore(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Restore Suite")
+	junitReporter := reporters.NewJUnitReporter("junit_restoreintegration.xml")
+	RunSpecsWithDefaultAndCustomReporters(t, "Restoreintegration Suite", []Reporter{junitReporter})
 }
 
 var restoreExecutablePath string

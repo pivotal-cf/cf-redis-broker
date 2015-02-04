@@ -2,6 +2,7 @@ package system_test
 
 import (
 	. "github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
 
 	"testing"
@@ -9,5 +10,6 @@ import (
 
 func TestSystem(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "System Suite")
+	junitReporter := reporters.NewJUnitReporter("junit_system.xml")
+	RunSpecsWithDefaultAndCustomReporters(t, "System Suite", []Reporter{junitReporter})
 }

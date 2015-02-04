@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
 	"github.com/pivotal-cf/cf-redis-broker/debug"
@@ -17,7 +18,8 @@ import (
 
 func TestDebug(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Debug Suite")
+	junitReporter := reporters.NewJUnitReporter("junit_debug.xml")
+	RunSpecsWithDefaultAndCustomReporters(t, "Debug Suite", []Reporter{junitReporter})
 }
 
 var dirs []string

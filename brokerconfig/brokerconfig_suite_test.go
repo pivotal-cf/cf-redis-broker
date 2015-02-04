@@ -2,6 +2,7 @@ package brokerconfig_test
 
 import (
 	. "github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
 
 	"testing"
@@ -9,5 +10,6 @@ import (
 
 func TestBrokerconfig(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Brokerconfig Suite")
+	junitReporter := reporters.NewJUnitReporter("junit_brokerconfig.xml")
+	RunSpecsWithDefaultAndCustomReporters(t, "Brokerconfig Suite", []Reporter{junitReporter})
 }

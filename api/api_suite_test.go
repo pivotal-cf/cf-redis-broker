@@ -2,6 +2,7 @@ package api_test
 
 import (
 	. "github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
 
 	"testing"
@@ -9,5 +10,6 @@ import (
 
 func TestApi(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Api Suite")
+	junitReporter := reporters.NewJUnitReporter("junit_api.xml")
+	RunSpecsWithDefaultAndCustomReporters(t, "Api Suite", []Reporter{junitReporter})
 }

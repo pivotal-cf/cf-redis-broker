@@ -6,6 +6,7 @@ import (
 	"net"
 
 	. "github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
 	"github.com/pivotal-cf/cf-redis-broker/redis"
 
@@ -20,7 +21,8 @@ type Statefile struct {
 
 func TestRedis(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Redis Suite")
+	junitReporter := reporters.NewJUnitReporter("junit_redis.xml")
+	RunSpecsWithDefaultAndCustomReporters(t, "Redis Suite", []Reporter{junitReporter})
 }
 
 func getStatefileContents(path string) Statefile {

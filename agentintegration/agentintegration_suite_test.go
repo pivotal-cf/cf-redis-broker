@@ -16,6 +16,7 @@ import (
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 
 	. "github.com/onsi/ginkgo"
+	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
 
 	"testing"
@@ -23,7 +24,8 @@ import (
 
 func TestAgentintegration(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Agent Integration Suite")
+	junitReporter := reporters.NewJUnitReporter("junit_agentintegration.xml")
+	RunSpecsWithDefaultAndCustomReporters(t, "Agent Integration Suite", []Reporter{junitReporter})
 }
 
 func redisNotWritingAof(redisConn redis.Conn) func() bool {
