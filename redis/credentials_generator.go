@@ -1,6 +1,6 @@
 package redis
 
-import "github.com/dchest/uniuri"
+import "code.google.com/p/go-uuid/uuid"
 
 type CredentialsGenerator interface {
 	GenerateCredentials() string
@@ -9,5 +9,5 @@ type CredentialsGenerator interface {
 type RandomCredentialsGenerator struct{}
 
 func (RandomCredentialsGenerator) GenerateCredentials() string {
-	return uniuri.New()
+	return uuid.NewRandom().String()
 }

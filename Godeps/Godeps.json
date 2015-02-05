@@ -24,10 +24,6 @@
 			"Rev": "ae96f1c1ac9eb11be7dff4fe4cb42f6846b93d77"
 		},
 		{
-			"ImportPath": "github.com/dchest/uniuri",
-			"Rev": "bc4af7603a3e0ce9d58009f82fca481555182e1c"
-		},
-		{
 			"ImportPath": "github.com/garyburd/redigo/redis",
 			"Rev": "917dc959b1d73370434f1f2339ca86a67e551ebb"
 		},
