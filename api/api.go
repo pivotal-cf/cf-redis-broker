@@ -19,71 +19,38 @@ func New(resetter redisResetter, configPath string, parseCredentials credentials
 
 	router.Path("/").
 		Methods("DELETE").
-		HandlerFunc(deleteHandler(resetter))
+		HandlerFunc(resetHandler(resetter))
 
 	router.Path("/").
 		Methods("GET").
-		HandlerFunc(getHandler(configPath, parseCredentials))
+		HandlerFunc(credentialsHandler(configPath, parseCredentials))
 
 	return router
 }
 
-func deleteHandler(resetter redisResetter) http.HandlerFunc {
+func resetHandler(resetter redisResetter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-
 		err := resetter.ResetRedis()
-
 		if err != nil {
-			writeError(err, http.StatusServiceUnavailable, w)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		writeNothing(w, http.StatusOK)
+		w.WriteHeader(http.StatusOK)
 	}
 }
 
-func getHandler(configPath string, parseCredentials credentialsParserFunc) http.HandlerFunc {
+func credentialsHandler(configPath string, parseCredentials credentialsParserFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
 		credentials, err := parseCredentials(configPath)
 		if err != nil {
-			writeError(err, http.StatusInternalServerError, w)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		writeJSON(credentials, http.StatusOK, w)
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		encoder := json.NewEncoder(w)
+		encoder.Encode(credentials)
 	}
-}
-
-func writeJSON(js interface{}, status int, w http.ResponseWriter) {
-	bytes, err := json.Marshal(js)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(status)
-	w.Write(bytes)
-}
-
-func writeNothing(w http.ResponseWriter, status int) {
-	w.WriteHeader(status)
-
-	_, err := w.Write([]byte("{}"))
-	if err != nil {
-		writeError(err, http.StatusInternalServerError, w)
-		return
-	}
-}
-
-func writeError(err error, status int, w http.ResponseWriter) {
-	writeJSON(Error{Err: err.Error()}, status, w)
-}
-
-type Error struct {
-	Err string `json:"error"`
-}
-
-func (err Error) Error() string {
-	return err.Err
 }

@@ -167,12 +167,12 @@ var _ = Describe("DELETE /", func() {
 	})
 
 	Context("when there is some failure at the redis level", func() {
-		It("responds with HTTP 503", func() {
+		It("responds with HTTP 500", func() {
 			request, _ := http.NewRequest("DELETE", "http://127.0.0.1:9876", nil)
 
 			response, err := http.DefaultClient.Do(request)
 			Ω(err).ShouldNot(HaveOccurred())
-			Ω(response.StatusCode).To(Equal(503))
+			Ω(response.StatusCode).To(Equal(500))
 		})
 	})
 })

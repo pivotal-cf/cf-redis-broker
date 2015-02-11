@@ -23,11 +23,11 @@ func (client *fakeRedisResetter) ResetRedis() error {
 }
 
 var _ = Describe("redis agent HTTP API", func() {
-
 	var server *httptest.Server
 	var redisClient *fakeRedisResetter
 	var deleteCount int
 	var configPath string
+	var response *http.Response
 
 	var parseCredentials func(string) (credentials.Credentials, error)
 
@@ -54,8 +54,6 @@ var _ = Describe("redis agent HTTP API", func() {
 	})
 
 	Describe("GET /", func() {
-		var response *http.Response
-
 		JustBeforeEach(func() {
 			response = makeRequest("GET", server.URL)
 		})
@@ -88,22 +86,16 @@ var _ = Describe("redis agent HTTP API", func() {
 				Ω(response.StatusCode).Should(Equal(500))
 			})
 
-			It("returns a json error object", func() {
+			It("returns the correct error in the body", func() {
 				body, err := ioutil.ReadAll(response.Body)
 				Ω(err).ShouldNot(HaveOccurred())
 
-				respErr := api.Error{}
-				err = json.Unmarshal(body, &respErr)
-				Ω(err).ShouldNot(HaveOccurred())
-
-				Ω(respErr).Should(MatchError("unable to open config file"))
+				Ω(string(body)).Should(Equal("unable to open config file\n"))
 			})
 		})
 	})
 
 	Describe("DELETE /", func() {
-		var response *http.Response
-
 		Context("When it can connect to Redis successfully", func() {
 			JustBeforeEach(func() {
 				redisClient.deleteAllData = func() error {
@@ -121,10 +113,6 @@ var _ = Describe("redis agent HTTP API", func() {
 			It("returns HTTP 200 OK", func() {
 				Ω(response.StatusCode).Should(Equal(200))
 			})
-
-			It("has the correct content type", func() {
-				Ω(response.Header.Get("Content-Type")).Should(Equal("application/json"))
-			})
 		})
 
 		Context("when deleting all data from redis goes wrong", func() {
@@ -135,19 +123,15 @@ var _ = Describe("redis agent HTTP API", func() {
 				response = makeRequest("DELETE", server.URL)
 			})
 
-			It("returns 503", func() {
-				Ω(response.StatusCode).Should(Equal(503))
+			It("returns 500", func() {
+				Ω(response.StatusCode).Should(Equal(500))
 			})
 
-			It("returns a json error object", func() {
+			It("returns the correct error in the body", func() {
 				body, err := ioutil.ReadAll(response.Body)
 				Ω(err).ShouldNot(HaveOccurred())
 
-				respErr := api.Error{}
-				err = json.Unmarshal(body, &respErr)
-				Ω(err).ShouldNot(HaveOccurred())
-
-				Ω(respErr).Should(MatchError("redis burned down"))
+				Ω(string(body)).Should(Equal("redis burned down\n"))
 			})
 		})
 	})
