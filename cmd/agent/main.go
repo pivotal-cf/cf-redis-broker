@@ -27,9 +27,9 @@ func (portChecker) Check(address *net.TCPAddr, timeout time.Duration) error {
 	return availability.Check(address, timeout)
 }
 
-type RealShell struct{}
+type commandRunner struct{}
 
-func (RealShell) Run(command *exec.Cmd) ([]byte, error) {
+func (commandRunner) Run(command *exec.Cmd) ([]byte, error) {
 	return command.CombinedOutput()
 }
 
@@ -77,7 +77,7 @@ func main() {
 		"conf": newConfig,
 	})
 
-	redisResetter := resetter.New(config.DefaultConfPath, config.ConfPath, new(portChecker), new(RealShell), config.MonitExecutablePath)
+	redisResetter := resetter.New(config.DefaultConfPath, config.ConfPath, new(portChecker), new(commandRunner), config.MonitExecutablePath)
 	handler := api.New(redisResetter, config.ConfPath, credentials.Parse)
 
 	serverMiddleware := negroni.Classic()

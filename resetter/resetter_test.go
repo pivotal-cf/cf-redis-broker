@@ -22,42 +22,46 @@ type fakeChecker struct {
 	checkErr          error
 }
 
-func (fakePortChecker *fakeChecker) Check(address *net.TCPAddr, timeout time.Duration) error {
-	fakePortChecker.addressesWaitedOn = append(fakePortChecker.addressesWaitedOn, address)
-	return fakePortChecker.checkErr
+func (portChecker *fakeChecker) Check(address *net.TCPAddr, timeout time.Duration) error {
+	portChecker.addressesWaitedOn = append(portChecker.addressesWaitedOn, address)
+	return portChecker.checkErr
 }
 
-type fakeShell struct {
+type fakeRunner struct {
 	commandsRan []*exec.Cmd
 }
 
-func (shell *fakeShell) Run(command *exec.Cmd) ([]byte, error) {
-	shell.commandsRan = append(shell.commandsRan, command)
+func (commandRunner *fakeRunner) Run(command *exec.Cmd) ([]byte, error) {
+	commandRunner.commandsRan = append(commandRunner.commandsRan, command)
 	return []byte{}, nil
 }
 
 var _ = Describe("Client", func() {
+	var (
+		redisClient     *resetter.Resetter
+		fakePortChecker *fakeChecker
+		commandRunner   *fakeRunner
+		aofPath         string
+		rdbPath         string
+		redisPort       int
+		confPath        string
+		defaultConfPath string
+		conf            redisconf.Conf
 
-	var redisClient *resetter.Resetter
-	var fakePortChecker *fakeChecker
-	var shell *fakeShell
-	var monitExecutable = "/path/to/monit"
-	var aofPath string
-	var rdbPath string
-	var redisPort int
-	var redisPassword string
-	var confPath string
-	var defaultConfPath string
-	var conf redisconf.Conf
+		monitExecutablePath = "/path/to/monit"
+		redisPassword       = "somepassword"
+	)
 
 	BeforeEach(func() {
-		shell = new(fakeShell)
+		commandRunner = new(fakeRunner)
 		fakePortChecker = new(fakeChecker)
-		redisPassword = "somepassword"
-		dir, _ := ioutil.TempDir("", "redisconf-test")
-		defaultConfPath = filepath.Join(dir, "redis.conf-default")
-		confPath = filepath.Join(dir, "redis.conf")
-		err := redisconf.New(
+
+		tmpdir, err := ioutil.TempDir("", "redisconf-test")
+		Ω(err).ToNot(HaveOccurred())
+		defaultConfPath = filepath.Join(tmpdir, "redis.conf-default")
+		confPath = filepath.Join(tmpdir, "redis.conf")
+
+		err = redisconf.New(
 			redisconf.Param{
 				Key:   "port",
 				Value: fmt.Sprintf("%d", redisPort),
@@ -68,6 +72,7 @@ var _ = Describe("Client", func() {
 			},
 		).Save(defaultConfPath)
 		Ω(err).ToNot(HaveOccurred())
+
 		conf = redisconf.New(
 			redisconf.Param{
 				Key:   "port",
@@ -86,21 +91,22 @@ var _ = Describe("Client", func() {
 				Value: "CONFIG aliasedconfigcommand",
 			},
 		)
-		redisClient = resetter.New(defaultConfPath, confPath, fakePortChecker, shell, monitExecutable)
-	})
 
-	JustBeforeEach(func() {
-		err := conf.Save(confPath)
+		err = conf.Save(confPath)
 		Ω(err).ShouldNot(HaveOccurred())
 
 		cwd, err := os.Getwd()
 		Ω(err).ShouldNot(HaveOccurred())
+
 		aofPath = filepath.Join(cwd, "appendonly.aof")
 		_, err = os.Create(aofPath)
 		Ω(err).ShouldNot(HaveOccurred())
+
 		rdbPath = filepath.Join(cwd, "dump.rdb")
 		_, err = os.Create(rdbPath)
 		Ω(err).ShouldNot(HaveOccurred())
+
+		redisClient = resetter.New(defaultConfPath, confPath, fakePortChecker, commandRunner, monitExecutablePath)
 	})
 
 	AfterEach(func() {
@@ -108,19 +114,21 @@ var _ = Describe("Client", func() {
 		os.Remove(rdbPath)
 	})
 
-	Describe("#DeleteAllData", func() {
+	Describe("#ResetRedis", func() {
 		It("stops and starts redis with monit", func() {
-			err := redisClient.DeleteAllData()
+			err := redisClient.ResetRedis()
 			Ω(err).ShouldNot(HaveOccurred())
-			Ω(shell.commandsRan).To(HaveLen(2))
-			Ω(shell.commandsRan[0].Path).To(Equal(monitExecutable))
-			Ω(shell.commandsRan[0].Args).To(ConsistOf(monitExecutable, "stop", "redis"))
-			Ω(shell.commandsRan[1].Path).To(Equal(monitExecutable))
-			Ω(shell.commandsRan[1].Args).To(ConsistOf(monitExecutable, "start", "redis"))
+
+			Ω(commandRunner.commandsRan[0].Args).To(Equal(
+				[]string{monitExecutablePath, "stop", "redis"},
+			))
+			Ω(commandRunner.commandsRan[1].Args).To(Equal(
+				[]string{monitExecutablePath, "start", "redis"},
+			))
 		})
 
 		It("removes the AOF file", func() {
-			err := redisClient.DeleteAllData()
+			err := redisClient.ResetRedis()
 			Ω(err).ShouldNot(HaveOccurred())
 
 			_, err = os.Stat(aofPath)
@@ -128,7 +136,7 @@ var _ = Describe("Client", func() {
 		})
 
 		It("removes the RDB file", func() {
-			err := redisClient.DeleteAllData()
+			err := redisClient.ResetRedis()
 			Ω(err).ShouldNot(HaveOccurred())
 
 			_, err = os.Stat(rdbPath)
@@ -136,7 +144,7 @@ var _ = Describe("Client", func() {
 		})
 
 		It("nukes the config file and replaces it with one containing a new password", func() {
-			err := redisClient.DeleteAllData()
+			err := redisClient.ResetRedis()
 			Ω(err).ShouldNot(HaveOccurred())
 
 			newConfig, err := redisconf.Load(confPath)
@@ -145,35 +153,34 @@ var _ = Describe("Client", func() {
 			newPassword := newConfig.Get("requirepass")
 			Ω(newPassword).NotTo(BeEmpty())
 			Ω(newPassword).NotTo(Equal(redisPassword))
-
-			Ω(newConfig.HasKey("appendonly")).Should(BeFalse())
 		})
 
 		It("does not return until redis is available again", func() {
-			err := redisClient.DeleteAllData()
+			err := redisClient.ResetRedis()
 			Ω(err).ShouldNot(HaveOccurred())
+
 			address, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("localhost:%d", redisPort))
 			Ω(err).ShouldNot(HaveOccurred())
+
 			Ω(fakePortChecker.addressesWaitedOn).To(ConsistOf(address))
 		})
 
 		Context("when redis fails to become available again within the timeout period", func() {
 			It("returns the error from the checker", func() {
 				fakePortChecker.checkErr = errors.New("I timed out")
-				err := redisClient.DeleteAllData()
+				err := redisClient.ResetRedis()
 				Ω(err).Should(MatchError("I timed out"))
 			})
 		})
 
-		Context("when the AOF file cannot be found", func() {
-
+		Context("when the AOF file cannot be removed", func() {
 			JustBeforeEach(func() {
 				err := os.Remove(aofPath)
 				Ω(err).ShouldNot(HaveOccurred())
 			})
 
 			It("returns error", func() {
-				Ω(redisClient.DeleteAllData()).Should(HaveOccurred())
+				Ω(redisClient.ResetRedis()).Should(HaveOccurred())
 			})
 		})
 	})

@@ -8,31 +8,31 @@ import (
 	"github.com/pivotal-cf/cf-redis-broker/credentials"
 )
 
-type RedisResetter interface {
-	DeleteAllData() error
+type redisResetter interface {
+	ResetRedis() error
 }
 
-type CredentialsParser func(string) (credentials.Credentials, error)
+type credentialsParserFunc func(string) (credentials.Credentials, error)
 
-func New(redisClient RedisResetter, configPath string, credentialsParser CredentialsParser) http.Handler {
+func New(resetter redisResetter, configPath string, parseCredentials credentialsParserFunc) http.Handler {
 	router := mux.NewRouter()
 
 	router.Path("/").
 		Methods("DELETE").
-		HandlerFunc(deleteHandler(redisClient))
+		HandlerFunc(deleteHandler(resetter))
 
 	router.Path("/").
 		Methods("GET").
-		HandlerFunc(getHandler(configPath, credentialsParser))
+		HandlerFunc(getHandler(configPath, parseCredentials))
 
 	return router
 }
 
-func deleteHandler(redisClient RedisResetter) http.HandlerFunc {
+func deleteHandler(resetter redisResetter) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
-		err := redisClient.DeleteAllData()
+		err := resetter.ResetRedis()
 
 		if err != nil {
 			writeError(err, http.StatusServiceUnavailable, w)
@@ -43,7 +43,7 @@ func deleteHandler(redisClient RedisResetter) http.HandlerFunc {
 	}
 }
 
-func getHandler(configPath string, parseCredentials CredentialsParser) http.HandlerFunc {
+func getHandler(configPath string, parseCredentials credentialsParserFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		credentials, err := parseCredentials(configPath)

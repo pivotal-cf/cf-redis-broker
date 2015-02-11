@@ -18,7 +18,7 @@ type fakeRedisResetter struct {
 	deleteAllData func() error
 }
 
-func (client *fakeRedisResetter) DeleteAllData() error {
+func (client *fakeRedisResetter) ResetRedis() error {
 	return client.deleteAllData()
 }
 
@@ -29,7 +29,7 @@ var _ = Describe("redis agent HTTP API", func() {
 	var deleteCount int
 	var configPath string
 
-	var parseCredentials api.CredentialsParser
+	var parseCredentials func(string) (credentials.Credentials, error)
 
 	BeforeEach(func() {
 		parseCredentials = func(path string) (credentials.Credentials, error) {

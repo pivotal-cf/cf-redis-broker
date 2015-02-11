@@ -14,35 +14,39 @@ import (
 	"code.google.com/p/go-uuid/uuid"
 )
 
-type portChecker interface {
+type checker interface {
 	Check(address *net.TCPAddr, timeout time.Duration) error
 }
 
-type Shell interface {
+type runner interface {
 	Run(command *exec.Cmd) ([]byte, error)
 }
 
 type Resetter struct {
-	defaultConfPath string
-	confPath        string
-	portChecker     portChecker
-	shell           Shell
-	monitExecutable string
-	timeout         time.Duration
+	defaultConfPath     string
+	liveConfPath        string
+	portChecker         checker
+	commandRunner       runner
+	monitExecutablePath string
+	timeout             time.Duration
 }
 
-func New(defaultConfPath string, confPath string, portChecker portChecker, shell Shell, monitExecutable string) *Resetter {
+func New(defaultConfPath string,
+	liveConfPath string,
+	portChecker checker,
+	commandRunner runner,
+	monitExecutablePath string) *Resetter {
 	return &Resetter{
-		defaultConfPath: defaultConfPath,
-		confPath:        confPath,
-		portChecker:     portChecker,
-		shell:           shell,
-		monitExecutable: monitExecutable,
-		timeout:         time.Second * 10,
+		defaultConfPath:     defaultConfPath,
+		liveConfPath:        liveConfPath,
+		portChecker:         portChecker,
+		commandRunner:       commandRunner,
+		monitExecutablePath: monitExecutablePath,
+		timeout:             time.Second * 10,
 	}
 }
 
-func (resetter *Resetter) DeleteAllData() error {
+func (resetter *Resetter) ResetRedis() error {
 	if err := resetter.stopRedis(); err != nil {
 		return err
 	}
@@ -51,7 +55,7 @@ func (resetter *Resetter) DeleteAllData() error {
 		return err
 	}
 
-	if err := resetter.resetConf(); err != nil {
+	if err := resetter.resetConfigWithNewPassword(); err != nil {
 		return err
 	}
 
@@ -59,7 +63,7 @@ func (resetter *Resetter) DeleteAllData() error {
 		return err
 	}
 
-	credentials, err := credentials.Parse(resetter.confPath)
+	credentials, err := credentials.Parse(resetter.liveConfPath)
 	if err != nil {
 		return err
 	}
@@ -73,7 +77,7 @@ func (resetter *Resetter) DeleteAllData() error {
 }
 
 func (resetter *Resetter) stopRedis() error {
-	resetter.shell.Run(exec.Command(resetter.monitExecutable, "stop", "redis"))
+	resetter.commandRunner.Run(exec.Command(resetter.monitExecutablePath, "stop", "redis"))
 	redisProcessDead := make(chan bool)
 	go func(c chan<- bool) {
 		for {
@@ -103,7 +107,7 @@ func (resetter *Resetter) startRedis() error {
 	redisStarted := make(chan bool)
 	go func(c chan<- bool) {
 		for {
-			_, err := resetter.shell.Run(exec.Command(resetter.monitExecutable, "start", "redis"))
+			_, err := resetter.commandRunner.Run(exec.Command(resetter.monitExecutablePath, "start", "redis"))
 			if err == nil {
 				c <- true
 				return
@@ -133,7 +137,7 @@ func (_ *Resetter) deleteData() error {
 	return nil
 }
 
-func (resetter *Resetter) resetConf() error {
+func (resetter *Resetter) resetConfigWithNewPassword() error {
 	conf, err := redisconf.Load(resetter.defaultConfPath)
 	if err != nil {
 		return err
@@ -141,7 +145,7 @@ func (resetter *Resetter) resetConf() error {
 
 	conf.Set("requirepass", uuid.NewRandom().String())
 
-	if err := conf.Save(resetter.confPath); err != nil {
+	if err := conf.Save(resetter.liveConfPath); err != nil {
 		return err
 	}
 
