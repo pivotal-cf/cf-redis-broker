@@ -27,6 +27,7 @@ auth:
   username: admin
   password: secret
 
+backend_host: localhost
 backend_port: 3000
 
 monit_executable_path: /some/path/to/monit

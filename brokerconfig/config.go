@@ -11,6 +11,7 @@ import (
 type Config struct {
 	RedisConfiguration        ServiceConfiguration `yaml:"redis"`
 	AuthConfiguration         AuthConfiguration    `yaml:"auth"`
+	Host                      string               `yaml:"backend_host"`
 	Port                      string               `yaml:"backend_port"`
 	MonitExecutablePath       string               `yaml:"monit_executable_path"`
 	RedisServerExecutablePath string               `yaml:"redis_server_executable_path"`

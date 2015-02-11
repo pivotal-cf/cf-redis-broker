@@ -54,8 +54,12 @@ var _ = Describe("parsing the broker config file", func() {
 				Ω(parseConfigErr).NotTo(HaveOccurred())
 			})
 
-			It("loads host", func() {
+			It("loads redis host", func() {
 				Ω(config.RedisConfiguration.Host).To(Equal("example.com"))
+			})
+
+			It("loads host", func() {
+				Ω(config.Host).To(Equal("localhost"))
 			})
 
 			It("loads port", func() {

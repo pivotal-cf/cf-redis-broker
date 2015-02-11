@@ -26,4 +26,6 @@
 "auth":
   "password": "secret"
   "username": "admin"
+"backend_host": "localhost"
 "backend_port": "3000"
+

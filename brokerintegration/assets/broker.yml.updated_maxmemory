@@ -14,5 +14,5 @@ redis:
 auth:
   username: admin
   password: secret
-
+backend_host: "localhost"
 backend_port: 3000

@@ -86,7 +86,7 @@ func main() {
 	http.HandleFunc("/debug", debugHandler)
 	http.Handle("/", brokerAPI)
 
-	if http.ListenAndServe(":"+config.Port, nil) != nil {
+	if http.ListenAndServe(config.Host+":"+config.Port, nil) != nil {
 		brokerLogger.Error("http-listen", err)
 	}
 }
