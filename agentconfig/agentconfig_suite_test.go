@@ -11,5 +11,5 @@ import (
 func TestConfig(t *testing.T) {
 	RegisterFailHandler(Fail)
 	junitReporter := reporters.NewJUnitReporter("junit_agentconfig.xml")
-	RunSpecsWithDefaultAndCustomReporters(t, "Config Suite", []Reporter{junitReporter})
+	RunSpecsWithDefaultAndCustomReporters(t, "Agent Config Suite", []Reporter{junitReporter})
 }

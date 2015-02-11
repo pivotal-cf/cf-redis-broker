@@ -15,7 +15,7 @@ import (
 func TestRestore(t *testing.T) {
 	RegisterFailHandler(Fail)
 	junitReporter := reporters.NewJUnitReporter("junit_restoreintegration.xml")
-	RunSpecsWithDefaultAndCustomReporters(t, "Restoreintegration Suite", []Reporter{junitReporter})
+	RunSpecsWithDefaultAndCustomReporters(t, "Restore Integration Suite", []Reporter{junitReporter})
 }
 
 var restoreExecutablePath string
