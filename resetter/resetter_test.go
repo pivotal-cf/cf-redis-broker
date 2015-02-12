@@ -28,12 +28,17 @@ func (portChecker *fakeChecker) Check(address *net.TCPAddr, timeout time.Duratio
 }
 
 type fakeRunner struct {
-	commandsRan []*exec.Cmd
+	commandsRan   []*exec.Cmd
+	outputStrings []string
 }
 
 func (commandRunner *fakeRunner) Run(command *exec.Cmd) ([]byte, error) {
 	commandRunner.commandsRan = append(commandRunner.commandsRan, command)
-	return []byte{}, nil
+	commandIndex := len(commandRunner.commandsRan) - 1
+	if len(commandRunner.outputStrings) <= commandIndex {
+		return []byte("Process 'redis' running"), nil
+	}
+	return []byte(commandRunner.outputStrings[commandIndex]), nil
 }
 
 var _ = Describe("Client", func() {
@@ -116,14 +121,40 @@ var _ = Describe("Client", func() {
 
 	Describe("#ResetRedis", func() {
 		It("stops and starts redis with monit", func() {
+			commandRunner.outputStrings = []string{
+				"",
+				"",
+				`The Monit daemon 5.2.4 uptime: 23m
+
+Process 'redis-agent'               running
+Process 'redis'                     something_wierd_state
+Process 'syslog-configurator'       running
+System 'system_d289e4bf-dc4b-4369-a7a7-a45e71319fe0' running`,
+				`The Monit daemon 5.2.4 uptime: 23m
+
+Process 'redis-agent'               running
+Process 'redis'                     running
+Process 'syslog-configurator'       running
+System 'system_d289e4bf-dc4b-4369-a7a7-a45e71319fe0' running`,
+			}
 			err := redisClient.ResetRedis()
 			Ω(err).ShouldNot(HaveOccurred())
+
+			Ω(len(commandRunner.commandsRan)).To(Equal(4))
 
 			Ω(commandRunner.commandsRan[0].Args).To(Equal(
 				[]string{monitExecutablePath, "stop", "redis"},
 			))
 			Ω(commandRunner.commandsRan[1].Args).To(Equal(
 				[]string{monitExecutablePath, "start", "redis"},
+			))
+			// initializing
+			Ω(commandRunner.commandsRan[2].Args).To(Equal(
+				[]string{monitExecutablePath, "summary"},
+			))
+			// running
+			Ω(commandRunner.commandsRan[3].Args).To(Equal(
+				[]string{monitExecutablePath, "summary"},
 			))
 		})
 

@@ -1,13 +1,15 @@
 #!/bin/bash
 
 set -e
-set -x
+# set -x
 
 ACTION=$1
 shift
 
-PROCESS_NAME=$1
-shift
+if [ -n "$1" ]; then
+  PROCESS_NAME=$1
+  shift
+fi
 
 START_STACK=/tmp/fake_monit_start_stack
 STOP_STACK=/tmp/fake_monit_stop_stack
@@ -18,4 +20,6 @@ case $ACTION in
   stop )
     pkill redis-server
     echo $PROCESS_NAME >> $STOP_STACK ;;
+  summary )
+    echo "Process 'redis' running" ;;
 esac
