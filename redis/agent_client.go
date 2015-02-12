@@ -36,7 +36,8 @@ func (agentClient *RemoteAgentClient) Reset(hostIP string) error {
 	}
 
 	if response.StatusCode != 200 {
-		return errors.New(fmt.Sprintf("Expected status code 200, received %d", response.StatusCode))
+		body, _ := ioutil.ReadAll(response.Body)
+		return errors.New(fmt.Sprintf("Expected status code 200, received %d, %s", response.StatusCode, string(body)))
 	}
 
 	return nil

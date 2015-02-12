@@ -62,7 +62,7 @@ var _ = Describe("RemoteAgentClient", func() {
 
 			It("returns the error", func() {
 				err := remoteAgentClient.Reset("127.0.0.1")
-				Ω(err).To(MatchError("Expected status code 200, received 500"))
+				Ω(err).To(MatchError("Expected status code 200, received 500, "))
 			})
 		})
 	})
