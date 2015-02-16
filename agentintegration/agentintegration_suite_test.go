@@ -6,6 +6,8 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/cloudfoundry-incubator/candiedyaml"
@@ -21,6 +23,9 @@ import (
 
 	"testing"
 )
+
+var redisConfPath string
+var originalConf redisconf.Conf
 
 func TestAgentintegration(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -56,6 +61,50 @@ func startAgentWithConfig(config *agentconfig.Config) *gexec.Session {
 	file.Close()
 
 	return startAgentWithFile(file.Name())
+}
+
+func defaultRedisConfigPath() string {
+	defaultConfPath, err := filepath.Abs(path.Join("assets", "redis.conf.default"))
+	Ω(err).ShouldNot(HaveOccurred())
+	return defaultConfPath
+}
+
+func createDefaultRedisConfig() {
+	dir, err := ioutil.TempDir("", "redisconf-test")
+	redisConfPath = filepath.Join(dir, "redis.conf")
+
+	originalConf = redisconf.New(
+		redisconf.Param{Key: "requirepass", Value: "thepassword"},
+		redisconf.Param{Key: "port", Value: "6379"},
+	)
+
+	err = originalConf.Save(redisConfPath)
+	Expect(err).ToNot(HaveOccurred())
+}
+
+func startAgentWithDefaultConfig() *gexec.Session {
+	os.Remove("/tmp/fake_monit_start_stack")
+	os.Remove("/tmp/fake_monit_start_stop")
+
+	createDefaultRedisConfig()
+
+	config := &agentconfig.Config{
+		DefaultConfPath:     defaultRedisConfigPath(),
+		ConfPath:            redisConfPath,
+		MonitExecutablePath: "assets/fake_monit",
+	}
+
+	session := startAgentWithConfig(config)
+	Eventually(isListeningChecker("localhost:9876")).Should(BeTrue())
+	return session
+}
+
+func stopAgent(session *gexec.Session) {
+	session.Terminate().Wait()
+	Eventually(session).Should(gexec.Exit())
+
+	err := os.Remove(redisConfPath)
+	Expect(err).ToNot(HaveOccurred())
 }
 
 func buildRedisConn(conf redisconf.Conf) (redis.Conn, error) {

@@ -5,13 +5,11 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"time"
 
 	"github.com/garyburd/redigo/redis"
 	"github.com/onsi/gomega/gexec"
-	"github.com/pivotal-cf/cf-redis-broker/agentconfig"
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 
 	. "github.com/onsi/ginkgo"
@@ -21,44 +19,13 @@ import (
 var _ = Describe("DELETE /", func() {
 
 	var session *gexec.Session
-	var redisConfPath string
-	var originalConf redisconf.Conf
 
 	BeforeEach(func() {
-		os.Remove("/tmp/fake_monit_start_stack")
-		os.Remove("/tmp/fake_monit_start_stop")
-
-		defaultConfPath, err := filepath.Abs(path.Join("assets", "redis.conf.default"))
-		Ω(err).ShouldNot(HaveOccurred())
-
-		dir, err := ioutil.TempDir("", "redisconf-test")
-		redisConfPath = filepath.Join(dir, "redis.conf")
-
-		originalConf = redisconf.New(
-			redisconf.Param{Key: "requirepass", Value: "thepassword"},
-			redisconf.Param{Key: "port", Value: "6379"},
-		)
-
-		config := &agentconfig.Config{
-			DefaultConfPath:     defaultConfPath,
-			ConfPath:            redisConfPath,
-			MonitExecutablePath: "assets/fake_monit",
-		}
-
-		err = originalConf.Save(redisConfPath)
-		Expect(err).ToNot(HaveOccurred())
-
-		session = startAgentWithConfig(config)
-		Eventually(isListeningChecker("localhost:9876")).Should(BeTrue())
+		session = startAgentWithDefaultConfig()
 	})
 
 	AfterEach(func() {
-		session.Terminate().Wait()
-		Eventually(session).Should(gexec.Exit())
-
-		redisConfPath, err := filepath.Abs(path.Join("assets", "redis.conf.tmp"))
-		Ω(err).ShouldNot(HaveOccurred())
-		os.Remove(redisConfPath)
+		stopAgent(session)
 	})
 
 	Context("when redis is up after being reset", func() {
