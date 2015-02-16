@@ -1,7 +1,6 @@
 package brokerintegration_test
 
 import (
-	"bytes"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -27,6 +26,7 @@ import (
 	"github.com/pivotal-cf/cf-redis-broker/availability"
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
 	"github.com/pivotal-cf/cf-redis-broker/debug"
+	"github.com/pivotal-cf/cf-redis-broker/integration"
 	"github.com/pivotal-cf/cf-redis-broker/process"
 
 	. "github.com/onsi/ginkgo"
@@ -251,23 +251,11 @@ func executeHTTPRequest(method string, uri string) (int, []byte) {
 }
 
 func executeAuthenticatedHTTPRequest(method string, uri string) (int, []byte) {
-	return executeAuthenticatedHTTPRequestWithBody(method, uri, nil)
+	return integration.ExecuteAuthenticatedHTTPRequest(method, uri, brokerConfig.AuthConfiguration.Username, brokerConfig.AuthConfiguration.Password)
 }
 
-func executeAuthenticatedHTTPRequestWithBody(method string, uri string, body []byte) (int, []byte) {
-	req, err := http.NewRequest(method, uri, bytes.NewReader(body))
-	Ω(err).ToNot(HaveOccurred())
-	req.SetBasicAuth(brokerConfig.AuthConfiguration.Username, brokerConfig.AuthConfiguration.Password)
-	resp, err := (&http.Client{}).Do(req)
-	Ω(err).ToNot(HaveOccurred())
-
-	defer resp.Body.Close()
-
-	responseBody, err := ioutil.ReadAll(resp.Body)
-	Ω(err).ToNot(HaveOccurred())
-
-	Ω(err).ToNot(HaveOccurred())
-	return resp.StatusCode, responseBody
+func executeAuthenticatedHTTPRequestWithBody(method, uri string, body []byte) (int, []byte) {
+	return integration.ExecuteAuthenticatedHTTPRequestWithBody(method, uri, brokerConfig.AuthConfiguration.Username, brokerConfig.AuthConfiguration.Password, body)
 }
 
 func provisionInstance(instanceID string, plan string) (int, []byte) {
@@ -374,24 +362,4 @@ func getDebugInfo() debug.Info {
 	Ω(err).ShouldNot(HaveOccurred())
 
 	return debugInfo
-}
-
-func hostIP4Addresses() ([]string, error) {
-	addrs, err := net.InterfaceAddrs()
-
-	if err != nil {
-		return nil, err
-	}
-
-	ipAddresses := []string{}
-
-	for _, address := range addrs {
-		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
-			if ipnet.IP.To4() != nil {
-				ipAddresses = append(ipAddresses, ipnet.IP.String())
-			}
-		}
-	}
-
-	return ipAddresses, nil
 }

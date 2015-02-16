@@ -6,6 +6,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/pivotal-cf/cf-redis-broker/integration"
 )
 
 var _ = Describe("Broker Security", func() {
@@ -43,7 +44,7 @@ var _ = Describe("Broker Security", func() {
 			resp.Body.Close()
 			Ω(err).ToNot(HaveOccurred())
 
-			publicIPAddresses, err := hostIP4Addresses()
+			publicIPAddresses, err := integration.HostIP4Addresses()
 			Ω(err).ToNot(HaveOccurred())
 
 			for _, ipAddress := range publicIPAddresses {
