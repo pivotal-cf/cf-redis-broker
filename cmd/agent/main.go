@@ -85,7 +85,7 @@ func main() {
 
 	serverMiddleware := negroni.Classic()
 	serverMiddleware.UseHandler(handler)
-	serverMiddleware.Run("localhost:9876")
+	serverMiddleware.Run("localhost:" + config.Port)
 }
 
 func fileExists(path string) bool {

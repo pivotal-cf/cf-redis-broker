@@ -42,6 +42,10 @@ var _ = Describe("Config", func() {
 				Expect(config.MonitExecutablePath).To(Equal("/foo/monit"))
 			})
 
+			It("Has the correct backend_port", func() {
+				Expect(config.Port).To(Equal("9876"))
+			})
+
 			It("Has the correct username and password", func() {
 				Expect(config.AuthConfiguration.Username).To(Equal("admin"))
 				Expect(config.AuthConfiguration.Password).To(Equal("secret"))

@@ -28,6 +28,7 @@ var _ = Describe("Startup", func() {
 		config = &agentconfig.Config{
 			DefaultConfPath: defaultConfPath,
 			ConfPath:        confPath,
+			Port:            "9876",
 		}
 	})
 

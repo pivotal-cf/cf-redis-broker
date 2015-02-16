@@ -15,6 +15,7 @@ type Config struct {
 	DefaultConfPath     string            `yaml:"default_conf_path"`
 	ConfPath            string            `yaml:"conf_path"`
 	MonitExecutablePath string            `yaml:"monit_executable_path"`
+	Port                string            `yaml:"backend_port"`
 	AuthConfiguration   AuthConfiguration `yaml:"auth"`
 }
 

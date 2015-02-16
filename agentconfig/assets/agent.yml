@@ -1,6 +1,7 @@
 default_conf_path: /default/conf/path
 conf_path: /conf/path 
 monit_executable_path: /foo/monit
+backend_port: "9876"
 auth:
   username: admin
   password: secret
