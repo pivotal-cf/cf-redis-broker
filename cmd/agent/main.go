@@ -9,6 +9,7 @@ import (
 
 	"code.google.com/p/go-uuid/uuid"
 
+	"github.com/pivotal-cf/brokerapi/auth"
 	"github.com/pivotal-cf/cf-redis-broker/agentconfig"
 	"github.com/pivotal-cf/cf-redis-broker/api"
 	"github.com/pivotal-cf/cf-redis-broker/availability"
@@ -78,11 +79,13 @@ func main() {
 	})
 
 	redisResetter := resetter.New(config.DefaultConfPath, config.ConfPath, new(portChecker), new(commandRunner), config.MonitExecutablePath)
-	handler := api.New(redisResetter, config.ConfPath, credentials.Parse)
+
+	authWrapper := auth.NewWrapper(config.AuthConfiguration.Username, config.AuthConfiguration.Password)
+	handler := authWrapper.Wrap(api.New(redisResetter, config.ConfPath, credentials.Parse))
 
 	serverMiddleware := negroni.Classic()
 	serverMiddleware.UseHandler(handler)
-	serverMiddleware.Run(":9876")
+	serverMiddleware.Run("localhost:9876")
 }
 
 func fileExists(path string) bool {

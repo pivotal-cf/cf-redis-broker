@@ -56,6 +56,7 @@ var _ = Describe("DELETE /", func() {
 			go func(c chan<- bool) {
 				defer GinkgoRecover()
 				request, _ := http.NewRequest("DELETE", "http://127.0.0.1:9876", nil)
+				request.SetBasicAuth("admin", "secret")
 				response, err := http.DefaultClient.Do(request)
 				Ω(err).ShouldNot(HaveOccurred())
 				Ω(response.StatusCode).To(Equal(http.StatusOK))
@@ -136,6 +137,7 @@ var _ = Describe("DELETE /", func() {
 	Context("when there is some failure at the redis level", func() {
 		It("responds with HTTP 500", func() {
 			request, _ := http.NewRequest("DELETE", "http://127.0.0.1:9876", nil)
+			request.SetBasicAuth("admin", "secret")
 
 			response, err := http.DefaultClient.Do(request)
 			Ω(err).ShouldNot(HaveOccurred())

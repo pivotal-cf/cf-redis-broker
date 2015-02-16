@@ -32,8 +32,6 @@ var _ = Describe("RemoteRepository", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		fakeAgentClient = &fakes.FakeAgentClient{}
-		redis.DefaultAgentClient = fakeAgentClient
-
 		fakeAgentClient.CredentialsFunc = func(hostIp string) (redis.Credentials, error) {
 			return redis.Credentials{
 				Port:     6666,
@@ -43,15 +41,14 @@ var _ = Describe("RemoteRepository", func() {
 
 		statefilePath = path.Join(tmpDir, "statefile.json")
 		config.RedisConfiguration.Dedicated.StatefilePath = statefilePath
-		repo, err = redis.NewRemoteRepository(&config)
+		repo, err = redis.NewRemoteRepository(fakeAgentClient, config)
 		Expect(err).ToNot(HaveOccurred())
-
 	})
 
 	Describe("NewRemoteRepository", func() {
 		Context("When a state file does not exist", func() {
 			It("does not return an error", func() {
-				_, err := redis.NewRemoteRepository(&config)
+				_, err := redis.NewRemoteRepository(fakeAgentClient, config)
 				Expect(err).ToNot(HaveOccurred())
 			})
 		})
@@ -76,7 +73,7 @@ var _ = Describe("RemoteRepository", func() {
 
 			Context("When the state file can be read", func() {
 				It("loads its state from the state file", func() {
-					repo, err := redis.NewRemoteRepository(&config)
+					repo, err := redis.NewRemoteRepository(fakeAgentClient, config)
 					Expect(err).ToNot(HaveOccurred())
 
 					allocatedInstances, err := repo.AllInstances()
@@ -90,7 +87,7 @@ var _ = Describe("RemoteRepository", func() {
 					nodes := append(config.RedisConfiguration.Dedicated.Nodes, "10.0.0.4")
 					config.RedisConfiguration.Dedicated.Nodes = nodes
 
-					repo, err := redis.NewRemoteRepository(&config)
+					repo, err := redis.NewRemoteRepository(fakeAgentClient, config)
 					Expect(err).ToNot(HaveOccurred())
 
 					availableInstances := repo.AvailableInstances()
@@ -102,7 +99,7 @@ var _ = Describe("RemoteRepository", func() {
 					nodes := append(config.RedisConfiguration.Dedicated.Nodes, "10.0.0.4")
 					config.RedisConfiguration.Dedicated.Nodes = nodes
 
-					_, err := redis.NewRemoteRepository(&config)
+					_, err := redis.NewRemoteRepository(fakeAgentClient, config)
 					Expect(err).ToNot(HaveOccurred())
 
 					state := getStatefileContents(statefilePath)
@@ -123,7 +120,7 @@ var _ = Describe("RemoteRepository", func() {
 				})
 
 				It("returns an error", func() {
-					_, err := redis.NewRemoteRepository(&config)
+					_, err := redis.NewRemoteRepository(fakeAgentClient, config)
 					Expect(err).To(HaveOccurred())
 				})
 			})
@@ -135,7 +132,7 @@ var _ = Describe("RemoteRepository", func() {
 				})
 
 				It("returns an error", func() {
-					_, err := redis.NewRemoteRepository(&config)
+					_, err := redis.NewRemoteRepository(fakeAgentClient, config)
 					Expect(err).To(HaveOccurred())
 				})
 			})

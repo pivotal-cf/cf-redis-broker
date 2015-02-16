@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
 )
 
 type Credentials struct {
@@ -13,21 +15,18 @@ type Credentials struct {
 	Password string `json:"password"`
 }
 
-type AgentClient interface {
-	Reset(hostIP string) error
-	Credentials(hostIP string) (Credentials, error)
-}
-
 type RemoteAgentClient struct {
+	HttpAuth brokerconfig.AuthConfiguration
 }
 
 func (agentClient *RemoteAgentClient) Reset(hostIP string) error {
 	url := fmt.Sprintf("http://%s:9876/", hostIP)
 	request, err := http.NewRequest("DELETE", url, nil)
-
 	if err != nil {
 		return err
 	}
+
+	request.SetBasicAuth(agentClient.HttpAuth.Username, agentClient.HttpAuth.Password)
 
 	response, err := http.DefaultClient.Do(request)
 
@@ -49,6 +48,8 @@ func (agentClient *RemoteAgentClient) Credentials(hostIP string) (Credentials, e
 	if err != nil {
 		return Credentials{}, err
 	}
+
+	request.SetBasicAuth(agentClient.HttpAuth.Username, agentClient.HttpAuth.Password)
 
 	response, err := http.DefaultClient.Do(request)
 	if err != nil {

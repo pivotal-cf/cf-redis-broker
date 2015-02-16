@@ -39,7 +39,7 @@ var _ = BeforeSuite(func() {
 	config, err := brokerconfig.ParseConfig(path)
 	Ω(err).NotTo(HaveOccurred())
 
-	repo, err := redis.NewRemoteRepository(&config)
+	repo, err := redis.NewRemoteRepository(&redis.RemoteAgentClient{}, config)
 	Ω(err).NotTo(HaveOccurred())
 
 	handler := debug.NewHandler(repo)

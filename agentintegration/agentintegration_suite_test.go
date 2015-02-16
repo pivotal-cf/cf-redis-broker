@@ -92,6 +92,10 @@ func startAgentWithDefaultConfig() *gexec.Session {
 		DefaultConfPath:     defaultRedisConfigPath(),
 		ConfPath:            redisConfPath,
 		MonitExecutablePath: "assets/fake_monit",
+		AuthConfiguration: agentconfig.AuthConfiguration{
+			Username: "admin",
+			Password: "secret",
+		},
 	}
 
 	session := startAgentWithConfig(config)

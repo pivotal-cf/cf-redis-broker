@@ -22,15 +22,17 @@ type RemoteRepository struct {
 	sync.RWMutex
 }
 
-var DefaultAgentClient AgentClient = &RemoteAgentClient{}
+type AgentClient interface {
+	Reset(hostIP string) error
+	Credentials(hostIP string) (Credentials, error)
+}
 
-func NewRemoteRepository(config *brokerconfig.Config) (*RemoteRepository, error) {
-
+func NewRemoteRepository(agentClient AgentClient, config brokerconfig.Config) (*RemoteRepository, error) {
 	repo := RemoteRepository{
 		instanceLimit:    len(config.RedisConfiguration.Dedicated.Nodes),
 		instanceBindings: map[string][]string{},
 		statefilePath:    config.RedisConfiguration.Dedicated.StatefilePath,
-		agentClient:      DefaultAgentClient,
+		agentClient:      agentClient,
 	}
 
 	err := repo.loadStateFromFile()

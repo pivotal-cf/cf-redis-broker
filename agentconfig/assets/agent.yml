@@ -1,0 +1,6 @@
+default_conf_path: /default/conf/path
+conf_path: /conf/path 
+monit_executable_path: /foo/monit
+auth:
+  username: admin
+  password: secret

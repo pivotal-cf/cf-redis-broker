@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
 	"github.com/pivotal-cf/cf-redis-broker/redis"
 )
 
@@ -18,9 +19,19 @@ var _ = Describe("RemoteAgentClient", func() {
 	var status int
 
 	BeforeEach(func() {
-		remoteAgentClient = redis.RemoteAgentClient{}
+		remoteAgentClient = redis.RemoteAgentClient{
+			HttpAuth: brokerconfig.AuthConfiguration{
+				Username: "username",
+				Password: "password",
+			},
+		}
 		agentCalled = 0
+
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			username, password, _ := r.BasicAuth()
+			Expect(username).To(Equal(remoteAgentClient.HttpAuth.Username))
+			Expect(password).To(Equal(remoteAgentClient.HttpAuth.Password))
+
 			Ω([]string{"DELETE", "GET"}).Should(ContainElement(r.Method))
 			Ω(r.URL.Path).Should(Equal("/"))
 			agentCalled++

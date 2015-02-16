@@ -1,8 +1,8 @@
 package agentconfig_test
 
 import (
-	"io/ioutil"
-	"os"
+	"path"
+	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -12,20 +12,6 @@ import (
 
 var _ = Describe("Config", func() {
 	Describe("Load", func() {
-		var file *os.File
-		var path string
-
-		BeforeEach(func() {
-			var err error
-			file, err = ioutil.TempFile("", "config.yml")
-			Expect(err).ToNot(HaveOccurred())
-			path = file.Name()
-		})
-
-		AfterEach(func() {
-			file.Close()
-		})
-
 		Context("When the file does not exist", func() {
 			It("returns an error", func() {
 				_, err := agentconfig.Load("/this/is/an/invalid/path")
@@ -35,13 +21,9 @@ var _ = Describe("Config", func() {
 
 		Context("When the file is successfully loaded", func() {
 			var config *agentconfig.Config
-			contents := "" +
-				"default_conf_path: /default/conf/path\n" +
-				"conf_path: /conf/path\n" +
-				"monit_executable_path: /foo/monit\n"
 
 			BeforeEach(func() {
-				_, err := file.WriteString(contents)
+				path, err := filepath.Abs(path.Join("assets", "agent.yml"))
 				Expect(err).ToNot(HaveOccurred())
 
 				config, err = agentconfig.Load(path)
@@ -58,6 +40,11 @@ var _ = Describe("Config", func() {
 
 			It("Has the correct monit_executable_path", func() {
 				Expect(config.MonitExecutablePath).To(Equal("/foo/monit"))
+			})
+
+			It("Has the correct username and password", func() {
+				Expect(config.AuthConfiguration.Username).To(Equal("admin"))
+				Expect(config.AuthConfiguration.Password).To(Equal("secret"))
 			})
 		})
 	})

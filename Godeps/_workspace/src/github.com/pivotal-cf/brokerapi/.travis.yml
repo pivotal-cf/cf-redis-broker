@@ -1,9 +1,8 @@
 language: go
 
 go:
-- 1.2
-- 1.2.1
-- tip
+- 1.4
+- 1.4.1
 
 before_install:
 - export PATH=$HOME/gopath/bin:$PWD/Godeps/_workspace/bin:$PATH
