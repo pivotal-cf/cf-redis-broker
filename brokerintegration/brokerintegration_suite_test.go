@@ -48,7 +48,7 @@ var fakeAgent *httptest.Server
 func TestBrokerintegration(t *testing.T) {
 	RegisterFailHandler(Fail)
 	junitReporter := reporters.NewJUnitReporter("junit_brokerintegration.xml")
-	RunSpecsWithDefaultAndCustomReporters(t, "Brokerintegration Suite", []Reporter{junitReporter})
+	RunSpecsWithDefaultAndCustomReporters(t, "Broker Integration Suite", []Reporter{junitReporter})
 }
 
 func safelyResetAllDirectories() {
