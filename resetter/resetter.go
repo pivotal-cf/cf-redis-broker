@@ -6,7 +6,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
-	"regexp"
+	"strings"
 	"time"
 
 	"github.com/pivotal-cf/cf-redis-broker/credentials"
@@ -78,21 +78,21 @@ func (resetter *Resetter) ResetRedis() error {
 }
 
 const (
-	monitStart         = "start"
-	monitStop          = "stop"
-	monitSummary       = "summary"
-	monitRunningStatus = "running"
-	redisServer        = "redis"
-	pgrep              = "pgrep"
+	monitNotMonitoredStatus = "not monitored"
+	monitRedisProcessPrefix = "Process 'redis'"
+	monitRunningStatus      = "running"
+	monitStart              = "start"
+	monitStop               = "stop"
+	monitSummary            = "summary"
+	redisServer             = "redis"
 )
 
 func (resetter *Resetter) stopRedis() error {
 	resetter.commandRunner.Run(exec.Command(resetter.monitExecutablePath, monitStop, redisServer))
 
 	return resetter.loopWithTimeout("stopped", func() bool {
-		cmd := exec.Command(pgrep, redisServer)
-		output, _ := cmd.CombinedOutput()
-		return len(output) == 0
+		redisServerStatus := resetter.redisProcessStatus()
+		return redisServerStatus == monitNotMonitoredStatus
 	})
 }
 
@@ -100,13 +100,23 @@ func (resetter *Resetter) startRedis() error {
 	resetter.commandRunner.Run(exec.Command(resetter.monitExecutablePath, monitStart, redisServer))
 
 	return resetter.loopWithTimeout("started", func() bool {
-		output, _ := resetter.commandRunner.Run(exec.Command(resetter.monitExecutablePath, monitSummary))
-
-		re := regexp.MustCompile(fmt.Sprintf(`%s'\s+(\w+)`, redisServer))
-		redisServerStatus := re.FindAllStringSubmatch(string(output), -1)[0][1]
-
+		redisServerStatus := resetter.redisProcessStatus()
 		return redisServerStatus == monitRunningStatus
 	})
+}
+
+func (resetter *Resetter) redisProcessStatus() string {
+	output, _ := resetter.commandRunner.Run(exec.Command(resetter.monitExecutablePath, monitSummary))
+	lines := strings.Split(string(output), "\n")
+
+	for _, line := range lines {
+		if strings.HasPrefix(line, monitRedisProcessPrefix) {
+			status := strings.Replace(line, monitRedisProcessPrefix, "", 1)
+			return strings.TrimSpace(status)
+		}
+	}
+
+	return ""
 }
 
 func (resetter *Resetter) loopWithTimeout(desiredState string, redisProcessAction func() bool) error {

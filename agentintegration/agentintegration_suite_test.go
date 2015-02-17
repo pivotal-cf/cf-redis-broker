@@ -83,9 +83,6 @@ func createDefaultRedisConfig() {
 }
 
 func startAgentWithDefaultConfig() *gexec.Session {
-	os.Remove("/tmp/fake_monit_start_stack")
-	os.Remove("/tmp/fake_monit_start_stop")
-
 	createDefaultRedisConfig()
 
 	config := &agentconfig.Config{

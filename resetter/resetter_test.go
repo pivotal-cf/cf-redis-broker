@@ -28,17 +28,30 @@ func (portChecker *fakeChecker) Check(address *net.TCPAddr, timeout time.Duratio
 }
 
 type fakeRunner struct {
-	commandsRan   []*exec.Cmd
-	outputStrings []string
+	commandsRan          []*exec.Cmd
+	summaryCallCount     int
+	summaryOutputStrings []string
+	redisProcessStatus   string
 }
 
 func (commandRunner *fakeRunner) Run(command *exec.Cmd) ([]byte, error) {
 	commandRunner.commandsRan = append(commandRunner.commandsRan, command)
-	commandIndex := len(commandRunner.commandsRan) - 1
-	if len(commandRunner.outputStrings) <= commandIndex {
-		return []byte("Process 'redis' running"), nil
+
+	if command.Args[1] == "stop" {
+		commandRunner.redisProcessStatus = "not monitored"
+	} else if command.Args[1] == "start" {
+		commandRunner.redisProcessStatus = "running"
+	} else if command.Args[1] == "summary" {
+		commandRunner.summaryCallCount++
+
+		if len(commandRunner.summaryOutputStrings) == 0 {
+			return []byte("Process 'redis' " + commandRunner.redisProcessStatus), nil
+		}
+
+		return []byte(commandRunner.summaryOutputStrings[commandRunner.summaryCallCount-1]), nil
 	}
-	return []byte(commandRunner.outputStrings[commandIndex]), nil
+
+	return []byte{}, errors.New("Command not recognised by fake")
 }
 
 var _ = Describe("Client", func() {
@@ -59,6 +72,7 @@ var _ = Describe("Client", func() {
 
 	BeforeEach(func() {
 		commandRunner = new(fakeRunner)
+		commandRunner.redisProcessStatus = "running"
 		fakePortChecker = new(fakeChecker)
 
 		tmpdir, err := ioutil.TempDir("", "redisconf-test")
@@ -121,9 +135,19 @@ var _ = Describe("Client", func() {
 
 	Describe("#ResetRedis", func() {
 		It("stops and starts redis with monit", func() {
-			commandRunner.outputStrings = []string{
-				"",
-				"",
+			commandRunner.summaryOutputStrings = []string{
+				`The Monit daemon 5.2.4 uptime: 23m
+
+Process 'redis-agent'               running
+Process 'redis'                     running
+Process 'syslog-configurator'       running
+System 'system_d289e4bf-dc4b-4369-a7a7-a45e71319fe0' running`,
+				`The Monit daemon 5.2.4 uptime: 23m
+
+Process 'redis-agent'               running
+Process 'redis'                     not monitored
+Process 'syslog-configurator'       running
+System 'system_d289e4bf-dc4b-4369-a7a7-a45e71319fe0' running`,
 				`The Monit daemon 5.2.4 uptime: 23m
 
 Process 'redis-agent'               running
@@ -140,20 +164,29 @@ System 'system_d289e4bf-dc4b-4369-a7a7-a45e71319fe0' running`,
 			err := redisClient.ResetRedis()
 			Ω(err).ShouldNot(HaveOccurred())
 
-			Ω(len(commandRunner.commandsRan)).To(Equal(4))
+			Ω(len(commandRunner.commandsRan)).To(Equal(6))
 
 			Ω(commandRunner.commandsRan[0].Args).To(Equal(
 				[]string{monitExecutablePath, "stop", "redis"},
 			))
+			// still running
 			Ω(commandRunner.commandsRan[1].Args).To(Equal(
-				[]string{monitExecutablePath, "start", "redis"},
+				[]string{monitExecutablePath, "summary"},
 			))
-			// initializing
+			// not monitored
 			Ω(commandRunner.commandsRan[2].Args).To(Equal(
 				[]string{monitExecutablePath, "summary"},
 			))
-			// running
+
 			Ω(commandRunner.commandsRan[3].Args).To(Equal(
+				[]string{monitExecutablePath, "start", "redis"},
+			))
+			// initializing
+			Ω(commandRunner.commandsRan[4].Args).To(Equal(
+				[]string{monitExecutablePath, "summary"},
+			))
+			// running
+			Ω(commandRunner.commandsRan[5].Args).To(Equal(
 				[]string{monitExecutablePath, "summary"},
 			))
 		})
