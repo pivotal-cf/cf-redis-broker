@@ -20,64 +20,65 @@ type RemoteAgentClient struct {
 	HttpAuth brokerconfig.AuthConfiguration
 }
 
-func (agentClient *RemoteAgentClient) Reset(rootURL string) error {
-	request, err := http.NewRequest("DELETE", rootURL, nil)
+func (client *RemoteAgentClient) Reset(rootURL string) error {
+	response, err := client.doAuthenticatedRequest(rootURL, "DELETE")
 	if err != nil {
 		return err
 	}
 
-	request.SetBasicAuth(agentClient.HttpAuth.Username, agentClient.HttpAuth.Password)
-
-	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		},
-	}
-	response, err := client.Do(request)
-	if err != nil {
-		return err
-	}
-
-	if response.StatusCode != 200 {
-		body, _ := ioutil.ReadAll(response.Body)
-		return errors.New(fmt.Sprintf("Expected status code 200, received %d, %s", response.StatusCode, string(body)))
+	if response.StatusCode != http.StatusOK {
+		return client.agentError(response)
 	}
 
 	return nil
 }
 
-func (agentClient *RemoteAgentClient) Credentials(rootURL string) (Credentials, error) {
-	request, err := http.NewRequest("GET", rootURL, nil)
-	if err != nil {
-		return Credentials{}, err
-	}
+func (client *RemoteAgentClient) Credentials(rootURL string) (Credentials, error) {
+	credentials := Credentials{}
 
-	request.SetBasicAuth(agentClient.HttpAuth.Username, agentClient.HttpAuth.Password)
-
-	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		},
-	}
-	response, err := client.Do(request)
+	response, err := client.doAuthenticatedRequest(rootURL, "GET")
 	if err != nil {
-		return Credentials{}, err
+		return credentials, err
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return Credentials{}, errors.New("Received non-200 status code from agent")
+		return credentials, client.agentError(response)
 	}
 
 	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		return Credentials{}, err
+		return credentials, err
 	}
 
-	credentials := Credentials{}
 	err = json.Unmarshal(body, &credentials)
 	if err != nil {
-		return Credentials{}, err
+		return credentials, err
 	}
 
 	return credentials, nil
+}
+
+func (client *RemoteAgentClient) agentError(response *http.Response) error {
+	body, _ := ioutil.ReadAll(response.Body)
+	formattedBody := ""
+	if len(body) > 0 {
+		formattedBody = fmt.Sprintf(", %s", string(body))
+	}
+	return errors.New(fmt.Sprintf("Agent error: %d%s", response.StatusCode, formattedBody))
+}
+
+func (client *RemoteAgentClient) doAuthenticatedRequest(rootURL, method string) (*http.Response, error) {
+	request, err := http.NewRequest(method, rootURL, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	request.SetBasicAuth(client.HttpAuth.Username, client.HttpAuth.Password)
+
+	httpClient := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+	return httpClient.Do(request)
 }

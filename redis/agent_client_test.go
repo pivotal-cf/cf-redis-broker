@@ -81,7 +81,7 @@ var _ = Describe("RemoteAgentClient", func() {
 
 			It("returns the error", func() {
 				err := remoteAgentClient.Reset(rootURL)
-				Ω(err).To(MatchError("Expected status code 200, received 500, "))
+				Ω(err).To(MatchError("Agent error: 500"))
 			})
 		})
 	})
@@ -113,7 +113,7 @@ var _ = Describe("RemoteAgentClient", func() {
 				status = http.StatusInternalServerError
 				_, err := remoteAgentClient.Credentials(rootURL)
 				Ω(err).Should(HaveOccurred())
-				Ω(err.Error()).Should(Equal("Received non-200 status code from agent"))
+				Ω(err.Error()).Should(Equal(`Agent error: 500, {"port": 12345, "password": "super-secret"}`))
 			})
 		})
 	})
