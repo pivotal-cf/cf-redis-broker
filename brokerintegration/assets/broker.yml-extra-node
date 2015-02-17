@@ -28,4 +28,5 @@
   "username": "admin"
 "backend_host": "localhost"
 "backend_port": "3000"
+"agent_port": "9876"
 

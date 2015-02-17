@@ -10,20 +10,14 @@ var _ = Describe("Provision dedicated instance", func() {
 
 	var instanceID string
 	var httpInputs HTTPExampleInputs
-	var initialRedisProcessCount int
 
 	BeforeEach(func() {
 		instanceID = uuid.NewRandom().String()
-		initialRedisProcessCount = getRedisProcessCount()
 		serviceInstanceURI := "http://localhost:3000/v2/service_instances/" + instanceID
 		httpInputs = HTTPExampleInputs{
 			Method: "PUT",
 			URI:    serviceInstanceURI,
 		}
-	})
-
-	AfterEach(func() {
-		Ω(getRedisProcessCount()).To(Equal(initialRedisProcessCount))
 	})
 
 	Context("when instance is created successfully", func() {

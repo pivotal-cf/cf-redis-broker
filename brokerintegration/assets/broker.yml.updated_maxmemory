@@ -15,4 +15,5 @@ auth:
   username: admin
   password: secret
 backend_host: "localhost"
-backend_port: 3000
+backend_port: "3000"
+agent_port: "9876"

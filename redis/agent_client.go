@@ -1,6 +1,7 @@
 package redis
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -19,17 +20,20 @@ type RemoteAgentClient struct {
 	HttpAuth brokerconfig.AuthConfiguration
 }
 
-func (agentClient *RemoteAgentClient) Reset(hostIP string) error {
-	url := fmt.Sprintf("http://%s:9876/", hostIP)
-	request, err := http.NewRequest("DELETE", url, nil)
+func (agentClient *RemoteAgentClient) Reset(rootURL string) error {
+	request, err := http.NewRequest("DELETE", rootURL, nil)
 	if err != nil {
 		return err
 	}
 
 	request.SetBasicAuth(agentClient.HttpAuth.Username, agentClient.HttpAuth.Password)
 
-	response, err := http.DefaultClient.Do(request)
-
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+	response, err := client.Do(request)
 	if err != nil {
 		return err
 	}
@@ -42,16 +46,20 @@ func (agentClient *RemoteAgentClient) Reset(hostIP string) error {
 	return nil
 }
 
-func (agentClient *RemoteAgentClient) Credentials(hostIP string) (Credentials, error) {
-	url := fmt.Sprintf("http://%s:9876/", hostIP)
-	request, err := http.NewRequest("GET", url, nil)
+func (agentClient *RemoteAgentClient) Credentials(rootURL string) (Credentials, error) {
+	request, err := http.NewRequest("GET", rootURL, nil)
 	if err != nil {
 		return Credentials{}, err
 	}
 
 	request.SetBasicAuth(agentClient.HttpAuth.Username, agentClient.HttpAuth.Password)
 
-	response, err := http.DefaultClient.Do(request)
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+	response, err := client.Do(request)
 	if err != nil {
 		return Credentials{}, err
 	}

@@ -19,6 +19,7 @@ type RemoteRepository struct {
 	instanceBindings   map[string][]string
 	agentClient        AgentClient
 	statefilePath      string
+	agentPort          string
 	sync.RWMutex
 }
 
@@ -33,6 +34,7 @@ func NewRemoteRepository(agentClient AgentClient, config brokerconfig.Config) (*
 		instanceBindings: map[string][]string{},
 		statefilePath:    config.RedisConfiguration.Dedicated.StatefilePath,
 		agentClient:      agentClient,
+		agentPort:        config.AgentPort,
 	}
 
 	err := repo.loadStateFromFile()
@@ -92,7 +94,8 @@ func (repo *RemoteRepository) Destroy(instanceID string) error {
 
 	instance.ID = instanceID
 
-	err = repo.agentClient.Reset(instance.Host)
+	instanceURL := "https://" + instance.Host + ":" + repo.agentPort
+	err = repo.agentClient.Reset(instanceURL)
 	if err != nil {
 		return err
 	}
@@ -156,7 +159,8 @@ func (repo *RemoteRepository) Bind(instanceID string, bindingID string) (broker.
 		}
 	}
 
-	credentials, err := repo.agentClient.Credentials(instance.Host)
+	instanceURL := "https://" + instance.Host + ":" + repo.agentPort
+	credentials, err := repo.agentClient.Credentials(instanceURL)
 	if err != nil {
 		return broker.InstanceCredentials{}, err
 	}

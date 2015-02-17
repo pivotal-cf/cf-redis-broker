@@ -123,6 +123,10 @@ var _ = Describe("parsing the broker config file", func() {
 			It("loads the redis-server exectuable path", func() {
 				Ω(config.RedisServerExecutablePath).Should(Equal("/some/path/to/redis-server"))
 			})
+
+			It("loads the agent port", func() {
+				Ω(config.AgentPort).Should(Equal("1234"))
+			})
 		})
 
 		Context("when the configuration is invalid", func() {

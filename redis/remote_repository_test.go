@@ -26,13 +26,14 @@ var _ = Describe("RemoteRepository", func() {
 		config = brokerconfig.Config{}
 		config.RedisConfiguration.Dedicated.Nodes = []string{"10.0.0.1", "10.0.0.2", "10.0.0.3"}
 		config.RedisConfiguration.Dedicated.Port = 6379
+		config.AgentPort = "1234"
 
 		var err error
 		tmpDir, err = ioutil.TempDir("", "cf-redis-broker")
 		Expect(err).ToNot(HaveOccurred())
 
 		fakeAgentClient = &fakes.FakeAgentClient{}
-		fakeAgentClient.CredentialsFunc = func(hostIp string) (redis.Credentials, error) {
+		fakeAgentClient.CredentialsFunc = func(rootURL string) (redis.Credentials, error) {
 			return redis.Credentials{
 				Port:     6666,
 				Password: "password",
@@ -180,14 +181,14 @@ var _ = Describe("RemoteRepository", func() {
 
 		Describe("#Bind", func() {
 			BeforeEach(func() {
-				fakeAgentClient.CredentialsFunc = func(hostIp string) (redis.Credentials, error) {
-					if hostIp == "10.0.0.1" {
+				fakeAgentClient.CredentialsFunc = func(rootURL string) (redis.Credentials, error) {
+					if rootURL == "https://10.0.0.1:1234" {
 						return redis.Credentials{
 							Port:     123456,
 							Password: "super-secret",
 						}, nil
 					} else {
-						return redis.Credentials{}, errors.New("wrong host")
+						return redis.Credentials{}, errors.New("wrong url")
 					}
 				}
 			})
@@ -453,7 +454,7 @@ var _ = Describe("RemoteRepository", func() {
 					err = repo.Destroy("foo")
 					Expect(err).ToNot(HaveOccurred())
 
-					Expect(fakeAgentClient.ResetHostIPs).To(ConsistOf(instance.Host))
+					Expect(fakeAgentClient.ResetURLs).To(ConsistOf("https://" + instance.Host + ":1234"))
 				})
 
 				Context("when it cannot persist the state to the state file", func() {

@@ -29,7 +29,6 @@ var _ = Describe("Dedicated instance unbinding", func() {
 	})
 
 	It("should respond correctly", func() {
-
 		validURI := fmt.Sprintf("http://localhost:3000/v2/service_instances/%s/service_bindings/%s", instanceID, bindingID)
 		invalidURI := fmt.Sprintf("http://localhost:3000/v2/service_instances/%s/service_bindings/%s", "NON-EXISTANT", bindingID)
 

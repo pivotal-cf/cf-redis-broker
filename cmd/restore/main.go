@@ -17,8 +17,8 @@ import (
 	"github.com/pivotal-cf/cf-redis-broker/process"
 	"github.com/pivotal-cf/cf-redis-broker/redis"
 	"github.com/pivotal-cf/cf-redis-broker/redis/client"
-	"github.com/pivotal-cf/cf-redis-broker/system"
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
+	"github.com/pivotal-cf/cf-redis-broker/system"
 )
 
 const pidFileName = "redis-server.pid"

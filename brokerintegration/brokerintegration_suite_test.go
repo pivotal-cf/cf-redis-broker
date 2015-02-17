@@ -44,6 +44,8 @@ var backupExecutablePath string
 var brokerConfig brokerconfig.Config
 var previousBackupEndpointUrl string
 var fakeAgent *httptest.Server
+var agentRequests []*http.Request
+var agentResponseStatus = http.StatusOK
 
 func TestBrokerintegration(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -107,20 +109,26 @@ var _ = AfterSuite(func() {
 
 func startFakeAgent() {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		Ω([]string{"DELETE", "GET"}).Should(ContainElement(r.Method))
-		Ω(r.URL.Path).Should(Equal("/"))
-		w.WriteHeader(http.StatusOK)
+		agentRequests = append(agentRequests, r)
+
+		if agentResponseStatus != http.StatusOK {
+			http.Error(w, "", agentResponseStatus)
+			return
+		}
+
+		w.WriteHeader(agentResponseStatus)
+
 		if r.Method == "GET" {
 			w.Write([]byte("{\"port\": 12345, \"password\": \"super-secret\"}"))
 		}
 	})
 
-	fakeAgent = httptest.NewUnstartedServer(handler)
-	listener, err := net.Listen("tcp", "127.0.0.1:9876")
+	listener, err := net.Listen("tcp", ":9876")
 	Ω(err).ShouldNot(HaveOccurred())
 
+	fakeAgent = httptest.NewUnstartedServer(handler)
 	fakeAgent.Listener = listener
-	fakeAgent.Start()
+	fakeAgent.StartTLS()
 }
 
 func stopFakeAgent() {

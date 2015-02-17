@@ -29,3 +29,4 @@ backend_host: localhost
 backend_port: "3000"
 monit_executable_path: ""
 redis_server_executable_path: ""
+agent_port: "9876"

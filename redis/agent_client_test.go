@@ -18,6 +18,11 @@ var _ = Describe("RemoteAgentClient", func() {
 	var remoteAgentClient redis.RemoteAgentClient
 	var status int
 
+	const (
+		hostAndPort = "127.0.0.1:8080"
+		rootURL     = "http://127.0.0.1:8080"
+	)
+
 	BeforeEach(func() {
 		remoteAgentClient = redis.RemoteAgentClient{
 			HttpAuth: brokerconfig.AuthConfiguration{
@@ -28,6 +33,8 @@ var _ = Describe("RemoteAgentClient", func() {
 		agentCalled = 0
 
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			defer GinkgoRecover()
+
 			username, password, _ := r.BasicAuth()
 			Expect(username).To(Equal(remoteAgentClient.HttpAuth.Username))
 			Expect(password).To(Equal(remoteAgentClient.HttpAuth.Password))
@@ -41,17 +48,18 @@ var _ = Describe("RemoteAgentClient", func() {
 			}
 		})
 
-		server = httptest.NewUnstartedServer(handler)
-		listener, err := net.Listen("tcp", "127.0.0.1:9876")
+		listener, err := net.Listen("tcp", hostAndPort)
 		Ω(err).ShouldNot(HaveOccurred())
+
+		server = httptest.NewUnstartedServer(handler)
 		server.Listener = listener
 		server.Start()
-		Eventually(isListeningChecker("127.0.0.1:9876")).Should(BeTrue())
+		Eventually(isListeningChecker(hostAndPort)).Should(BeTrue())
 	})
 
 	AfterEach(func() {
 		server.Close()
-		Eventually(isListeningChecker("127.0.0.1:9876")).Should(BeFalse())
+		Eventually(isListeningChecker(hostAndPort)).Should(BeFalse())
 	})
 
 	Describe("#Reset", func() {
@@ -60,8 +68,8 @@ var _ = Describe("RemoteAgentClient", func() {
 				status = http.StatusOK
 			})
 
-			It("makes a DELETE request to http://<host ip>:9876/", func() {
-				remoteAgentClient.Reset("127.0.0.1")
+			It("makes a DELETE request to the rootURL", func() {
+				remoteAgentClient.Reset(rootURL)
 				Ω(agentCalled).Should(Equal(1))
 			})
 		})
@@ -72,7 +80,7 @@ var _ = Describe("RemoteAgentClient", func() {
 			})
 
 			It("returns the error", func() {
-				err := remoteAgentClient.Reset("127.0.0.1")
+				err := remoteAgentClient.Reset(rootURL)
 				Ω(err).To(MatchError("Expected status code 200, received 500, "))
 			})
 		})
@@ -83,14 +91,14 @@ var _ = Describe("RemoteAgentClient", func() {
 			status = http.StatusOK
 		})
 
-		It("makes a GET request to http://<host ip>:9876/", func() {
-			remoteAgentClient.Credentials("127.0.0.1")
+		It("makes a GET request to the rootURL", func() {
+			remoteAgentClient.Credentials(rootURL)
 			Ω(agentCalled).Should(Equal(1))
 		})
 
 		Context("When successful", func() {
 			It("returns the correct credentials", func() {
-				credentials, err := remoteAgentClient.Credentials("127.0.0.1")
+				credentials, err := remoteAgentClient.Credentials(rootURL)
 				Ω(err).ShouldNot(HaveOccurred())
 
 				Ω(credentials).Should(Equal(redis.Credentials{
@@ -103,7 +111,7 @@ var _ = Describe("RemoteAgentClient", func() {
 		Context("When unsuccessful", func() {
 			It("returns an error", func() {
 				status = http.StatusInternalServerError
-				_, err := remoteAgentClient.Credentials("127.0.0.1")
+				_, err := remoteAgentClient.Credentials(rootURL)
 				Ω(err).Should(HaveOccurred())
 				Ω(err.Error()).Should(Equal("Received non-200 status code from agent"))
 			})

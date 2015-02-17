@@ -15,6 +15,7 @@ type Config struct {
 	Port                      string               `yaml:"backend_port"`
 	MonitExecutablePath       string               `yaml:"monit_executable_path"`
 	RedisServerExecutablePath string               `yaml:"redis_server_executable_path"`
+	AgentPort                 string               `yaml:"agent_port"`
 }
 
 type AuthConfiguration struct {
