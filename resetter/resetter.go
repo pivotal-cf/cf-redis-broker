@@ -43,7 +43,7 @@ func New(defaultConfPath string,
 		portChecker:         portChecker,
 		commandRunner:       commandRunner,
 		monitExecutablePath: monitExecutablePath,
-		timeout:             time.Second * 10,
+		timeout:             time.Second * 30,
 	}
 }
 
