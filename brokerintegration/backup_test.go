@@ -47,7 +47,6 @@ var _ = Describe("backups", func() {
 		client = s3.New(aws.Auth{
 			AccessKey: backupConfig.AccessKeyId,
 			SecretKey: backupConfig.SecretAccessKey,
-			Token:     backupConfig.SecurityToken,
 		}, region)
 		bucket = client.Bucket(backupConfig.BucketName)
 	})

@@ -12,7 +12,6 @@ redis:
     bucket_name: redis-backups
     access_key_id: ABCDEABCDEABCDEABCDE
     secret_access_key: ABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDE
-    security_token: ABZEVEIEIEIE
     s3_region: france
     path: /home
     bg_save_timeout: 600

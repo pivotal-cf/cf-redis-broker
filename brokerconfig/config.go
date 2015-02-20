@@ -40,7 +40,6 @@ type BackupConfiguration struct {
 	BucketName           string `yaml:"bucket_name"`
 	AccessKeyId          string `yaml:"access_key_id"`
 	SecretAccessKey      string `yaml:"secret_access_key"`
-	SecurityToken        string `yaml:"security_token"`
 	Path                 string `yaml:"path"`
 	S3Region             string `yaml:"s3_region"`
 	BGSaveTimeoutSeconds int    `yaml:"bg_save_timeout"`

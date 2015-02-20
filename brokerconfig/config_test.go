@@ -105,7 +105,6 @@ var _ = Describe("parsing the broker config file", func() {
 				Ω(config.RedisConfiguration.BackupConfiguration.BucketName).Should(Equal("redis-backups"))
 				Ω(config.RedisConfiguration.BackupConfiguration.AccessKeyId).Should(Equal("ABCDEABCDEABCDEABCDE"))
 				Ω(config.RedisConfiguration.BackupConfiguration.SecretAccessKey).Should(Equal("ABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDE"))
-				Ω(config.RedisConfiguration.BackupConfiguration.SecurityToken).Should(Equal("ABZEVEIEIEIE"))
 				Ω(config.RedisConfiguration.BackupConfiguration.Path).Should(Equal("/home"))
 				Ω(config.RedisConfiguration.BackupConfiguration.S3Region).Should(Equal("france"))
 

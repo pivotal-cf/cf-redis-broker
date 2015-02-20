@@ -211,7 +211,6 @@ func configureS3Client(backupConfig brokerconfig.BackupConfiguration) (*s3.S3, e
 	auth := aws.Auth{
 		AccessKey: backupConfig.AccessKeyId,
 		SecretKey: backupConfig.SecretAccessKey,
-		Token:     backupConfig.SecurityToken,
 	}
 
 	return s3.New(auth, region), nil
