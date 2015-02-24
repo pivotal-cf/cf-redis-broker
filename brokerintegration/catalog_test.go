@@ -39,6 +39,11 @@ var _ = Describe("Catalog", func() {
 					plans = service.Plans
 				})
 
+				It("displays the correct service name and id", func() {
+					Ω(service.Name).Should(Equal("my-redis"))
+					Ω(service.ID).Should(Equal("123456abcdef"))
+				})
+
 				It("displays the correct documentation URL", func() {
 					Ω(service.Metadata.DocumentationUrl).Should(Equal("http://docs.pivotal.io/p1-services/Redis.html"))
 				})
@@ -184,19 +189,5 @@ var _ = Describe("Catalog", func() {
 				})
 			})
 		})
-	})
-
-	It("returns the correct service name", func() {
-		_, body := executeAuthenticatedHTTPRequest("GET", "http://localhost:3000/v2/catalog")
-
-		catalog := struct {
-			Services []brokerapi.Service `json:"services"`
-		}{}
-
-		json.Unmarshal(body, &catalog)
-		Ω(len(catalog.Services)).Should(Equal(1))
-
-		service := catalog.Services[0]
-		Ω(service.Name).Should(Equal("p-redis"))
 	})
 })

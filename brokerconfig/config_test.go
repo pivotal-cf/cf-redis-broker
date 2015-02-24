@@ -54,6 +54,14 @@ var _ = Describe("parsing the broker config file", func() {
 				Ω(parseConfigErr).NotTo(HaveOccurred())
 			})
 
+			It("loads service name", func() {
+				Ω(config.RedisConfiguration.ServiceName).To(Equal("my-redis"))
+			})
+
+			It("loads service id", func() {
+				Ω(config.RedisConfiguration.ServiceID).To(Equal("12345abcde"))
+			})
+
 			It("loads redis host", func() {
 				Ω(config.RedisConfiguration.Host).To(Equal("example.com"))
 			})

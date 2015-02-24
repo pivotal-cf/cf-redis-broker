@@ -1,5 +1,7 @@
 ---
 redis:
+  service_name: my-redis
+  service_id: 12345abcde
   host: example.com
   data_directory: /some/redis/data/directory
   log_directory: /some/redis/log/directory

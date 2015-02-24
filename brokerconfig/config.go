@@ -24,6 +24,8 @@ type AuthConfiguration struct {
 }
 
 type ServiceConfiguration struct {
+	ServiceName                 string              `yaml:"service_name"`
+	ServiceID                   string              `yaml:"service_id"`
 	Host                        string              `yaml:"host"`
 	DefaultConfigPath           string              `yaml:"redis_conf_path"`
 	ProcessCheckIntervalSeconds int                 `yaml:"process_check_interval"`

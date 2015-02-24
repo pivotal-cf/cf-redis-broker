@@ -1,4 +1,6 @@
 redis:
+  service_name: my-redis
+  service_id: 123456abcdef
   host: localhost
   redis_conf_path: assets/redis.conf
   process_check_interval: 1

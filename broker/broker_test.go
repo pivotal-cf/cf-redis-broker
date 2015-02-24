@@ -64,8 +64,8 @@ var _ = Describe("Redis service broker", func() {
 
 	var someCreatorAndBinder *fakeInstanceCreatorAndBinder
 
-	var plan_id = "C210CA06-E7E5-4F5D-A5AA-7A2C51CC290E"
-	var plan_name = "shared"
+	var planID = "C210CA06-E7E5-4F5D-A5AA-7A2C51CC290E"
+	var planName = "shared"
 
 	var host = "an_host"
 	var port = 1234
@@ -82,10 +82,10 @@ var _ = Describe("Redis service broker", func() {
 
 		redisBroker = &broker.RedisServiceBroker{
 			InstanceCreators: map[string]broker.InstanceCreator{
-				plan_name: someCreatorAndBinder,
+				planName: someCreatorAndBinder,
 			},
 			InstanceBinders: map[string]broker.InstanceBinder{
-				plan_name: someCreatorAndBinder,
+				planName: someCreatorAndBinder,
 			},
 			Config: brokerconfig.Config{
 				RedisConfiguration: brokerconfig.ServiceConfiguration{
@@ -101,7 +101,7 @@ var _ = Describe("Redis service broker", func() {
 	Describe(".Provision", func() {
 		Context("when the plan is recognized", func() {
 			It("creates an instance", func() {
-				err := redisBroker.Provision(instanceID, brokerapi.ServiceDetails{PlanID: plan_id})
+				err := redisBroker.Provision(instanceID, brokerapi.ServiceDetails{PlanID: planID})
 				Ω(err).ToNot(HaveOccurred())
 
 				Expect(len(someCreatorAndBinder.createdInstanceIds)).To(Equal(1))
@@ -110,12 +110,12 @@ var _ = Describe("Redis service broker", func() {
 
 			Context("when the instance already exists", func() {
 				BeforeEach(func() {
-					err := redisBroker.Provision(instanceID, brokerapi.ServiceDetails{PlanID: plan_id})
+					err := redisBroker.Provision(instanceID, brokerapi.ServiceDetails{PlanID: planID})
 					Ω(err).ToNot(HaveOccurred())
 				})
 
 				It("gives an error when trying to use the same instanceID", func() {
-					err := redisBroker.Provision(instanceID, brokerapi.ServiceDetails{PlanID: plan_id})
+					err := redisBroker.Provision(instanceID, brokerapi.ServiceDetails{PlanID: planID})
 					Expect(err).To(Equal(brokerapi.ErrInstanceAlreadyExists))
 				})
 			})
@@ -126,7 +126,7 @@ var _ = Describe("Redis service broker", func() {
 				})
 
 				It("returns the same error", func() {
-					err := redisBroker.Provision(instanceID, brokerapi.ServiceDetails{PlanID: plan_id})
+					err := redisBroker.Provision(instanceID, brokerapi.ServiceDetails{PlanID: planID})
 					Expect(err).To(MatchError("something went bad"))
 				})
 			})
@@ -156,7 +156,7 @@ var _ = Describe("Redis service broker", func() {
 
 	Describe(".Deprovision", func() {
 		BeforeEach(func() {
-			err := redisBroker.Provision(instanceID, brokerapi.ServiceDetails{PlanID: plan_id})
+			err := redisBroker.Provision(instanceID, brokerapi.ServiceDetails{PlanID: planID})
 			Ω(err).ToNot(HaveOccurred())
 		})
 

@@ -40,8 +40,8 @@ func (redisServiceBroker *RedisServiceBroker) Services() []brokerapi.Service {
 
 	return []brokerapi.Service{
 		brokerapi.Service{
-			ID:          "EEA47C3A-569C-4C24-869D-0ADB5B337A4C",
-			Name:        "p-redis",
+			ID:          redisServiceBroker.Config.RedisConfiguration.ServiceID,
+			Name:        redisServiceBroker.Config.RedisConfiguration.ServiceName,
 			Description: "Redis service to provide a key-value store",
 			Bindable:    true,
 			Plans:       planList,
