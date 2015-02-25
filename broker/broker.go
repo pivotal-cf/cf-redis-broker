@@ -145,7 +145,7 @@ func (redisServiceBroker *RedisServiceBroker) plans() map[string]*brokerapi.Serv
 
 	if redisServiceBroker.Config.SharedEnabled() {
 		plans["shared"] = &brokerapi.ServicePlan{
-			ID:          "C210CA06-E7E5-4F5D-A5AA-7A2C51CC290E",
+			ID:          redisServiceBroker.Config.RedisConfiguration.SharedVMPlanID,
 			Name:        "shared-vm",
 			Description: "This plan provides a single Redis process on a shared VM, which is suitable for development and testing workloads",
 			Metadata: brokerapi.ServicePlanMetadata{
@@ -161,7 +161,7 @@ func (redisServiceBroker *RedisServiceBroker) plans() map[string]*brokerapi.Serv
 
 	if redisServiceBroker.Config.DedicatedEnabled() {
 		plans["dedicated"] = &brokerapi.ServicePlan{
-			ID:          "74E8984C-5F8C-11E4-86BE-07807B3B2589",
+			ID:          redisServiceBroker.Config.RedisConfiguration.DedicatedVMPlanID,
 			Name:        "dedicated-vm",
 			Description: "This plan provides a single Redis process on a dedicated VM, which is suitable for production workloads",
 			Metadata: brokerapi.ServicePlanMetadata{

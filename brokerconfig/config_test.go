@@ -83,6 +83,11 @@ var _ = Describe("parsing the broker config file", func() {
 				Ω(config.AuthConfiguration.Password).To(Equal("secret"))
 			})
 
+			It("loads plan ids", func() {
+				Ω(config.RedisConfiguration.DedicatedVMPlanID).To(Equal("id-for-dedicated-vm-plan"))
+				Ω(config.RedisConfiguration.SharedVMPlanID).To(Equal("id-for-shared-vm-plan"))
+			})
+
 			It("loads the start Redis timeout", func() {
 				Ω(config.RedisConfiguration.StartRedisTimeoutSeconds).To(Equal(3))
 			})

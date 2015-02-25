@@ -17,176 +17,179 @@ var _ = Describe("Catalog", func() {
 		Ω(code).To(Equal(http.StatusOK))
 	})
 
-	Describe("JSON response", func() {
+	var plans []brokerapi.ServicePlan
+	var service brokerapi.Service
 
-		Describe("plans", func() {
+	Describe("Service", func() {
 
-			var plans []brokerapi.ServicePlan
-			var service brokerapi.Service
+		BeforeEach(func() {
+			_, body := executeAuthenticatedHTTPRequest("GET", "http://localhost:3000/v2/catalog")
 
-			Describe("Service", func() {
-				BeforeEach(func() {
-					_, body := executeAuthenticatedHTTPRequest("GET", "http://localhost:3000/v2/catalog")
+			catalog := struct {
+				Services []brokerapi.Service `json:"services"`
+			}{}
 
-					catalog := struct {
-						Services []brokerapi.Service `json:"services"`
-					}{}
+			json.Unmarshal(body, &catalog)
+			Ω(len(catalog.Services)).Should(Equal(1))
 
-					json.Unmarshal(body, &catalog)
-					Ω(len(catalog.Services)).Should(Equal(1))
+			service = catalog.Services[0]
+			plans = service.Plans
+		})
 
-					service = catalog.Services[0]
-					plans = service.Plans
-				})
+		It("displays the correct service name and id", func() {
+			Ω(service.Name).Should(Equal("my-redis"))
+			Ω(service.ID).Should(Equal("123456abcdef"))
+		})
 
-				It("displays the correct service name and id", func() {
-					Ω(service.Name).Should(Equal("my-redis"))
-					Ω(service.ID).Should(Equal("123456abcdef"))
-				})
+		It("displays the correct documentation URL", func() {
+			Ω(service.Metadata.DocumentationUrl).Should(Equal("http://docs.pivotal.io/p1-services/Redis.html"))
+		})
 
-				It("displays the correct documentation URL", func() {
-					Ω(service.Metadata.DocumentationUrl).Should(Equal("http://docs.pivotal.io/p1-services/Redis.html"))
-				})
+		It("displays the correct support URL", func() {
+			Ω(service.Metadata.SupportUrl).Should(Equal("http://support.pivotal.io"))
+		})
 
-				It("displays the correct support URL", func() {
-					Ω(service.Metadata.SupportUrl).Should(Equal("http://support.pivotal.io"))
-				})
+		It("displays the description", func() {
+			Ω(service.Description).Should(Equal("Redis service to provide a key-value store"))
+		})
 
-				It("displays the description", func() {
-					Ω(service.Description).Should(Equal("Redis service to provide a key-value store"))
-				})
+		Describe("Shared-vm plan", func() {
+			var plan brokerapi.ServicePlan
 
-				Describe("Shared-vm plan", func() {
-					var plan brokerapi.ServicePlan
-
-					BeforeEach(func() {
-						for _, p := range plans {
-							if p.Name == "shared-vm" {
-								plan = p
-							}
-						}
-					})
-
-					It("displays the correct description", func() {
-						Ω(plan.Description).Should(Equal("This plan provides a single Redis process on a shared VM, which is suitable for development and testing workloads"))
-					})
-
-					It("displays the correct metadata bullet points", func() {
-						Ω(plan.Metadata.Bullets).Should(Equal([]string{
-							"Each instance shares the same VM",
-							"Single dedicated Redis process",
-							"Suitable for development & testing workloads",
-						}))
-					})
-				})
-
-				Describe("Dedicated-vm plan", func() {
-					var plan brokerapi.ServicePlan
-
-					BeforeEach(func() {
-						for _, p := range plans {
-							if p.Name == "dedicated-vm" {
-								plan = p
-							}
-						}
-					})
-
-					It("displays the correct description", func() {
-						Ω(plan.Description).Should(Equal("This plan provides a single Redis process on a dedicated VM, which is suitable for production workloads"))
-					})
-
-					It("displays the correct metadata bullet points", func() {
-						Ω(plan.Metadata.Bullets).Should(Equal([]string{
-							"Dedicated VM per instance",
-							"Single dedicated Redis process",
-							"Suitable for production workloads",
-						}))
-					})
-				})
-			})
-
-			Context("When there are no dedicated nodes", func() {
-				BeforeEach(func() {
-					switchBroker("broker.yml-no-dedicated")
-
-					_, body := executeAuthenticatedHTTPRequest("GET", "http://localhost:3000/v2/catalog")
-
-					catalog := struct {
-						Services []brokerapi.Service `json:"services"`
-					}{}
-
-					json.Unmarshal(body, &catalog)
-					Ω(len(catalog.Services)).Should(Equal(1))
-
-					plans = catalog.Services[0].Plans
-				})
-
-				AfterEach(func() {
-					switchBroker("broker.yml")
-				})
-
-				It("only shows the shared plan", func() {
-					Ω(len(plans)).Should(Equal(1))
-
-					sharedPlan := plans[0]
-					Ω(sharedPlan.Name).Should(Equal("shared-vm"))
-				})
-			})
-
-			Context("When there are dedicated nodes", func() {
-
-				BeforeEach(func() {
-					_, body := executeAuthenticatedHTTPRequest("GET", "http://localhost:3000/v2/catalog")
-
-					catalog := struct {
-						Services []brokerapi.Service `json:"services"`
-					}{}
-
-					json.Unmarshal(body, &catalog)
-					Ω(len(catalog.Services)).Should(Equal(1))
-
-					plans = catalog.Services[0].Plans
-				})
-
-				It("shows both plans", func() {
-					Ω(len(plans)).Should(Equal(2))
-
-					planNames := []string{}
-					for _, plan := range plans {
-						planNames = append(planNames, plan.Name)
+			BeforeEach(func() {
+				for _, p := range plans {
+					if p.Name == "shared-vm" {
+						plan = p
 					}
+				}
+			})
 
-					Ω(planNames).Should(ContainElement("shared-vm"))
-					Ω(planNames).Should(ContainElement("dedicated-vm"))
-				})
+			It("has the correct id from the config file", func() {
+				Ω(plan.ID).Should(Equal("C210CA06-E7E5-4F5D-A5AA-7A2C51CC290E"))
+			})
 
-				Context("When the service instance limit is set to zero", func() {
-					BeforeEach(func() {
-						switchBroker("broker.yml-no-shared")
+			It("displays the correct description", func() {
+				Ω(plan.Description).Should(Equal("This plan provides a single Redis process on a shared VM, which is suitable for development and testing workloads"))
+			})
 
-						_, body := executeAuthenticatedHTTPRequest("GET", "http://localhost:3000/v2/catalog")
+			It("displays the correct metadata bullet points", func() {
+				Ω(plan.Metadata.Bullets).Should(Equal([]string{
+					"Each instance shares the same VM",
+					"Single dedicated Redis process",
+					"Suitable for development & testing workloads",
+				}))
+			})
+		})
 
-						catalog := struct {
-							Services []brokerapi.Service `json:"services"`
-						}{}
+		Describe("Dedicated-vm plan", func() {
+			var plan brokerapi.ServicePlan
 
-						json.Unmarshal(body, &catalog)
-						Ω(len(catalog.Services)).Should(Equal(1))
+			BeforeEach(func() {
+				for _, p := range plans {
+					if p.Name == "dedicated-vm" {
+						plan = p
+					}
+				}
+			})
 
-						plans = catalog.Services[0].Plans
-					})
+			It("has the correct id from the config file", func() {
+				Ω(plan.ID).Should(Equal("74E8984C-5F8C-11E4-86BE-07807B3B2589"))
+			})
 
-					AfterEach(func() {
-						switchBroker("broker.yml")
-					})
+			It("displays the correct description", func() {
+				Ω(plan.Description).Should(Equal("This plan provides a single Redis process on a dedicated VM, which is suitable for production workloads"))
+			})
 
-					It("Only shows the dedicated plan", func() {
-						Ω(len(plans)).Should(Equal(1))
+			It("displays the correct metadata bullet points", func() {
+				Ω(plan.Metadata.Bullets).Should(Equal([]string{
+					"Dedicated VM per instance",
+					"Single dedicated Redis process",
+					"Suitable for production workloads",
+				}))
+			})
+		})
+	})
 
-						dedicatedPlan := plans[0]
-						Ω(dedicatedPlan.Name).Should(Equal("dedicated-vm"))
-					})
-				})
+	Context("When there are no dedicated nodes", func() {
+		BeforeEach(func() {
+			switchBroker("broker.yml-no-dedicated")
+
+			_, body := executeAuthenticatedHTTPRequest("GET", "http://localhost:3000/v2/catalog")
+
+			catalog := struct {
+				Services []brokerapi.Service `json:"services"`
+			}{}
+
+			json.Unmarshal(body, &catalog)
+			Ω(len(catalog.Services)).Should(Equal(1))
+
+			plans = catalog.Services[0].Plans
+		})
+
+		AfterEach(func() {
+			switchBroker("broker.yml")
+		})
+
+		It("only shows the shared plan", func() {
+			Ω(len(plans)).Should(Equal(1))
+
+			sharedPlan := plans[0]
+			Ω(sharedPlan.Name).Should(Equal("shared-vm"))
+		})
+	})
+
+	Context("When there are dedicated nodes", func() {
+
+		BeforeEach(func() {
+			_, body := executeAuthenticatedHTTPRequest("GET", "http://localhost:3000/v2/catalog")
+
+			catalog := struct {
+				Services []brokerapi.Service `json:"services"`
+			}{}
+
+			json.Unmarshal(body, &catalog)
+			Ω(len(catalog.Services)).Should(Equal(1))
+
+			plans = catalog.Services[0].Plans
+		})
+
+		It("shows both plans", func() {
+			Ω(len(plans)).Should(Equal(2))
+
+			planNames := []string{}
+			for _, plan := range plans {
+				planNames = append(planNames, plan.Name)
+			}
+
+			Ω(planNames).Should(ContainElement("shared-vm"))
+			Ω(planNames).Should(ContainElement("dedicated-vm"))
+		})
+
+		Context("When the service instance limit is set to zero", func() {
+			BeforeEach(func() {
+				switchBroker("broker.yml-no-shared")
+
+				_, body := executeAuthenticatedHTTPRequest("GET", "http://localhost:3000/v2/catalog")
+
+				catalog := struct {
+					Services []brokerapi.Service `json:"services"`
+				}{}
+
+				json.Unmarshal(body, &catalog)
+				Ω(len(catalog.Services)).Should(Equal(1))
+
+				plans = catalog.Services[0].Plans
+			})
+
+			AfterEach(func() {
+				switchBroker("broker.yml")
+			})
+
+			It("Only shows the dedicated plan", func() {
+				Ω(len(plans)).Should(Equal(1))
+
+				dedicatedPlan := plans[0]
+				Ω(dedicatedPlan.Name).Should(Equal("dedicated-vm"))
 			})
 		})
 	})

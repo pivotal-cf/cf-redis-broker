@@ -2,6 +2,8 @@
 redis:
   service_name: my-redis
   service_id: 12345abcde
+  dedicated_vm_plan_id: id-for-dedicated-vm-plan
+  shared_vm_plan_id: id-for-shared-vm-plan
   host: example.com
   data_directory: /tmp/redis/data/directory
   log_directory: /tmp/redis/log/directory
