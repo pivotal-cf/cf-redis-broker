@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/mitchellh/goamz/aws"
@@ -41,7 +42,7 @@ func main() {
 
 	backupErrors := []error{}
 	for _, instanceDir := range instanceDirs {
-		if instanceDir.Name()[0] == '.' {
+		if strings.HasPrefix(instanceDir.Name(), ".") {
 			continue
 		}
 		err = backupInstance(instanceDir, config, bucket)
