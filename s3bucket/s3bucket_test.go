@@ -65,6 +65,11 @@ var _ = Describe("s3bucket", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(bucket.Name).To(Equal(bucketName))
 			})
+
+			AfterEach(func() {
+				err := goamzBucketClient.DelBucket()
+				Expect(err).NotTo(HaveOccurred())
+			})
 		})
 
 		Context("when goamz returns an error", func() {
