@@ -138,6 +138,24 @@ var _ = Describe("Client", func() {
 			})
 		})
 
+		Describe("creating a snapshot", func() {
+			It("creates a snapshot", func() {
+				client, err := client.Connect(host, port, password, conf)
+				Ω(err).ShouldNot(HaveOccurred())
+
+				beforeSnapshotLastSaveTime, err := client.LastRDBSaveTime()
+				Ω(err).ShouldNot(HaveOccurred())
+
+				err = client.CreateSnapshot(10)
+				Ω(err).ShouldNot(HaveOccurred())
+
+				afterSnapshotLastSaveTime, err := client.LastRDBSaveTime()
+				Ω(err).ShouldNot(HaveOccurred())
+
+				Ω(afterSnapshotLastSaveTime).Should(BeNumerically(">", beforeSnapshotLastSaveTime))
+			})
+		})
+
 		Describe("querying info fields", func() {
 			Context("when the field exits", func() {
 				It("returns the value", func() {

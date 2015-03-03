@@ -50,13 +50,33 @@ func (client *Client) WaitUntilRedisNotLoading(timeoutMilliseconds int) error {
 	return nil
 }
 
+func (client *Client) CreateSnapshot(timeoutInSeconds int) error {
+	lastSaveTime, err := client.LastRDBSaveTime()
+	if err != nil {
+		return err
+	}
+
+	client.waitForUniqueSnapshotTime()
+
+	err = client.RunBGSave()
+	if err != nil {
+		return err
+	}
+
+	err = client.waitForNewSaveSince(lastSaveTime, timeoutInSeconds)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (client *Client) EnableAOF() error {
 	return client.setConfig("appendonly", "yes")
 }
 
 func (client *Client) RunBGSave() error {
 	bgSaveCommand := client.conf.CommandAlias("BGSAVE")
-
 	_, err := client.connection.Do(bgSaveCommand)
 	return err
 }
@@ -82,6 +102,27 @@ func (client *Client) InfoField(fieldName string) (string, error) {
 	}
 
 	return value, nil
+}
+
+func (client *Client) waitForUniqueSnapshotTime() {
+	time.Sleep(time.Second)
+}
+
+func (client *Client) waitForNewSaveSince(lastSaveTime int, timeoutInSeconds int) error {
+	for i := 0; i < timeoutInSeconds; i++ {
+		latestSaveTime, err := client.LastRDBSaveTime()
+		if err != nil {
+			return err
+		}
+
+		if latestSaveTime > lastSaveTime {
+			return nil
+		}
+
+		time.Sleep(time.Second)
+	}
+
+	return errors.New("Timed out waiting for background save to complete")
 }
 
 func (client *Client) setConfig(key string, value string) error {
