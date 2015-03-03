@@ -20,7 +20,6 @@ import (
 	cf_lager "github.com/cloudfoundry-incubator/cf-lager"
 )
 
-var S3RegionNotFoundErr error = errors.New("S3 region not found")
 var logger = cf_lager.New("backup")
 
 func main() {
