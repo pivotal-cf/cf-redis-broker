@@ -1,14 +1,12 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
 	"github.com/pivotal-cf/cf-redis-broker/redis"
@@ -121,35 +119,7 @@ func saveAndWaitUntilFinished(instanceDir os.FileInfo, config brokerconfig.Confi
 		return err
 	}
 
-	lastSaveTime, err := client.LastRDBSaveTime()
-	if err != nil {
-		return err
-	}
-
-	// ensure new save time can't match last save time
-	time.Sleep(time.Second)
-
-	err = client.RunBGSave()
-	if err != nil {
-		return err
-	}
-
-	// wait for save to complete
-	timeout := config.RedisConfiguration.BackupConfiguration.BGSaveTimeoutSeconds
-	for i := 0; i < timeout; i++ {
-		saveTime, err := client.LastRDBSaveTime()
-		if err != nil {
-			return err
-		}
-
-		if saveTime > lastSaveTime {
-			return nil
-		}
-
-		time.Sleep(time.Second)
-	}
-
-	return errors.New("Timed out waiting for background save to complete")
+	return client.CreateSnapshot(config.RedisConfiguration.BackupConfiguration.BGSaveTimeoutSeconds)
 }
 
 func buildRedisClient(instanceID string, config brokerconfig.Config) (*client.Client, error) {
