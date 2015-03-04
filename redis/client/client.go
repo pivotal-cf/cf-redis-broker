@@ -58,7 +58,7 @@ func (client *Client) CreateSnapshot(timeoutInSeconds int) error {
 
 	client.waitForUniqueSnapshotTime()
 
-	err = client.RunBGSave()
+	err = client.runBGSave()
 	if err != nil {
 		return err
 	}
@@ -75,7 +75,7 @@ func (client *Client) EnableAOF() error {
 	return client.setConfig("appendonly", "yes")
 }
 
-func (client *Client) RunBGSave() error {
+func (client *Client) runBGSave() error {
 	bgSaveCommand := client.conf.CommandAlias("BGSAVE")
 	_, err := client.connection.Do(bgSaveCommand)
 	return err
