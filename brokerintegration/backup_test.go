@@ -56,10 +56,10 @@ var _ = Describe("backups", func() {
 	})
 
 	Context("when there is a dump.rdb to back up", func() {
-		var lastSaveTimes map[string]int
+		var lastSaveTimes map[string]int64
 
 		JustBeforeEach(func() {
-			lastSaveTimes = map[string]int{}
+			lastSaveTimes = map[string]int64{}
 
 			for _, instanceID := range instanceIDs {
 				status, _ := provisionInstance(instanceID, "shared")
@@ -212,7 +212,7 @@ var _ = Describe("backups", func() {
 	})
 })
 
-func getLastSaveTime(instanceID string, configPath string) int {
+func getLastSaveTime(instanceID string, configPath string) int64 {
 	status, bindingBytes := bindInstance(instanceID, "somebindingID")
 	Ω(status).To(Equal(http.StatusCreated))
 	bindingResponse := map[string]interface{}{}

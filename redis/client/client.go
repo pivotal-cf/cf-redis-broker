@@ -3,7 +3,6 @@ package client
 import (
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -81,13 +80,13 @@ func (client *Client) runBGSave() error {
 	return err
 }
 
-func (client *Client) LastRDBSaveTime() (int, error) {
-	saveTimeStr, err := client.InfoField("rdb_last_save_time")
+func (client *Client) LastRDBSaveTime() (int64, error) {
+	saveTimeStr, err := client.connection.Do("LASTSAVE")
 	if err != nil {
 		return 0, err
 	}
 
-	return strconv.Atoi(saveTimeStr)
+	return saveTimeStr.(int64), nil
 }
 
 func (client *Client) InfoField(fieldName string) (string, error) {
@@ -108,7 +107,7 @@ func (client *Client) waitForUniqueSnapshotTime() {
 	time.Sleep(time.Second)
 }
 
-func (client *Client) waitForNewSaveSince(lastSaveTime int, timeoutInSeconds int) error {
+func (client *Client) waitForNewSaveSince(lastSaveTime int64, timeoutInSeconds int) error {
 	for i := 0; i < timeoutInSeconds; i++ {
 		latestSaveTime, err := client.LastRDBSaveTime()
 		if err != nil {
