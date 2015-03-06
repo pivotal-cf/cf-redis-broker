@@ -33,11 +33,12 @@ func main() {
 	}
 
 	backupErrors := []error{}
-	for _, instance := range instances {
-		backup := redis.Backup{
-			Config: &config,
-		}
 
+	backup := redis.Backup{
+		Config: &config,
+	}
+
+	for _, instance := range instances {
 		err = backup.Create(instance.ID)
 		if err != nil {
 			backupErrors = append(backupErrors, err)
@@ -51,13 +52,6 @@ func main() {
 	if len(backupErrors) > 0 {
 		os.Exit(1)
 	}
-}
-
-func fileExists(path string) bool {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return false
-	}
-	return true
 }
 
 func configPath() string {
