@@ -1,10 +1,8 @@
 package main
 
 import (
-	"io/ioutil"
 	"log"
 	"os"
-	"strings"
 
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
 	"github.com/pivotal-cf/cf-redis-broker/redis"
@@ -25,26 +23,26 @@ func main() {
 		return
 	}
 
-	instanceDirs, err := ioutil.ReadDir(config.RedisConfiguration.InstanceDataDirectory)
+	localRepo := &redis.LocalRepository{
+		RedisConf: config.RedisConfiguration,
+	}
+
+	instances, err := localRepo.AllInstances()
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	backupErrors := []error{}
-	for _, instanceDir := range instanceDirs {
-		if strings.HasPrefix(instanceDir.Name(), ".") {
-			continue
-		}
-
+	for _, instance := range instances {
 		backup := redis.Backup{
 			Config: &config,
 		}
 
-		err = backup.Create(instanceDir.Name())
+		err = backup.Create(instance.ID)
 		if err != nil {
 			backupErrors = append(backupErrors, err)
 			logger.Error("error backing up instance", err, lager.Data{
-				"instance_id": instanceDir.Name(),
+				"instance_id": instance.ID,
 			})
 		}
 
