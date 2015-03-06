@@ -176,8 +176,8 @@ var _ = Describe("backups", func() {
 	})
 
 	Context("when backing up multiple instances", func() {
-		Context("when an error happens with one of the intances", func() {
-			It("still backups the other intances", func() {
+		Context("when an error happens with one of the instances", func() {
+			It("still backups the other instances", func() {
 				status, _ := provisionInstance("A", "shared")
 				Ω(status).To(Equal(http.StatusCreated))
 
