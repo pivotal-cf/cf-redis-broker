@@ -20,58 +20,26 @@ type Backup struct {
 }
 
 func (backup Backup) Create(instanceID string) error {
-	s3Client := s3bucket.NewClient(
-		backup.Config.RedisConfiguration.BackupConfiguration.EndpointUrl,
-		backup.Config.RedisConfiguration.BackupConfiguration.S3Region,
-		backup.Config.RedisConfiguration.BackupConfiguration.AccessKeyId,
-		backup.Config.RedisConfiguration.BackupConfiguration.SecretAccessKey,
-	)
-
-	bucket, err := s3Client.GetOrCreate(backup.Config.RedisConfiguration.BackupConfiguration.BucketName)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return backup.backupInstance(instanceID, bucket)
-}
-
-func (backup Backup) backupInstance(instanceID string, bucket s3bucket.Bucket) error {
 	logger := cf_lager.New("backup")
 
-	pathToInstanceDirectory := filepath.Join(backup.Config.RedisConfiguration.InstanceDataDirectory, instanceID)
-	if !fileExists(pathToInstanceDirectory) {
-		logger.Info("instance directory not found, skipping instance backup", lager.Data{
-			"Local file": pathToInstanceDirectory,
-		})
+	bucket := backup.createBucket()
+
+	if !backup.validateInstanceDirectoryIsPresentFor(instanceID, logger) {
 		return nil
 	}
 
-	err := backup.saveAndWaitUntilFinished(instanceID)
+	err := backup.createSnapshot(instanceID)
 	if err != nil {
 		return err
 	}
 
 	pathToRdbFile := filepath.Join(backup.Config.RedisConfiguration.InstanceDataDirectory, instanceID, "db", "dump.rdb")
-	if !fileExists(pathToRdbFile) {
-		logger.Info("dump.rb not found, skipping instance backup", lager.Data{
-			"Local file": pathToRdbFile,
-		})
+
+	if !backup.validateBackupFileCreatedFor(pathToRdbFile, logger) {
 		return nil
 	}
 
-	rdbBytes, err := ioutil.ReadFile(pathToRdbFile)
-	if err != nil {
-		return err
-	}
-
-	remotePath := fmt.Sprintf("%s/%s", backup.Config.RedisConfiguration.BackupConfiguration.Path, instanceID)
-
-	logger.Info("Backing up instance", lager.Data{
-		"Local file":  pathToRdbFile,
-		"Remote file": remotePath,
-	})
-
-	return bucket.Upload(rdbBytes, remotePath)
+	return backup.uploadToS3(instanceID, pathToRdbFile, bucket, logger)
 }
 
 func fileExists(path string) bool {
@@ -81,7 +49,7 @@ func fileExists(path string) bool {
 	return true
 }
 
-func (backup Backup) saveAndWaitUntilFinished(instanceID string) error {
+func (backup Backup) createSnapshot(instanceID string) error {
 	client, err := backup.buildRedisClient(instanceID)
 	if err != nil {
 		return err
@@ -104,4 +72,56 @@ func (backup Backup) buildRedisClient(instanceID string) (*client.Client, error)
 	}
 
 	return client.Connect(instance.Host, uint(instance.Port), instance.Password, instanceConf)
+}
+
+func (backup Backup) validateInstanceDirectoryIsPresentFor(instanceID string, logger lager.Logger) bool {
+	pathToInstanceDirectory := filepath.Join(backup.Config.RedisConfiguration.InstanceDataDirectory, instanceID)
+	if !fileExists(pathToInstanceDirectory) {
+		logger.Info("instance directory not found, skipping instance backup", lager.Data{
+			"Local file": pathToInstanceDirectory,
+		})
+		return false
+	}
+	return true
+}
+
+func (backup Backup) validateBackupFileCreatedFor(pathToRdbFile string, logger lager.Logger) bool {
+	if !fileExists(pathToRdbFile) {
+		logger.Info("dump.rb not found, skipping instance backup", lager.Data{
+			"Local file": pathToRdbFile,
+		})
+		return false
+	}
+	return true
+}
+
+func (backup Backup) uploadToS3(instanceID, pathToRdbFile string, bucket s3bucket.Bucket, logger lager.Logger) error {
+	rdbBytes, err := ioutil.ReadFile(pathToRdbFile)
+	if err != nil {
+		return err
+	}
+
+	remotePath := fmt.Sprintf("%s/%s", backup.Config.RedisConfiguration.BackupConfiguration.Path, instanceID)
+
+	logger.Info("Backing up instance", lager.Data{
+		"Local file":  pathToRdbFile,
+		"Remote file": remotePath,
+	})
+
+	return bucket.Upload(rdbBytes, remotePath)
+}
+
+func (backup Backup) createBucket() s3bucket.Bucket {
+	s3Client := s3bucket.NewClient(
+		backup.Config.RedisConfiguration.BackupConfiguration.EndpointUrl,
+		backup.Config.RedisConfiguration.BackupConfiguration.S3Region,
+		backup.Config.RedisConfiguration.BackupConfiguration.AccessKeyId,
+		backup.Config.RedisConfiguration.BackupConfiguration.SecretAccessKey,
+	)
+
+	bucket, err := s3Client.GetOrCreate(backup.Config.RedisConfiguration.BackupConfiguration.BucketName)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return bucket
 }
