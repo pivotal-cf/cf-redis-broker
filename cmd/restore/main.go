@@ -11,7 +11,6 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/cloudfoundry-incubator/cf-lager"
 	"github.com/pivotal-cf/cf-redis-broker/availability"
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
 	"github.com/pivotal-cf/cf-redis-broker/process"
@@ -19,6 +18,7 @@ import (
 	"github.com/pivotal-cf/cf-redis-broker/redis/client"
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 	"github.com/pivotal-cf/cf-redis-broker/system"
+	"github.com/pivotal-golang/lager"
 )
 
 const pidFileName = "redis-server.pid"
@@ -71,7 +71,7 @@ func main() {
 	instanceID := os.Args[1]
 	rdbPath := os.Args[2]
 
-	logger := cf_lager.New("redis-restore")
+	logger := lager.NewLogger("redis-restore")
 
 	startStep("Loading config")
 	config, err := brokerconfig.ParseConfig(configPath())

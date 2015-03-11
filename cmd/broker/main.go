@@ -7,7 +7,6 @@ import (
 	"github.com/pivotal-cf/brokerapi"
 	"github.com/pivotal-golang/lager"
 
-	cf_lager "github.com/cloudfoundry-incubator/cf-lager"
 	"github.com/pivotal-cf/cf-redis-broker/availability"
 	"github.com/pivotal-cf/cf-redis-broker/broker"
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
@@ -19,7 +18,7 @@ import (
 
 func main() {
 	brokerConfigPath := configPath()
-	brokerLogger := cf_lager.New("redis-broker")
+	brokerLogger := lager.NewLogger("redis-broker")
 	brokerLogger.Info("Config File: " + brokerConfigPath)
 
 	config, err := brokerconfig.ParseConfig(brokerConfigPath)

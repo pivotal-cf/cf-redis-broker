@@ -13,12 +13,10 @@ import (
 	"github.com/pivotal-cf/cf-redis-broker/redis"
 	"github.com/pivotal-cf/cf-redis-broker/system"
 	"github.com/pivotal-golang/lager"
-
-	"github.com/cloudfoundry-incubator/cf-lager"
 )
 
 func main() {
-	logger := cf_lager.New("process-monitor")
+	logger := lager.NewLogger("process-monitor")
 
 	sigChannel := make(chan os.Signal, 1)
 	signal.Notify(sigChannel, syscall.SIGUSR1)

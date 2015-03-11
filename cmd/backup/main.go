@@ -7,13 +7,11 @@ import (
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
 	"github.com/pivotal-cf/cf-redis-broker/redis"
 	"github.com/pivotal-golang/lager"
-
-	cf_lager "github.com/cloudfoundry-incubator/cf-lager"
 )
 
-var logger = cf_lager.New("backup")
-
 func main() {
+	logger := lager.NewLogger("backup")
+
 	config, err := brokerconfig.ParseConfig(configPath())
 	if err != nil {
 		log.Fatal(err)

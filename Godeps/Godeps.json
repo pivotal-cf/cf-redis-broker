@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/pivotal-cf/cf-redis-broker",
-	"GoVersion": "go1.3.3",
+	"GoVersion": "go1.4.1",
 	"Packages": [
 		"./..."
 	],
@@ -13,10 +13,6 @@
 		{
 			"ImportPath": "github.com/cloudfoundry-incubator/candiedyaml",
 			"Rev": "150e4e8f749b21a7f0de8e3cfd885143fcea6b32"
-		},
-		{
-			"ImportPath": "github.com/cloudfoundry-incubator/cf-lager",
-			"Rev": "e28b8c12c6771eefcfef8654002dc513f42eb673"
 		},
 		{
 			"ImportPath": "github.com/codegangsta/negroni",

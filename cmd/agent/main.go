@@ -18,7 +18,6 @@ import (
 	"github.com/pivotal-cf/cf-redis-broker/resetter"
 	"github.com/pivotal-golang/lager"
 
-	cf_lager "github.com/cloudfoundry-incubator/cf-lager"
 	"github.com/codegangsta/negroni"
 )
 
@@ -35,9 +34,10 @@ func (commandRunner) Run(command *exec.Cmd) ([]byte, error) {
 }
 
 func main() {
-
 	configPath := flag.String("agentConfig", "", "Agent config yaml")
-	logger := cf_lager.New("redis-agent")
+	flag.Parse()
+
+	logger := lager.NewLogger("redis-agent")
 
 	config, err := agentconfig.Load(*configPath)
 	if err != nil {

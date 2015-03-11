@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/cloudfoundry-incubator/cf-lager"
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
 	"github.com/pivotal-cf/cf-redis-broker/redis/client"
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
@@ -20,7 +19,7 @@ type Backup struct {
 }
 
 func (backup Backup) Create(instanceID string) error {
-	logger := cf_lager.New("backup")
+	logger := lager.NewLogger("backup")
 
 	bucket := backup.createBucket()
 
