@@ -6,7 +6,7 @@ import (
 
 	"github.com/mitchellh/goamz/aws"
 	"github.com/mitchellh/goamz/s3"
-	"github.com/pivotal-cf/cf-redis-broker/s3bucket"
+	"github.com/pivotal-cf/cf-redis-broker/backup/s3bucket"
 )
 
 var _ = Describe("s3bucket", func() {

@@ -1,4 +1,4 @@
-package redis
+package backup
 
 import (
 	"fmt"
@@ -7,10 +7,11 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/pivotal-cf/cf-redis-broker/backup/s3bucket"
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
+	"github.com/pivotal-cf/cf-redis-broker/redis"
 	"github.com/pivotal-cf/cf-redis-broker/redis/client"
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
-	"github.com/pivotal-cf/cf-redis-broker/s3bucket"
 	"github.com/pivotal-golang/lager"
 )
 
@@ -57,8 +58,7 @@ func (backup Backup) createSnapshot(instanceID string) error {
 }
 
 func (backup Backup) buildRedisClient(instanceID string) (*client.Client, error) {
-
-	localRepo := LocalRepository{RedisConf: backup.Config.RedisConfiguration}
+	localRepo := redis.LocalRepository{RedisConf: backup.Config.RedisConfiguration}
 	instance, err := localRepo.FindByID(instanceID)
 	if err != nil {
 		return nil, err

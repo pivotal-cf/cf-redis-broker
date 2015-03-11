@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/pivotal-cf/cf-redis-broker/backup"
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
 	"github.com/pivotal-cf/cf-redis-broker/redis"
 	"github.com/pivotal-golang/lager"
@@ -32,13 +33,13 @@ func main() {
 
 	backupErrors := []error{}
 
-	backup := redis.Backup{
+	backupCreator := backup.Backup{
 		Config: &config,
 		Logger: logger,
 	}
 
 	for _, instance := range instances {
-		err = backup.Create(instance.ID)
+		err = backupCreator.Create(instance.ID)
 		if err != nil {
 			backupErrors = append(backupErrors, err)
 			logger.Error("error backing up instance", err, lager.Data{
