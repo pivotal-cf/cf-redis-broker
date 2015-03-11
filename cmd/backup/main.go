@@ -34,6 +34,7 @@ func main() {
 
 	backup := redis.Backup{
 		Config: &config,
+		Logger: logger,
 	}
 
 	for _, instance := range instances {

@@ -16,14 +16,13 @@ import (
 
 type Backup struct {
 	Config *brokerconfig.Config
+	Logger lager.Logger
 }
 
 func (backup Backup) Create(instanceID string) error {
-	logger := lager.NewLogger("backup")
-
 	bucket := backup.createBucket()
 
-	if !backup.validateInstanceDirectoryIsPresentFor(instanceID, logger) {
+	if !backup.validateInstanceDirectoryIsPresentFor(instanceID) {
 		return nil
 	}
 
@@ -34,11 +33,11 @@ func (backup Backup) Create(instanceID string) error {
 
 	pathToRdbFile := filepath.Join(backup.Config.RedisConfiguration.InstanceDataDirectory, instanceID, "db", "dump.rdb")
 
-	if !backup.validateBackupFileCreatedFor(pathToRdbFile, logger) {
+	if !backup.validateBackupFileCreatedFor(pathToRdbFile) {
 		return nil
 	}
 
-	return backup.uploadToS3(instanceID, pathToRdbFile, bucket, logger)
+	return backup.uploadToS3(instanceID, pathToRdbFile, bucket)
 }
 
 func fileExists(path string) bool {
@@ -73,10 +72,10 @@ func (backup Backup) buildRedisClient(instanceID string) (*client.Client, error)
 	return client.Connect(instance.Host, uint(instance.Port), instance.Password, instanceConf)
 }
 
-func (backup Backup) validateInstanceDirectoryIsPresentFor(instanceID string, logger lager.Logger) bool {
+func (backup Backup) validateInstanceDirectoryIsPresentFor(instanceID string) bool {
 	pathToInstanceDirectory := filepath.Join(backup.Config.RedisConfiguration.InstanceDataDirectory, instanceID)
 	if !fileExists(pathToInstanceDirectory) {
-		logger.Info("instance directory not found, skipping instance backup", lager.Data{
+		backup.Logger.Info("instance directory not found, skipping instance backup", lager.Data{
 			"Local file": pathToInstanceDirectory,
 		})
 		return false
@@ -84,9 +83,9 @@ func (backup Backup) validateInstanceDirectoryIsPresentFor(instanceID string, lo
 	return true
 }
 
-func (backup Backup) validateBackupFileCreatedFor(pathToRdbFile string, logger lager.Logger) bool {
+func (backup Backup) validateBackupFileCreatedFor(pathToRdbFile string) bool {
 	if !fileExists(pathToRdbFile) {
-		logger.Info("dump.rb not found, skipping instance backup", lager.Data{
+		backup.Logger.Info("dump.rb not found, skipping instance backup", lager.Data{
 			"Local file": pathToRdbFile,
 		})
 		return false
@@ -94,7 +93,7 @@ func (backup Backup) validateBackupFileCreatedFor(pathToRdbFile string, logger l
 	return true
 }
 
-func (backup Backup) uploadToS3(instanceID, pathToRdbFile string, bucket s3bucket.Bucket, logger lager.Logger) error {
+func (backup Backup) uploadToS3(instanceID, pathToRdbFile string, bucket s3bucket.Bucket) error {
 	rdbBytes, err := ioutil.ReadFile(pathToRdbFile)
 	if err != nil {
 		return err
@@ -102,7 +101,7 @@ func (backup Backup) uploadToS3(instanceID, pathToRdbFile string, bucket s3bucke
 
 	remotePath := fmt.Sprintf("%s/%s", backup.Config.RedisConfiguration.BackupConfiguration.Path, instanceID)
 
-	logger.Info("Backing up instance", lager.Data{
+	backup.Logger.Info("Backing up instance", lager.Data{
 		"Local file":  pathToRdbFile,
 		"Remote file": remotePath,
 	})
