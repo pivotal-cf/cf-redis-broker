@@ -89,10 +89,6 @@ func main() {
 }
 
 func fileExists(path string) bool {
-	if _, err := os.Stat(path); err != nil {
-		if os.IsNotExist(err) {
-			return false
-		}
-	}
-	return true
+	_, err := os.Stat(path)
+	return err == nil || os.IsExist(err)
 }
