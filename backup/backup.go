@@ -46,13 +46,6 @@ func (backup Backup) Create(instanceID string) error {
 	return backup.uploadToS3(instanceID, pathToRdbFile, bucket)
 }
 
-func fileExists(path string) bool {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return false
-	}
-	return true
-}
-
 func (backup Backup) createSnapshot(instanceID string) error {
 	client, err := backup.buildRedisClient(instanceID)
 	if err != nil {
@@ -101,4 +94,9 @@ func (backup Backup) uploadToS3(instanceID, pathToRdbFile string, bucket s3bucke
 	})
 
 	return bucket.Upload(rdbBytes, remotePath)
+}
+
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil || os.IsExist(err)
 }
