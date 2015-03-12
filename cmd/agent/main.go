@@ -13,7 +13,6 @@ import (
 	"github.com/pivotal-cf/cf-redis-broker/agentconfig"
 	"github.com/pivotal-cf/cf-redis-broker/api"
 	"github.com/pivotal-cf/cf-redis-broker/availability"
-	"github.com/pivotal-cf/cf-redis-broker/credentials"
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 	"github.com/pivotal-cf/cf-redis-broker/resetter"
 	"github.com/pivotal-golang/lager"
@@ -81,7 +80,7 @@ func main() {
 	redisResetter := resetter.New(config.DefaultConfPath, config.ConfPath, new(portChecker), new(commandRunner), config.MonitExecutablePath)
 
 	authWrapper := auth.NewWrapper(config.AuthConfiguration.Username, config.AuthConfiguration.Password)
-	handler := authWrapper.Wrap(api.New(redisResetter, config.ConfPath, credentials.Parse))
+	handler := authWrapper.Wrap(api.New(redisResetter, config.ConfPath))
 
 	serverMiddleware := negroni.Classic()
 	serverMiddleware.UseHandler(handler)

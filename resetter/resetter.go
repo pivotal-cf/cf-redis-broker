@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pivotal-cf/cf-redis-broker/credentials"
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 
 	"code.google.com/p/go-uuid/uuid"
@@ -64,12 +63,12 @@ func (resetter *Resetter) ResetRedis() error {
 		return err
 	}
 
-	credentials, err := credentials.Parse(resetter.liveConfPath)
+	conf, err := redisconf.Load(resetter.liveConfPath)
 	if err != nil {
 		return err
 	}
 
-	address, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("127.0.0.1:%d", credentials.Port))
+	address, err := net.ResolveTCPAddr("tcp", "127.0.0.1:"+conf.Get("port"))
 	if err != nil {
 		return err
 	}

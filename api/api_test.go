@@ -6,9 +6,9 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 
 	"github.com/pivotal-cf/cf-redis-broker/api"
-	"github.com/pivotal-cf/cf-redis-broker/credentials"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -29,23 +29,16 @@ var _ = Describe("redis agent HTTP API", func() {
 	var configPath string
 	var response *http.Response
 
-	var parseCredentials func(string) (credentials.Credentials, error)
-
 	BeforeEach(func() {
-		parseCredentials = func(path string) (credentials.Credentials, error) {
-			Ω(path).Should(Equal(configPath))
-			return credentials.Credentials{
-				Port:     123345,
-				Password: "secret",
-			}, nil
-		}
-		configPath = "/some/Config/Path"
+		var err error
+		configPath, err = filepath.Abs("assets/redis.conf")
+		Ω(err).ShouldNot(HaveOccurred())
 		redisClient = &fakeRedisResetter{}
 		deleteCount = 0
 	})
 
 	JustBeforeEach(func() {
-		handler := api.New(redisClient, configPath, parseCredentials)
+		handler := api.New(redisClient, configPath)
 		server = httptest.NewServer(handler)
 	})
 
@@ -63,23 +56,18 @@ var _ = Describe("redis agent HTTP API", func() {
 				body, err := ioutil.ReadAll(response.Body)
 				Ω(err).ShouldNot(HaveOccurred())
 
-				creds := credentials.Credentials{}
-				err = json.Unmarshal(body, &creds)
+				response := map[string]interface{}{}
+				err = json.Unmarshal(body, &response)
 				Ω(err).ShouldNot(HaveOccurred())
 
-				Ω(creds).Should(Equal(credentials.Credentials{
-					Port:     123345,
-					Password: "secret",
-				}))
+				Ω(response["port"]).Should(Equal(float64(1234))) // json.Unmarshal provides float64s by default
+				Ω(response["password"]).Should(Equal("an-password"))
 			})
 		})
 
 		Context("When it is unable to read the conf file", func() {
 			BeforeEach(func() {
-				parseCredentials = func(path string) (credentials.Credentials, error) {
-					Ω(path).Should(Equal(configPath))
-					return credentials.Credentials{}, errors.New("unable to open config file")
-				}
+				configPath = "some/path/that/makes/no/sense"
 			})
 
 			It("returns an 500", func() {
@@ -90,7 +78,7 @@ var _ = Describe("redis agent HTTP API", func() {
 				body, err := ioutil.ReadAll(response.Body)
 				Ω(err).ShouldNot(HaveOccurred())
 
-				Ω(string(body)).Should(Equal("unable to open config file\n"))
+				Ω(string(body)).Should(ContainSubstring("no such file or directory"))
 			})
 		})
 	})

@@ -3,18 +3,17 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
-	"github.com/pivotal-cf/cf-redis-broker/credentials"
+	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 )
 
 type redisResetter interface {
 	ResetRedis() error
 }
 
-type credentialsParserFunc func(string) (credentials.Credentials, error)
-
-func New(resetter redisResetter, configPath string, parseCredentials credentialsParserFunc) http.Handler {
+func New(resetter redisResetter, configPath string) http.Handler {
 	router := mux.NewRouter()
 
 	router.Path("/").
@@ -23,7 +22,7 @@ func New(resetter redisResetter, configPath string, parseCredentials credentials
 
 	router.Path("/").
 		Methods("GET").
-		HandlerFunc(credentialsHandler(configPath, parseCredentials))
+		HandlerFunc(credentialsHandler(configPath))
 
 	return router
 }
@@ -40,12 +39,27 @@ func resetHandler(resetter redisResetter) http.HandlerFunc {
 	}
 }
 
-func credentialsHandler(configPath string, parseCredentials credentialsParserFunc) http.HandlerFunc {
+func credentialsHandler(configPath string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		credentials, err := parseCredentials(configPath)
+		conf, err := redisconf.Load(configPath)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
+		}
+
+		port, err := strconv.Atoi(conf.Get("port"))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		password := conf.Get("requirepass")
+
+		credentials := struct {
+			Port     int    `json:"port"`
+			Password string `json:"password"`
+		}{
+			Port:     port,
+			Password: password,
 		}
 
 		w.Header().Set("Content-Type", "application/json")
