@@ -20,20 +20,12 @@ type Backup struct {
 }
 
 func (backup Backup) Create(instanceID string) error {
-	s3Client := s3bucket.NewClient(
-		backup.Config.RedisConfiguration.BackupConfiguration.EndpointUrl,
-		backup.Config.RedisConfiguration.BackupConfiguration.S3Region,
-		backup.Config.RedisConfiguration.BackupConfiguration.AccessKeyId,
-		backup.Config.RedisConfiguration.BackupConfiguration.SecretAccessKey,
-	)
-
-	bucket, err := s3Client.GetOrCreate(backup.Config.RedisConfiguration.BackupConfiguration.BucketName)
+	bucket, err := backup.getOrCreateBucket()
 	if err != nil {
 		return err
 	}
 
-	err = backup.createSnapshot(instanceID)
-	if err != nil {
+	if err = backup.createSnapshot(instanceID); err != nil {
 		return err
 	}
 
@@ -47,6 +39,17 @@ func (backup Backup) Create(instanceID string) error {
 	}
 
 	return backup.uploadToS3(instanceID, pathToRdbFile, bucket)
+}
+
+func (backup Backup) getOrCreateBucket() (s3bucket.Bucket, error) {
+	s3Client := s3bucket.NewClient(
+		backup.Config.RedisConfiguration.BackupConfiguration.EndpointUrl,
+		backup.Config.RedisConfiguration.BackupConfiguration.S3Region,
+		backup.Config.RedisConfiguration.BackupConfiguration.AccessKeyId,
+		backup.Config.RedisConfiguration.BackupConfiguration.SecretAccessKey,
+	)
+
+	return s3Client.GetOrCreate(backup.Config.RedisConfiguration.BackupConfiguration.BucketName)
 }
 
 func (backup Backup) createSnapshot(instanceID string) error {
