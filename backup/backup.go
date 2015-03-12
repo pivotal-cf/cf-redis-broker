@@ -39,7 +39,10 @@ func (backup Backup) Create(instanceID string) error {
 
 	pathToRdbFile := filepath.Join(backup.Config.RedisConfiguration.InstanceDataDirectory, instanceID, "db", "dump.rdb")
 
-	if !backup.validateBackupFileCreatedFor(pathToRdbFile) {
+	if !fileExists(pathToRdbFile) {
+		backup.Logger.Info("dump.rdb not found, skipping instance backup", lager.Data{
+			"Local file": pathToRdbFile,
+		})
 		return nil
 	}
 
@@ -68,16 +71,6 @@ func (backup Backup) buildRedisClient(instanceID string) (*client.Client, error)
 	}
 
 	return client.Connect(instance.Host, uint(instance.Port), instance.Password, instanceConf)
-}
-
-func (backup Backup) validateBackupFileCreatedFor(pathToRdbFile string) bool {
-	if !fileExists(pathToRdbFile) {
-		backup.Logger.Info("dump.rb not found, skipping instance backup", lager.Data{
-			"Local file": pathToRdbFile,
-		})
-		return false
-	}
-	return true
 }
 
 func (backup Backup) uploadToS3(instanceID, pathToRdbFile string, bucket s3bucket.Bucket) error {
