@@ -32,10 +32,6 @@ func (backup Backup) Create(instanceID string) error {
 		return err
 	}
 
-	if !backup.validateInstanceDirectoryIsPresentFor(instanceID) {
-		return nil
-	}
-
 	err = backup.createSnapshot(instanceID)
 	if err != nil {
 		return err
@@ -79,17 +75,6 @@ func (backup Backup) buildRedisClient(instanceID string) (*client.Client, error)
 	}
 
 	return client.Connect(instance.Host, uint(instance.Port), instance.Password, instanceConf)
-}
-
-func (backup Backup) validateInstanceDirectoryIsPresentFor(instanceID string) bool {
-	pathToInstanceDirectory := filepath.Join(backup.Config.RedisConfiguration.InstanceDataDirectory, instanceID)
-	if !fileExists(pathToInstanceDirectory) {
-		backup.Logger.Info("instance directory not found, skipping instance backup", lager.Data{
-			"Local file": pathToInstanceDirectory,
-		})
-		return false
-	}
-	return true
 }
 
 func (backup Backup) validateBackupFileCreatedFor(pathToRdbFile string) bool {
