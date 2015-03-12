@@ -3,7 +3,6 @@ package backup
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 
@@ -21,13 +20,23 @@ type Backup struct {
 }
 
 func (backup Backup) Create(instanceID string) error {
-	bucket := backup.createBucket()
+	s3Client := s3bucket.NewClient(
+		backup.Config.RedisConfiguration.BackupConfiguration.EndpointUrl,
+		backup.Config.RedisConfiguration.BackupConfiguration.S3Region,
+		backup.Config.RedisConfiguration.BackupConfiguration.AccessKeyId,
+		backup.Config.RedisConfiguration.BackupConfiguration.SecretAccessKey,
+	)
+
+	bucket, err := s3Client.GetOrCreate(backup.Config.RedisConfiguration.BackupConfiguration.BucketName)
+	if err != nil {
+		return err
+	}
 
 	if !backup.validateInstanceDirectoryIsPresentFor(instanceID) {
 		return nil
 	}
 
-	err := backup.createSnapshot(instanceID)
+	err = backup.createSnapshot(instanceID)
 	if err != nil {
 		return err
 	}
@@ -107,19 +116,4 @@ func (backup Backup) uploadToS3(instanceID, pathToRdbFile string, bucket s3bucke
 	})
 
 	return bucket.Upload(rdbBytes, remotePath)
-}
-
-func (backup Backup) createBucket() s3bucket.Bucket {
-	s3Client := s3bucket.NewClient(
-		backup.Config.RedisConfiguration.BackupConfiguration.EndpointUrl,
-		backup.Config.RedisConfiguration.BackupConfiguration.S3Region,
-		backup.Config.RedisConfiguration.BackupConfiguration.AccessKeyId,
-		backup.Config.RedisConfiguration.BackupConfiguration.SecretAccessKey,
-	)
-
-	bucket, err := s3Client.GetOrCreate(backup.Config.RedisConfiguration.BackupConfiguration.BucketName)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return bucket
 }
