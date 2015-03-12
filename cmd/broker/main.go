@@ -49,7 +49,6 @@ func main() {
 		FindFreePort:            system.FindFreePort,
 		RedisConfiguration:      config.RedisConfiguration,
 		ProcessController:       processController,
-		CredentialsGenerator:    redis.RandomCredentialsGenerator{},
 		LocalInstanceRepository: localRepo,
 	}
 

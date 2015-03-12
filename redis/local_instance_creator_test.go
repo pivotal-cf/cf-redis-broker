@@ -25,7 +25,6 @@ var _ = Describe("Local Redis Creator", func() {
 
 	var instanceID string
 	var fakeProcessController *fakes.FakeProcessController
-	var fakeCredentialGenerator *fakes.FakeCredentialGenerator
 	var fakeLocalRepository *fakes.FakeLocalRepository
 	var localInstanceCreator *redis.LocalInstanceCreator
 
@@ -39,11 +38,8 @@ var _ = Describe("Local Redis Creator", func() {
 			Instances:          []*redis.Instance{},
 		}
 
-		fakeCredentialGenerator = &fakes.FakeCredentialGenerator{}
-
 		localInstanceCreator = &redis.LocalInstanceCreator{
 			FindFreePort:            fakeFreePortFinder,
-			CredentialsGenerator:    fakeCredentialGenerator,
 			ProcessController:       fakeProcessController,
 			LocalInstanceRepository: fakeLocalRepository,
 			RedisConfiguration: brokerconfig.ServiceConfiguration{

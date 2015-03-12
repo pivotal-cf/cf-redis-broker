@@ -10,14 +10,13 @@ import (
 )
 
 type FakeLocalRepository struct {
-	FindFreePort         func() (int, error)
-	DeletedInstanceIds   []string
-	CreatedInstances     []*redis.Instance
-	LockedInstances      []*redis.Instance
-	UnlockedInstances    []*redis.Instance
-	Instances            []*redis.Instance
-	InstanceCountErr     error
-	CredentialsGenerator *FakeCredentialGenerator
+	FindFreePort       func() (int, error)
+	DeletedInstanceIds []string
+	CreatedInstances   []*redis.Instance
+	LockedInstances    []*redis.Instance
+	UnlockedInstances  []*redis.Instance
+	Instances          []*redis.Instance
+	InstanceCountErr   error
 }
 
 func (repo *FakeLocalRepository) InstanceDataDir(instanceID string) string     { return "" }

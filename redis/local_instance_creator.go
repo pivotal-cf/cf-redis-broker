@@ -3,6 +3,8 @@ package redis
 import (
 	"time"
 
+	"code.google.com/p/go-uuid/uuid"
+
 	"github.com/pivotal-cf/brokerapi"
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
 )
@@ -28,10 +30,9 @@ type LocalInstanceRepository interface {
 
 type LocalInstanceCreator struct {
 	LocalInstanceRepository
-	FindFreePort         func() (int, error)
-	CredentialsGenerator CredentialsGenerator
-	ProcessController    ProcessController
-	RedisConfiguration   brokerconfig.ServiceConfiguration
+	FindFreePort       func() (int, error)
+	ProcessController  ProcessController
+	RedisConfiguration brokerconfig.ServiceConfiguration
 }
 
 func (localInstanceCreator *LocalInstanceCreator) Create(instanceID string) error {
@@ -49,7 +50,7 @@ func (localInstanceCreator *LocalInstanceCreator) Create(instanceID string) erro
 		ID:       instanceID,
 		Port:     port,
 		Host:     localInstanceCreator.RedisConfiguration.Host,
-		Password: localInstanceCreator.CredentialsGenerator.GenerateCredentials(),
+		Password: uuid.NewRandom().String(),
 	}
 
 	err = localInstanceCreator.Setup(instance)
