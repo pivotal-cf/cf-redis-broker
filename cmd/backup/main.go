@@ -39,18 +39,18 @@ func main() {
 	}
 
 	for _, instance := range instances {
-		err = backupCreator.Create(instance.ID)
+		instancePath := localRepo.InstanceBaseDir(instance.ID)
+		err = backupCreator.Create(instancePath, instance.ID)
 		if err != nil {
 			backupErrors = append(backupErrors, err)
 			logger.Error("error backing up instance", err, lager.Data{
 				"instance_id": instance.ID,
 			})
 		}
-
 	}
 
 	if len(backupErrors) > 0 {
-		os.Exit(1)
+		log.Fatal(backupErrors)
 	}
 }
 

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/mitchellh/goamz/aws"
@@ -84,7 +85,7 @@ var _ = Describe("backups", func() {
 
 			JustBeforeEach(func() {
 				backupExitStatusCode = backupSession.Wait(time.Second * 10).ExitCode()
-				Eventually(backupSession).Should(gexec.Exit())
+				Expect(backupExitStatusCode).To(Equal(0))
 			})
 
 			Context("when the bucket exists", func() {
@@ -218,14 +219,15 @@ func getLastSaveTime(instanceID string, configPath string) int64 {
 	bindingResponse := map[string]interface{}{}
 	json.Unmarshal(bindingBytes, &bindingResponse)
 	credentials := bindingResponse["credentials"].(map[string]interface{})
-	port := uint(credentials["port"].(float64))
 
 	conf, err := redisconf.Load(configPath)
+	conf.Set("requirepass", credentials["password"].(string))
+	port := int(credentials["port"].(float64))
+	conf.Set("port", strconv.Itoa(port))
+
 	Ω(err).ShouldNot(HaveOccurred())
 	redisClient, err := client.Connect(
 		credentials["host"].(string),
-		port,
-		credentials["password"].(string),
 		conf,
 	)
 	Ω(err).ShouldNot(HaveOccurred())

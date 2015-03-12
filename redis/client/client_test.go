@@ -51,7 +51,7 @@ func (runner *RedisRunner) Stop() {
 }
 
 var host = "localhost"
-var port uint = 6480
+var port = "6480"
 var password = ""
 
 var _ = Describe("Client", func() {
@@ -60,14 +60,17 @@ var _ = Describe("Client", func() {
 	var conf redisconf.Conf
 
 	BeforeEach(func() {
-		conf = redisconf.New()
-		redisArgs = []string{"--port", "6480"}
+		conf = redisconf.New(
+			redisconf.Param{Key: "port", Value: port},
+			redisconf.Param{Key: "requirepass", Value: password},
+		)
+		redisArgs = []string{"--port", port}
 	})
 
 	Describe("connecting to a redis server", func() {
 		Context("when the server is not running", func() {
 			It("returns an error", func() {
-				_, err := client.Connect(host, port, password, conf)
+				_, err := client.Connect(host, conf)
 				Ω(err).Should(MatchError("dial tcp 127.0.0.1:6480: connection refused"))
 			})
 		})
@@ -83,7 +86,7 @@ var _ = Describe("Client", func() {
 			})
 
 			It("connects with no error", func() {
-				_, err := client.Connect(host, port, password, conf)
+				_, err := client.Connect(host, conf)
 				Ω(err).ShouldNot(HaveOccurred())
 			})
 
@@ -93,16 +96,22 @@ var _ = Describe("Client", func() {
 				})
 
 				It("returns an error if the password is incorrect", func() {
-					password := "goodbye"
+					conf = redisconf.New(
+						redisconf.Param{Key: "port", Value: port},
+						redisconf.Param{Key: "requirepass", Value: "goodbye"},
+					)
 
-					_, err := client.Connect(host, port, password, conf)
+					_, err := client.Connect(host, conf)
 					Ω(err).Should(MatchError("ERR invalid password"))
 				})
 
 				It("works if the password is correct", func() {
-					password := "hello"
+					conf = redisconf.New(
+						redisconf.Param{Key: "port", Value: port},
+						redisconf.Param{Key: "requirepass", Value: "hello"},
+					)
 
-					_, err := client.Connect(host, port, password, conf)
+					_, err := client.Connect(host, conf)
 					Ω(err).ShouldNot(HaveOccurred())
 				})
 			})
@@ -121,7 +130,7 @@ var _ = Describe("Client", func() {
 
 		Describe("turning on appendonly", func() {
 			It("turns on appendonly", func() {
-				client, err := client.Connect(host, port, password, conf)
+				client, err := client.Connect(host, conf)
 				Ω(err).ShouldNot(HaveOccurred())
 
 				err = client.EnableAOF()
@@ -140,7 +149,7 @@ var _ = Describe("Client", func() {
 
 		Describe("creating a snapshot", func() {
 			It("creates a snapshot", func() {
-				client, err := client.Connect(host, port, password, conf)
+				client, err := client.Connect(host, conf)
 				Ω(err).ShouldNot(HaveOccurred())
 
 				beforeSnapshotLastSaveTime, err := client.LastRDBSaveTime()
@@ -159,7 +168,7 @@ var _ = Describe("Client", func() {
 		Describe("querying info fields", func() {
 			Context("when the field exits", func() {
 				It("returns the value", func() {
-					client, err := client.Connect(host, port, password, conf)
+					client, err := client.Connect(host, conf)
 					Ω(err).ShouldNot(HaveOccurred())
 
 					result, err := client.InfoField("aof_enabled")
@@ -170,7 +179,7 @@ var _ = Describe("Client", func() {
 
 			Context("when the field does not exist", func() {
 				It("returns an error", func() {
-					client, err := client.Connect(host, port, password, conf)
+					client, err := client.Connect(host, conf)
 					Ω(err).ShouldNot(HaveOccurred())
 
 					_, err = client.InfoField("made_up_field")

@@ -9,6 +9,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/pivotal-cf/cf-redis-broker/availability"
@@ -157,7 +158,11 @@ func main() {
 	finishStep("OK")
 
 	startStep("Waiting for redis to finish loading data into memory")
-	client, err := client.Connect(instance.Host, uint(instance.Port), instance.Password, redisconf.New())
+	conf := redisconf.New(
+		redisconf.Param{Key: "port", Value: strconv.Itoa(instance.Port)},
+		redisconf.Param{Key: "requirepass", Value: instance.Password},
+	)
+	client, err := client.Connect(instance.Host, conf)
 	if err != nil {
 		finishStep("ERROR")
 		logger.Fatal("connecting-to-redis", err)

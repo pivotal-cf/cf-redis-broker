@@ -10,13 +10,14 @@ import (
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 )
 
-func Connect(host string, port uint, password string, conf redisconf.Conf) (*Client, error) {
-	address := fmt.Sprintf("%s:%d", host, port)
+func Connect(host string, conf redisconf.Conf) (*Client, error) {
+	address := fmt.Sprintf("%v:%v", host, conf.Get("port"))
 	connection, err := redisclient.Dial("tcp", address)
 	if err != nil {
 		return nil, err
 	}
 
+	password := conf.Get("requirepass")
 	if password != "" {
 		if _, err := connection.Do("AUTH", password); err != nil {
 			connection.Close()

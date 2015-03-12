@@ -188,7 +188,6 @@ func (repo *LocalRepository) WriteConfigFile(instance *Instance) error {
 }
 
 func (repo *LocalRepository) WriteBindingData(instance *Instance) error {
-
 	port := strconv.FormatInt(int64(instance.Port), 10)
 
 	baseDir := repo.InstanceBaseDir(instance.ID)
