@@ -19,12 +19,7 @@ type Backup struct {
 }
 
 func (backup Backup) Create(instancePath, instanceID string) error {
-	bucket, err := backup.getOrCreateBucket()
-	if err != nil {
-		return err
-	}
-
-	if err = backup.createSnapshot(instancePath); err != nil {
+	if err := backup.createSnapshot(instancePath); err != nil {
 		return err
 	}
 
@@ -35,6 +30,11 @@ func (backup Backup) Create(instancePath, instanceID string) error {
 			"Local file": pathToRdbFile,
 		})
 		return nil
+	}
+
+	bucket, err := backup.getOrCreateBucket()
+	if err != nil {
+		return err
 	}
 
 	return backup.uploadToS3(instanceID, pathToRdbFile, bucket)
@@ -61,8 +61,7 @@ func (backup Backup) createSnapshot(instancePath string) error {
 }
 
 func (backup Backup) buildRedisClient(instancePath string) (*client.Client, error) {
-	instanceConfPath := path.Join(instancePath, "redis.conf")
-	instanceConf, err := redisconf.Load(instanceConfPath)
+	instanceConf, err := redisconf.Load(path.Join(instancePath, "redis.conf"))
 	if err != nil {
 		return nil, err
 	}
