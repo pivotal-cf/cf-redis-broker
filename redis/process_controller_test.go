@@ -43,7 +43,7 @@ func (*fakeInstanceInformer) InstancePid(instanceId string) (int, error) {
 
 var _ = Describe("Redis Process Controller", func() {
 	var processController *redis.OSProcessController
-	var instance *redis.Instance
+	var instance *redis.Instance = &redis.Instance{}
 	var instanceInformer *fakeInstanceInformer
 	var logger *lagertest.TestLogger
 	var fakeProcessChecker *fakeProcessChecker = &fakeProcessChecker{}
@@ -56,10 +56,6 @@ var _ = Describe("Redis Process Controller", func() {
 		instanceInformer = &fakeInstanceInformer{}
 		logger = lagertest.NewTestLogger("process-controller")
 		commandRunner = &system.FakeCommandRunner{}
-		instance = &redis.Instance{
-			Port:     7001,
-			Password: "shmemley",
-		}
 	})
 
 	JustBeforeEach(func() {
@@ -77,7 +73,7 @@ var _ = Describe("Redis Process Controller", func() {
 
 	itStartsARedisProcess := func(executablePath string) {
 		Ω(commandRunner.Commands).To(Equal([]string{
-			fmt.Sprintf("%s configFilePath --pidfile pidFilePath --port 7001 --dir instanceDataDir --requirepass shmemley --logfile logFilePath", executablePath),
+			fmt.Sprintf("%s configFilePath --pidfile pidFilePath --dir instanceDataDir --logfile logFilePath", executablePath),
 		}))
 	}
 
@@ -113,9 +109,7 @@ var _ = Describe("Redis Process Controller", func() {
 				args := []string{
 					"configFilePath",
 					"--pidfile", "pidFilePath",
-					"--port", "7001",
 					"--dir", "instanceDataDir",
-					"--requirepass", "shmemley",
 					"--logfile", "logFilePath",
 				}
 				processController.StartAndWaitUntilReadyWithConfig(instance, args, time.Second*1)
@@ -127,9 +121,7 @@ var _ = Describe("Redis Process Controller", func() {
 			args := []string{
 				"configFilePath",
 				"--pidfile", "pidFilePath",
-				"--port", "7001",
 				"--dir", "instanceDataDir",
-				"--requirepass", "shmemley",
 				"--logfile", "logFilePath",
 			}
 			processController.StartAndWaitUntilReadyWithConfig(instance, args, time.Second*1)

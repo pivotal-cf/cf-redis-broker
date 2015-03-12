@@ -3,7 +3,6 @@ package redis
 import (
 	"fmt"
 	"net"
-	"strconv"
 	"time"
 
 	"github.com/pivotal-golang/lager"
@@ -41,9 +40,7 @@ func (controller *OSProcessController) StartAndWaitUntilReady(instance *Instance
 	instanceCommandArgs := []string{
 		configPath,
 		"--pidfile", pidfilePath,
-		"--port", strconv.Itoa(instance.Port),
 		"--dir", instanceDataDir,
-		"--requirepass", instance.Password,
 		"--logfile", logfilePath,
 	}
 	return controller.StartAndWaitUntilReadyWithConfig(instance, instanceCommandArgs, timeout)
