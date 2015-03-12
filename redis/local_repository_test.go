@@ -206,8 +206,7 @@ var _ = Describe("Local Repository", func() {
 		Context("when instance does not exist", func() {
 			It("returns an error", func() {
 				_, err := repo.FindByID(instanceID)
-				Ω(err).To(HaveOccurred())
-				Ω(err).To(BeAssignableToTypeOf(redis.InstanceNotFoundErr{}))
+				Ω(err).To(BeAssignableToTypeOf(&os.PathError{}))
 			})
 		})
 	})
@@ -230,21 +229,6 @@ var _ = Describe("Local Repository", func() {
 				result, err := repo.InstanceExists(instanceID)
 				Ω(result).Should(BeTrue())
 				Ω(err).ShouldNot(HaveOccurred())
-			})
-		})
-
-		Context("when something breaks while trying to find the instance", func() {
-			BeforeEach(func() {
-				newTestInstance(instanceID, repo)
-				instancePortFilePath := path.Join(repo.InstanceBaseDir(instanceID), "redis-server.port")
-				err := os.Remove(instancePortFilePath)
-				Ω(err).ShouldNot(HaveOccurred())
-			})
-
-			It("returns false and an error", func() {
-				result, err := repo.InstanceExists(instanceID)
-				Ω(result).Should(BeFalse())
-				Ω(err).Should(BeAssignableToTypeOf(new(os.PathError)))
 			})
 		})
 	})
@@ -339,21 +323,6 @@ var _ = Describe("Local Repository", func() {
 				Ω(err).To(HaveOccurred())
 			})
 		})
-
-		Context("when finding an instance fails", func() {
-			It("returns an error", func() {
-				newTestInstance(instanceID, repo)
-
-				_, err := ioutil.ReadDir(tmpInstanceDataDir)
-				Ω(err).NotTo(HaveOccurred())
-
-				os.Remove(path.Join(tmpInstanceDataDir, instanceID, "redis-server.password"))
-
-				_, err = repo.AllInstances()
-				Ω(err).To(HaveOccurred())
-				Ω(err).To(BeAssignableToTypeOf(&os.PathError{}))
-			})
-		})
 	})
 })
 
@@ -371,8 +340,6 @@ func writeInstance(instance *redis.Instance, repo *redis.LocalRepository) {
 	err := repo.EnsureDirectoriesExist(instance)
 	Ω(err).NotTo(HaveOccurred())
 	err = repo.WriteConfigFile(instance)
-	Ω(err).NotTo(HaveOccurred())
-	err = repo.WriteBindingData(instance)
 	Ω(err).NotTo(HaveOccurred())
 	file, err := os.Create(filepath.Join(repo.InstanceBaseDir(instance.ID), "monitor"))
 	Ω(err).NotTo(HaveOccurred())

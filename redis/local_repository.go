@@ -17,39 +17,20 @@ type LocalRepository struct {
 	RedisConf brokerconfig.ServiceConfiguration
 }
 
-type InstanceNotFoundErr struct{}
-
-func (err InstanceNotFoundErr) Error() string {
-	return "Instance not found"
-}
-
 func (repo *LocalRepository) FindByID(instanceID string) (*Instance, error) {
-	instanceBaseDir := repo.InstanceBaseDir(instanceID)
-
-	_, pathErr := os.Stat(instanceBaseDir)
-	if pathErr != nil {
-		return nil, InstanceNotFoundErr{}
+	conf, err := redisconf.Load(repo.InstanceConfigPath(instanceID))
+	if err != nil {
+		return nil, err
 	}
 
-	passwordBytes, passwordReadErr := ioutil.ReadFile(path.Join(instanceBaseDir, "redis-server.password"))
-	if passwordReadErr != nil {
-		return nil, passwordReadErr
-	}
-
-	portBytes, portReadErr := ioutil.ReadFile(path.Join(instanceBaseDir, "redis-server.port"))
-	if portReadErr != nil {
-		return nil, portReadErr
-	}
-
-	portString := string(portBytes)
-	port, err := strconv.Atoi(strings.TrimSpace(portString))
+	port, err := strconv.Atoi(conf.Get("port"))
 	if err != nil {
 		return nil, err
 	}
 
 	instance := &Instance{
 		ID:       instanceID,
-		Password: string(passwordBytes),
+		Password: conf.Get("requirepass"),
 		Port:     port,
 		Host:     repo.RedisConf.Host,
 	}
@@ -58,12 +39,12 @@ func (repo *LocalRepository) FindByID(instanceID string) (*Instance, error) {
 }
 
 func (repo *LocalRepository) InstanceExists(instanceID string) (bool, error) {
-	_, err := repo.FindByID(instanceID)
-	if _, ok := err.(InstanceNotFoundErr); ok {
+	if _, err := os.Stat(repo.InstanceBaseDir(instanceID)); os.IsNotExist(err) {
 		return false, nil
 	} else if err != nil {
 		return false, err
 	}
+
 	return true, nil
 }
 
@@ -74,7 +55,6 @@ func (repo *LocalRepository) Setup(instance *Instance) error {
 	repo.EnsureDirectoriesExist(instance)
 	repo.Lock(instance)
 	repo.WriteConfigFile(instance)
-	repo.WriteBindingData(instance)
 
 	return nil
 }
@@ -183,17 +163,6 @@ func (repo *LocalRepository) WriteConfigFile(instance *Instance) error {
 		strconv.Itoa(instance.Port),
 		instance.Password,
 	)
-}
-
-func (repo *LocalRepository) WriteBindingData(instance *Instance) error {
-	port := strconv.FormatInt(int64(instance.Port), 10)
-
-	baseDir := repo.InstanceBaseDir(instance.ID)
-
-	ioutil.WriteFile(path.Join(baseDir, "redis-server.password"), []byte(instance.Password), 0644)
-	ioutil.WriteFile(path.Join(baseDir, "redis-server.port"), []byte(port), 0644)
-
-	return nil
 }
 
 func (repo *LocalRepository) InstanceBaseDir(instanceID string) string {
