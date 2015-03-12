@@ -176,15 +176,13 @@ func (repo *LocalRepository) EnsureDirectoriesExist(instance *Instance) error {
 }
 
 func (repo *LocalRepository) WriteConfigFile(instance *Instance) error {
-	defaultConfigPath := repo.RedisConf.DefaultConfigPath
-	InstanceConfigPath := repo.InstanceConfigPath(instance.ID)
-
-	err := redisconf.CopyWithSyslogAdditions(defaultConfigPath, InstanceConfigPath, instance.ID)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return redisconf.CopyWithInstanceAdditions(
+		repo.RedisConf.DefaultConfigPath,
+		repo.InstanceConfigPath(instance.ID),
+		instance.ID,
+		strconv.Itoa(instance.Port),
+		instance.Password,
+	)
 }
 
 func (repo *LocalRepository) WriteBindingData(instance *Instance) error {

@@ -50,7 +50,6 @@ func (controller *OSProcessController) StartAndWaitUntilReady(instance *Instance
 }
 
 func (controller *OSProcessController) StartAndWaitUntilReadyWithConfig(instance *Instance, instanceCommandArgs []string, timeout time.Duration) error {
-
 	executable := "redis-server"
 	if controller.RedisServerExecutablePath != "" {
 		executable = controller.RedisServerExecutablePath

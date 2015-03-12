@@ -32,7 +32,6 @@ type RedisServiceBroker struct {
 }
 
 func (redisServiceBroker *RedisServiceBroker) Services() []brokerapi.Service {
-
 	planList := []brokerapi.ServicePlan{}
 	for _, plan := range redisServiceBroker.plans() {
 		planList = append(planList, *plan)

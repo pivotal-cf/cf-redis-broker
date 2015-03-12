@@ -144,8 +144,8 @@ var _ = Describe("redisconf", func() {
 		})
 	})
 
-	Describe("CopyWithSyslogAdditions", func() {
-		It("writes the syslog configuration", func() {
+	Describe("CopyWithInstanceAdditions", func() {
+		It("writes the instance configuration", func() {
 			fromPath, err := filepath.Abs(path.Join("assets", "redis.conf"))
 			Expect(err).ToNot(HaveOccurred())
 
@@ -154,8 +154,10 @@ var _ = Describe("redisconf", func() {
 			toPath := filepath.Join(dir, "redis.conf")
 
 			instanceID := "an-instance-id"
+			port := "1234"
+			password := "an-password"
 
-			err = redisconf.CopyWithSyslogAdditions(fromPath, toPath, instanceID)
+			err = redisconf.CopyWithInstanceAdditions(fromPath, toPath, instanceID, port, password)
 			Ω(err).ToNot(HaveOccurred())
 
 			resultingConf, err := redisconf.Load(toPath)
@@ -164,6 +166,8 @@ var _ = Describe("redisconf", func() {
 			Ω(resultingConf.Get("syslog-enabled")).Should(Equal("yes"))
 			Ω(resultingConf.Get("syslog-ident")).Should(Equal(fmt.Sprintf("redis-server-%s", instanceID)))
 			Ω(resultingConf.Get("syslog-facility")).Should(Equal("local0"))
+			Ω(resultingConf.Get("port")).Should(Equal(port))
+			Ω(resultingConf.Get("requirepass")).Should(Equal(password))
 		})
 	})
 })

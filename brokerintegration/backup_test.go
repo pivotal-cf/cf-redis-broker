@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
 	"time"
 
 	"github.com/mitchellh/goamz/aws"
@@ -221,10 +220,6 @@ func getLastSaveTime(instanceID string, configPath string) int64 {
 	credentials := bindingResponse["credentials"].(map[string]interface{})
 
 	conf, err := redisconf.Load(configPath)
-	conf.Set("requirepass", credentials["password"].(string))
-	port := int(credentials["port"].(float64))
-	conf.Set("port", strconv.Itoa(port))
-
 	Ω(err).ShouldNot(HaveOccurred())
 	redisClient, err := client.Connect(
 		credentials["host"].(string),

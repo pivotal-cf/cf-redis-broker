@@ -158,7 +158,7 @@ func parseParam(line string) (Param, error) {
 	}, nil
 }
 
-func CopyWithSyslogAdditions(fromPath string, toPath string, syslogIdentSuffix string) error {
+func CopyWithInstanceAdditions(fromPath, toPath, syslogIdentSuffix, port, password string) error {
 	defaultConfig, err := Load(fromPath)
 	if err != nil {
 		return err
@@ -167,6 +167,9 @@ func CopyWithSyslogAdditions(fromPath string, toPath string, syslogIdentSuffix s
 	defaultConfig.Set("syslog-enabled", "yes")
 	defaultConfig.Set("syslog-ident", fmt.Sprintf("redis-server-%s", syslogIdentSuffix))
 	defaultConfig.Set("syslog-facility", "local0")
+
+	defaultConfig.Set("port", port)
+	defaultConfig.Set("requirepass", password)
 
 	err = defaultConfig.Save(toPath)
 	if err != nil {

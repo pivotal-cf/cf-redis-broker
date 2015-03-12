@@ -67,18 +67,6 @@ func (backup Backup) buildRedisClient(instancePath string) (*client.Client, erro
 		return nil, err
 	}
 
-	port, err := ioutil.ReadFile(path.Join(instancePath, "redis-server.port"))
-	if err != nil {
-		return nil, err
-	}
-	instanceConf.Set("port", string(port))
-
-	password, err := ioutil.ReadFile(path.Join(instancePath, "redis-server.password"))
-	if err != nil {
-		return nil, err
-	}
-	instanceConf.Set("requirepass", string(password))
-
 	return client.Connect(backup.Config.RedisConfiguration.Host, instanceConf)
 }
 
