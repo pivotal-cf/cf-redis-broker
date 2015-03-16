@@ -1,0 +1,9 @@
+s3:
+  endpoint_url: endpointurl.com
+  bucket_name: some-bucket-name
+  access_key_id: some-access-key-id
+  secret_access_key: secret-access-key
+  path: some-s3-path
+  region: some-region
+bg_save_timeout: 10
+redis_data_directory: /the/path/to/redis/data
