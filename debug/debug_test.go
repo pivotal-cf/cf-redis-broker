@@ -10,7 +10,6 @@ import (
 )
 
 var _ = Describe("Handler", func() {
-
 	var response *http.Response
 
 	BeforeEach(func() {

@@ -13,7 +13,7 @@ import (
 var _ = Describe("Catalog", func() {
 
 	It("returns HTTP 200", func() {
-		code, _ := executeAuthenticatedHTTPRequest("GET", "http://localhost:3000/v2/catalog")
+		code, _ := makeCatalogRequest()
 		Ω(code).To(Equal(http.StatusOK))
 	})
 
@@ -23,7 +23,7 @@ var _ = Describe("Catalog", func() {
 	Describe("Service", func() {
 
 		BeforeEach(func() {
-			_, body := executeAuthenticatedHTTPRequest("GET", "http://localhost:3000/v2/catalog")
+			_, body := makeCatalogRequest()
 
 			catalog := struct {
 				Services []brokerapi.Service `json:"services"`
@@ -114,7 +114,7 @@ var _ = Describe("Catalog", func() {
 		BeforeEach(func() {
 			switchBroker("broker.yml-no-dedicated")
 
-			_, body := executeAuthenticatedHTTPRequest("GET", "http://localhost:3000/v2/catalog")
+			_, body := makeCatalogRequest()
 
 			catalog := struct {
 				Services []brokerapi.Service `json:"services"`
@@ -141,7 +141,7 @@ var _ = Describe("Catalog", func() {
 	Context("When there are dedicated nodes", func() {
 
 		BeforeEach(func() {
-			_, body := executeAuthenticatedHTTPRequest("GET", "http://localhost:3000/v2/catalog")
+			_, body := makeCatalogRequest()
 
 			catalog := struct {
 				Services []brokerapi.Service `json:"services"`
@@ -169,7 +169,7 @@ var _ = Describe("Catalog", func() {
 			BeforeEach(func() {
 				switchBroker("broker.yml-no-shared")
 
-				_, body := executeAuthenticatedHTTPRequest("GET", "http://localhost:3000/v2/catalog")
+				_, body := makeCatalogRequest()
 
 				catalog := struct {
 					Services []brokerapi.Service `json:"services"`

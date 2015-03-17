@@ -6,6 +6,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/pivotal-cf/cf-redis-broker/integration"
 )
 
 type HTTPExampleInputs struct {
@@ -15,7 +16,7 @@ type HTTPExampleInputs struct {
 
 func HTTPResponseBodyShouldBeEmptyJSON(inputs *HTTPExampleInputs) {
 	It("returns empty JSON", func() {
-		_, body := executeAuthenticatedHTTPRequest(inputs.Method, inputs.URI)
+		_, body := integration.ExecuteAuthenticatedHTTPRequest(inputs.Method, inputs.URI, brokerConfig.AuthConfiguration.Username, brokerConfig.AuthConfiguration.Password)
 
 		var parsedJSON map[string][]interface{}
 		json.Unmarshal(body, &parsedJSON)
@@ -26,7 +27,7 @@ func HTTPResponseBodyShouldBeEmptyJSON(inputs *HTTPExampleInputs) {
 
 func HTTPResponseShouldContainBrokerErrorMessage(inputs *HTTPExampleInputs, expectedErrorMessage string) {
 	It("returns the expected error message", func() {
-		_, body := executeAuthenticatedHTTPRequest(inputs.Method, inputs.URI)
+		_, body := integration.ExecuteAuthenticatedHTTPRequest(inputs.Method, inputs.URI, brokerConfig.AuthConfiguration.Username, brokerConfig.AuthConfiguration.Password)
 
 		var parsedJSON map[string]interface{}
 		json.Unmarshal(body, &parsedJSON)
@@ -38,7 +39,7 @@ func HTTPResponseShouldContainBrokerErrorMessage(inputs *HTTPExampleInputs, expe
 
 func HTTPResponseShouldContainExpectedHTTPStatusCode(inputs *HTTPExampleInputs, expectedStatusCode int) {
 	It(fmt.Sprint("returns HTTP ", expectedStatusCode), func() {
-		code, _ := executeAuthenticatedHTTPRequest(inputs.Method, inputs.URI)
+		code, _ := integration.ExecuteAuthenticatedHTTPRequest(inputs.Method, inputs.URI, brokerConfig.AuthConfiguration.Username, brokerConfig.AuthConfiguration.Password)
 
 		Ω(code).To(Equal(expectedStatusCode))
 	})

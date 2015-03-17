@@ -44,7 +44,7 @@ var _ = Describe("Dedicated instance binding", func() {
 			BeforeEach(func() {
 				debugInfo = getDebugInfo()
 
-				_, body := executeAuthenticatedHTTPRequest("PUT", bindingURI(instanceID, bindingID))
+				_, body := bindInstance(instanceID, bindingID)
 
 				parsedJSON := struct {
 					Credentials map[string]interface{} `json:"credentials"`

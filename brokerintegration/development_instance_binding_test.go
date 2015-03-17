@@ -12,11 +12,12 @@ import (
 var _ = Describe("Shared instance binding", func() {
 
 	var instanceID string
+	var bindingID string
 	var httpInputs HTTPExampleInputs
 
 	BeforeEach(func() {
 		instanceID = uuid.NewRandom().String()
-		bindingID := uuid.NewRandom().String()
+		bindingID = uuid.NewRandom().String()
 		httpInputs = HTTPExampleInputs{
 			Method: "PUT",
 			URI:    bindingURI(instanceID, bindingID),
@@ -39,7 +40,7 @@ var _ = Describe("Shared instance binding", func() {
 			var client redigo.Conn
 
 			BeforeEach(func() {
-				_, body := executeAuthenticatedHTTPRequest(httpInputs.Method, httpInputs.URI)
+				_, body := bindInstance(instanceID, bindingID)
 
 				var parsedJSON map[string]interface{}
 				json.Unmarshal(body, &parsedJSON)

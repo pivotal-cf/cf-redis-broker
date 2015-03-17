@@ -31,13 +31,11 @@ func ExecuteAuthenticatedHTTPRequestWithBody(method, uri, username, password str
 
 func HostIP4Addresses() ([]string, error) {
 	addrs, err := net.InterfaceAddrs()
-
 	if err != nil {
 		return nil, err
 	}
 
 	ipAddresses := []string{}
-
 	for _, address := range addrs {
 		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
 			if ipnet.IP.To4() != nil {

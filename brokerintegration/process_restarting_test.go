@@ -8,6 +8,8 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"time"
 
 	"code.google.com/p/go-uuid/uuid"
@@ -63,7 +65,7 @@ var _ = Describe("restarting processes", func() {
 
 			killRedisProcess(instanceID)
 
-			ensurePortAvailable(port)
+			Ω(portAvailable(port)).Should(BeTrue())
 
 			client = BuildRedisClient(port, host, password)
 
@@ -105,7 +107,7 @@ var _ = Describe("restarting processes", func() {
 
 			monitorSession = launchProcessWithBrokerConfig(processMonitorPath, "broker.yml")
 
-			ensurePortAvailable(port)
+			Ω(portAvailable(port)).Should(BeTrue())
 
 			_, err = ioutil.ReadDir(logDirPath)
 			Ω(err).NotTo(HaveOccurred())
@@ -118,7 +120,7 @@ var _ = Describe("restarting processes", func() {
 
 				monitorSession = launchProcessWithBrokerConfig(processMonitorPath, "broker.yml.updated_maxmemory")
 
-				ensurePortAvailable(port)
+				Ω(portAvailable(port)).Should(BeTrue())
 
 				client = BuildRedisClient(port, host, password)
 			})
@@ -172,4 +174,23 @@ func durationForProcessMonitorToRestartInstance() time.Duration {
 
 func allowTimeForProcessMonitorToRestartInstances() {
 	time.Sleep(durationForProcessMonitorToRestartInstance())
+}
+
+func killRedisProcess(instanceID string) {
+	pidFilePath, err := filepath.Abs(path.Join(brokerConfig.RedisConfiguration.InstanceDataDirectory, instanceID, "redis-server.pid"))
+	Ω(err).ToNot(HaveOccurred())
+
+	fileContent, err := ioutil.ReadFile(pidFilePath)
+	Ω(err).ToNot(HaveOccurred())
+
+	pid, err := strconv.ParseInt(strings.TrimSpace(string(fileContent)), 10, 32)
+	Ω(err).ToNot(HaveOccurred())
+
+	process, err := os.FindProcess(int(pid))
+	Ω(err).ToNot(HaveOccurred())
+
+	err = process.Kill()
+	Ω(err).ToNot(HaveOccurred())
+
+	process.Wait()
 }

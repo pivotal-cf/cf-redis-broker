@@ -82,11 +82,11 @@ var _ = BeforeSuite(func() {
 
 	startFakeAgent()
 
-	ensurePortAvailable(brokerPort)
+	Ω(portAvailable(brokerPort)).Should(BeTrue())
 })
 
 var _ = AfterSuite(func() {
-	stopFakeAgent()
+	fakeAgent.Close()
 
 	killProcess(brokerSession)
 })
@@ -113,10 +113,6 @@ func startFakeAgent() {
 	fakeAgent = httptest.NewUnstartedServer(handler)
 	fakeAgent.Listener = listener
 	fakeAgent.StartTLS()
-}
-
-func stopFakeAgent() {
-	fakeAgent.Close()
 }
 
 func loadBrokerConfig() {
@@ -176,7 +172,7 @@ func switchBroker(config string) {
 	killProcess(brokerSession)
 	safelyResetAllDirectories()
 	brokerSession = buildAndLaunchBroker(config)
-	ensurePortAvailable(brokerPort)
+	Ω(portAvailable(brokerPort)).Should(BeTrue())
 }
 
 func killProcess(session *gexec.Session) {
@@ -234,12 +230,8 @@ func executeHTTPRequest(method string, uri string) (int, []byte) {
 	return resp.StatusCode, body
 }
 
-func executeAuthenticatedHTTPRequest(method string, uri string) (int, []byte) {
-	return integration.ExecuteAuthenticatedHTTPRequest(method, uri, brokerConfig.AuthConfiguration.Username, brokerConfig.AuthConfiguration.Password)
-}
-
-func executeAuthenticatedHTTPRequestWithBody(method, uri string, body []byte) (int, []byte) {
-	return integration.ExecuteAuthenticatedHTTPRequestWithBody(method, uri, brokerConfig.AuthConfiguration.Username, brokerConfig.AuthConfiguration.Password, body)
+func makeCatalogRequest() (int, []byte) {
+	return integration.ExecuteAuthenticatedHTTPRequest("GET", "http://localhost:3000/v2/catalog", brokerConfig.AuthConfiguration.Username, brokerConfig.AuthConfiguration.Password)
 }
 
 func provisionInstance(instanceID string, plan string) (int, []byte) {
@@ -259,19 +251,23 @@ func provisionInstance(instanceID string, plan string) (int, []byte) {
 	payloadBytes, err := json.Marshal(&payload)
 	Expect(err).ToNot(HaveOccurred())
 
-	return executeAuthenticatedHTTPRequestWithBody("PUT", instanceURI(instanceID), payloadBytes)
+	return integration.ExecuteAuthenticatedHTTPRequestWithBody("PUT",
+		instanceURI(instanceID),
+		brokerConfig.AuthConfiguration.Username,
+		brokerConfig.AuthConfiguration.Password,
+		payloadBytes)
 }
 
 func bindInstance(instanceID, bindingID string) (int, []byte) {
-	return executeAuthenticatedHTTPRequest("PUT", bindingURI(instanceID, bindingID))
+	return integration.ExecuteAuthenticatedHTTPRequest("PUT", bindingURI(instanceID, bindingID), brokerConfig.AuthConfiguration.Username, brokerConfig.AuthConfiguration.Password)
 }
 
 func unbindInstance(instanceID, bindingID string) (int, []byte) {
-	return executeAuthenticatedHTTPRequest("DELETE", bindingURI(instanceID, bindingID))
+	return integration.ExecuteAuthenticatedHTTPRequest("DELETE", bindingURI(instanceID, bindingID), brokerConfig.AuthConfiguration.Username, brokerConfig.AuthConfiguration.Password)
 }
 
 func deprovisionInstance(instanceID string) (int, []byte) {
-	return executeAuthenticatedHTTPRequest("DELETE", instanceURI(instanceID))
+	return integration.ExecuteAuthenticatedHTTPRequest("DELETE", instanceURI(instanceID), brokerConfig.AuthConfiguration.Username, brokerConfig.AuthConfiguration.Password)
 }
 
 func instanceURI(instanceID string) string {
@@ -306,40 +302,15 @@ func portAvailable(port uint) bool {
 		return false
 	}
 
-	err = availability.Check(address, 10*time.Second)
-	if err != nil {
+	if err = availability.Check(address, 10*time.Second); err != nil {
 		return false
 	}
 
 	return true
 }
 
-func ensurePortAvailable(port uint) {
-	success := portAvailable(port)
-	Ω(success).Should(BeTrue())
-}
-
-func killRedisProcess(instanceID string) {
-	pidFilePath, err := filepath.Abs(path.Join(brokerConfig.RedisConfiguration.InstanceDataDirectory, instanceID, "redis-server.pid"))
-	Ω(err).ToNot(HaveOccurred())
-
-	fileContent, err := ioutil.ReadFile(pidFilePath)
-	Ω(err).ToNot(HaveOccurred())
-
-	pid, err := strconv.ParseInt(strings.TrimSpace(string(fileContent)), 10, 32)
-	Ω(err).ToNot(HaveOccurred())
-
-	process, err := os.FindProcess(int(pid))
-	Ω(err).ToNot(HaveOccurred())
-
-	err = process.Kill()
-	Ω(err).ToNot(HaveOccurred())
-
-	process.Wait()
-}
-
 func getDebugInfo() debug.Info {
-	_, bodyBytes := executeAuthenticatedHTTPRequest("GET", "http://localhost:3000/debug")
+	_, bodyBytes := integration.ExecuteAuthenticatedHTTPRequest("GET", "http://localhost:3000/debug", brokerConfig.AuthConfiguration.Username, brokerConfig.AuthConfiguration.Password)
 	debugInfo := debug.Info{}
 
 	err := json.Unmarshal(bodyBytes, &debugInfo)

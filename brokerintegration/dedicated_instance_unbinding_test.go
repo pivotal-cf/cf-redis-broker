@@ -1,7 +1,6 @@
 package brokerintegration_test
 
 import (
-	"fmt"
 	"net/http"
 
 	"code.google.com/p/go-uuid/uuid"
@@ -29,18 +28,15 @@ var _ = Describe("Dedicated instance unbinding", func() {
 	})
 
 	It("should respond correctly", func() {
-		validURI := fmt.Sprintf("http://localhost:3000/v2/service_instances/%s/service_bindings/%s", instanceID, bindingID)
-		invalidURI := fmt.Sprintf("http://localhost:3000/v2/service_instances/%s/service_bindings/%s", "NON-EXISTANT", bindingID)
-
-		code, body := executeAuthenticatedHTTPRequest("DELETE", validURI)
+		code, body := unbindInstance(instanceID, bindingID)
 		Ω(code).Should(Equal(200))
 		Ω(body).Should(MatchJSON("{}"))
 
-		code, body = executeAuthenticatedHTTPRequest("DELETE", validURI)
+		code, body = unbindInstance(instanceID, bindingID)
 		Ω(code).To(Equal(410))
 		Ω(body).Should(MatchJSON("{}"))
 
-		code, body = executeAuthenticatedHTTPRequest("DELETE", invalidURI)
+		code, body = unbindInstance("NON-EXISTANT", bindingID)
 		Ω(code).To(Equal(404))
 		Ω(body).Should(MatchJSON("{}"))
 	})

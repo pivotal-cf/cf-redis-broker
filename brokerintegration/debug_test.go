@@ -5,12 +5,13 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/pivotal-cf/cf-redis-broker/integration"
 )
 
 var _ = Describe("Debug", func() {
 	Context("when basic auth credentials are correct", func() {
 		It("returns HTTP 200", func() {
-			code, _ := executeAuthenticatedHTTPRequest("GET", "http://localhost:3000/debug")
+			code, _ := integration.ExecuteAuthenticatedHTTPRequest("GET", "http://localhost:3000/debug", brokerConfig.AuthConfiguration.Username, brokerConfig.AuthConfiguration.Password)
 			Ω(code).To(Equal(http.StatusOK))
 		})
 
