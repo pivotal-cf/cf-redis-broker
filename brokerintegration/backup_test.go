@@ -28,9 +28,11 @@ var _ = Describe("backups", func() {
 		instanceIDs = []string{"foo", "bar"}
 
 		backupConfigPath string
+		backupConfig     *backupconfig.Config
 		client           *s3.S3
 		bucket           *s3.Bucket
 		s3Path           string
+		oldS3ServerURL   string
 
 		backupExitStatusCode int
 
@@ -45,9 +47,10 @@ var _ = Describe("backups", func() {
 		Ω(err).ToNot(HaveOccurred())
 
 		backupConfigPath = filepath.Join("assets", "backup.yml")
-		backupConfig, err := backupconfig.Load(backupConfigPath)
+		backupConfig, err = backupconfig.Load(backupConfigPath)
 		Expect(err).NotTo(HaveOccurred())
 
+		oldS3ServerURL = backupConfig.S3Configuration.EndpointUrl
 		backupConfig.S3Configuration.EndpointUrl = s3testServer.URL()
 		saveBackupConfig(backupConfig, backupConfigPath)
 
@@ -66,6 +69,8 @@ var _ = Describe("backups", func() {
 
 	AfterEach(func() {
 		bucket.DelBucket()
+		backupConfig.S3Configuration.EndpointUrl = oldS3ServerURL
+		saveBackupConfig(backupConfig, backupConfigPath)
 	})
 
 	Context("when there is a dump.rdb to back up", func() {
@@ -144,6 +149,10 @@ var _ = Describe("backups", func() {
 			Context("when the backup configuration is empty", func() {
 				BeforeEach(func() {
 					backupConfigPath = filepath.Join("assets", "empty-backup.yml")
+					var err error
+					backupConfig, err = backupconfig.Load(backupConfigPath)
+					Expect(err).NotTo(HaveOccurred())
+					oldS3ServerURL = backupConfig.S3Configuration.EndpointUrl
 				})
 
 				It("exits with status code 0", func() {
