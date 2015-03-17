@@ -113,21 +113,6 @@ var _ = Describe("parsing the broker config file", func() {
 				Ω(config.AuthConfiguration.Password).To(Equal("secret"))
 			})
 
-			It("loads the backup configuration details", func() {
-				Ω(config.RedisConfiguration.BackupConfiguration.EndpointUrl).Should(Equal("http://s3url.com"))
-				Ω(config.RedisConfiguration.BackupConfiguration.BucketName).Should(Equal("redis-backups"))
-				Ω(config.RedisConfiguration.BackupConfiguration.AccessKeyId).Should(Equal("ABCDEABCDEABCDEABCDE"))
-				Ω(config.RedisConfiguration.BackupConfiguration.SecretAccessKey).Should(Equal("ABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDE"))
-				Ω(config.RedisConfiguration.BackupConfiguration.Path).Should(Equal("/home"))
-				Ω(config.RedisConfiguration.BackupConfiguration.S3Region).Should(Equal("france"))
-
-				Ω(config.RedisConfiguration.BackupConfiguration.BGSaveTimeoutSeconds).To(Equal(600))
-			})
-
-			It("backup is enabled", func() {
-				Ω(config.RedisConfiguration.BackupConfiguration.Enabled()).To(BeTrue())
-			})
-
 			It("loads the monit exectuable path", func() {
 				Ω(config.MonitExecutablePath).Should(Equal("/some/path/to/monit"))
 			})
@@ -149,26 +134,6 @@ var _ = Describe("parsing the broker config file", func() {
 
 			It("returns an error", func() {
 				Ω(parseConfigErr).Should(MatchError(ContainSubstring("not found")))
-			})
-		})
-
-		Context("when the backup configuration is empty", func() {
-			BeforeEach(func() {
-				configPath = "test_config.yml-no-backup"
-			})
-
-			It("backup is disabled", func() {
-				Ω(config.RedisConfiguration.BackupConfiguration.Enabled()).To(BeFalse())
-			})
-		})
-
-		Context("when the backup configuration has minimum to start a backup", func() {
-			BeforeEach(func() {
-				configPath = "test_config.yml-backup-minimum"
-			})
-
-			It("backup is enabled", func() {
-				Ω(config.RedisConfiguration.BackupConfiguration.Enabled()).To(BeTrue())
 			})
 		})
 

@@ -24,29 +24,18 @@ type AuthConfiguration struct {
 }
 
 type ServiceConfiguration struct {
-	ServiceName                 string              `yaml:"service_name"`
-	ServiceID                   string              `yaml:"service_id"`
-	DedicatedVMPlanID           string              `yaml:"dedicated_vm_plan_id"`
-	SharedVMPlanID              string              `yaml:"shared_vm_plan_id"`
-	Host                        string              `yaml:"host"`
-	DefaultConfigPath           string              `yaml:"redis_conf_path"`
-	ProcessCheckIntervalSeconds int                 `yaml:"process_check_interval"`
-	StartRedisTimeoutSeconds    int                 `yaml:"start_redis_timeout"`
-	InstanceDataDirectory       string              `yaml:"data_directory"`
-	InstanceLogDirectory        string              `yaml:"log_directory"`
-	ServiceInstanceLimit        int                 `yaml:"service_instance_limit"`
-	BackupConfiguration         BackupConfiguration `yaml:"backup"`
-	Dedicated                   Dedicated           `yaml:"dedicated"`
-}
-
-type BackupConfiguration struct {
-	EndpointUrl          string `yaml:"endpoint_url"`
-	BucketName           string `yaml:"bucket_name"`
-	AccessKeyId          string `yaml:"access_key_id"`
-	SecretAccessKey      string `yaml:"secret_access_key"`
-	Path                 string `yaml:"path"`
-	S3Region             string `yaml:"s3_region"`
-	BGSaveTimeoutSeconds int    `yaml:"bg_save_timeout"`
+	ServiceName                 string    `yaml:"service_name"`
+	ServiceID                   string    `yaml:"service_id"`
+	DedicatedVMPlanID           string    `yaml:"dedicated_vm_plan_id"`
+	SharedVMPlanID              string    `yaml:"shared_vm_plan_id"`
+	Host                        string    `yaml:"host"`
+	DefaultConfigPath           string    `yaml:"redis_conf_path"`
+	ProcessCheckIntervalSeconds int       `yaml:"process_check_interval"`
+	StartRedisTimeoutSeconds    int       `yaml:"start_redis_timeout"`
+	InstanceDataDirectory       string    `yaml:"data_directory"`
+	InstanceLogDirectory        string    `yaml:"log_directory"`
+	ServiceInstanceLimit        int       `yaml:"service_instance_limit"`
+	Dedicated                   Dedicated `yaml:"dedicated"`
 }
 
 type Dedicated struct {
@@ -106,8 +95,4 @@ func checkPathExists(path string, description string) error {
 		return errors.New(errMessage)
 	}
 	return nil
-}
-
-func (backupConfiguration BackupConfiguration) Enabled() bool {
-	return backupConfiguration.BucketName != "" && backupConfiguration.EndpointUrl != ""
 }

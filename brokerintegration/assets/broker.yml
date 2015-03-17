@@ -10,14 +10,6 @@ redis:
   data_directory: /tmp/redis-data-dir
   log_directory: /tmp/redis-log-dir
   service_instance_limit: 3
-  backup:
-    endpoint_url: http://127.0.0.1:51125
-    bucket_name: redis-backups
-    access_key_id: ABCDEABCDEABCDEABCDE
-    secret_access_key: ABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDE
-    path: ""
-    s3_region: fake-region-1
-    bg_save_timeout: 600
   dedicated:
     nodes:
     - server1.127.0.0.1.xip.io
