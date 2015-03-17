@@ -6,12 +6,16 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"time"
 
+	"github.com/fraenkel/candiedyaml"
 	"github.com/mitchellh/goamz/aws"
 	"github.com/mitchellh/goamz/s3"
+	"github.com/mitchellh/goamz/s3/s3test"
 	"github.com/onsi/gomega/gexec"
+	"github.com/pivotal-cf/cf-redis-broker/backupconfig"
 	"github.com/pivotal-cf/cf-redis-broker/redis/client"
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 
@@ -23,7 +27,7 @@ var _ = Describe("backups", func() {
 	var (
 		instanceIDs = []string{"foo", "bar"}
 
-		brokerConfigPath string
+		backupConfigPath string
 		client           *s3.S3
 		bucket           *s3.Bucket
 		s3Path           string
@@ -34,19 +38,30 @@ var _ = Describe("backups", func() {
 	)
 
 	BeforeEach(func() {
-		brokerConfigPath = "broker.yml"
-		backupConfig := brokerConfig.RedisConfiguration.BackupConfiguration
-		s3Path = backupConfig.Path
+		s3TestServerConfig := &s3test.Config{
+			Send409Conflict: true,
+		}
+		s3testServer, err := s3test.NewServer(s3TestServerConfig)
+		Ω(err).ToNot(HaveOccurred())
+
+		backupConfigPath = filepath.Join("assets", "backup.yml")
+		backupConfig, err := backupconfig.Load(backupConfigPath)
+		Expect(err).NotTo(HaveOccurred())
+
+		backupConfig.S3Configuration.EndpointUrl = s3testServer.URL()
+		saveBackupConfig(backupConfig, backupConfigPath)
+
+		s3Path = backupConfig.S3Configuration.Path
 		region := aws.Region{
-			Name:                 backupConfig.S3Region,
-			S3Endpoint:           backupConfig.EndpointUrl,
+			Name:                 backupConfig.S3Configuration.Region,
+			S3Endpoint:           backupConfig.S3Configuration.EndpointUrl,
 			S3LocationConstraint: true,
 		}
 		client = s3.New(aws.Auth{
-			AccessKey: backupConfig.AccessKeyId,
-			SecretKey: backupConfig.SecretAccessKey,
+			AccessKey: backupConfig.S3Configuration.AccessKeyId,
+			SecretKey: backupConfig.S3Configuration.SecretAccessKey,
 		}, region)
-		bucket = client.Bucket(backupConfig.BucketName)
+		bucket = client.Bucket(backupConfig.S3Configuration.BucketName)
 	})
 
 	AfterEach(func() {
@@ -67,7 +82,8 @@ var _ = Describe("backups", func() {
 				confPath := filepath.Join(brokerConfig.RedisConfiguration.InstanceDataDirectory, instanceID, "redis.conf")
 				lastSaveTimes[instanceID] = getLastSaveTime(instanceID, confPath)
 			}
-			backupSession = launchProcessWithBrokerConfig(backupExecutablePath, brokerConfigPath)
+
+			backupSession = runBackupWithConfig(backupExecutablePath, backupConfigPath)
 		})
 
 		AfterEach(func() {
@@ -127,7 +143,7 @@ var _ = Describe("backups", func() {
 
 			Context("when the backup configuration is empty", func() {
 				BeforeEach(func() {
-					brokerConfigPath = "broker.yml-no-backup"
+					backupConfigPath = filepath.Join("assets", "empty-backup.yml")
 				})
 
 				It("exits with status code 0", func() {
@@ -181,7 +197,7 @@ var _ = Describe("backups", func() {
 				killRedisProcess("A")
 
 				bindAndWriteTestData("B")
-				backupSession = launchProcessWithBrokerConfig(backupExecutablePath, brokerConfigPath)
+				backupSession = runBackupWithConfig(backupExecutablePath, backupConfigPath)
 				backupExitStatusCode = backupSession.Wait(time.Second * 10).ExitCode()
 
 				// backup should fail
@@ -249,4 +265,22 @@ func readRdbFile(instanceID string) []byte {
 	originalRdbBytes, err := ioutil.ReadFile(pathToRdbFile)
 	Ω(err).ToNot(HaveOccurred())
 	return originalRdbBytes
+}
+
+func saveBackupConfig(config *backupconfig.Config, path string) {
+	configFile, err := os.Create(path)
+	Ω(err).ToNot(HaveOccurred())
+	encoder := candiedyaml.NewEncoder(configFile)
+	err = encoder.Encode(config)
+	Ω(err).ToNot(HaveOccurred())
+}
+
+func runBackupWithConfig(executablePath, configPath string) *gexec.Session {
+	cmd := exec.Command(executablePath)
+	cmd.Stdout = GinkgoWriter
+	cmd.Stderr = GinkgoWriter
+	cmd.Env = append(cmd.Env, "BACKUP_CONFIG_PATH="+configPath)
+	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+	Expect(err).NotTo(HaveOccurred())
+	return session
 }

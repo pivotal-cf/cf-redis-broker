@@ -1,50 +1,52 @@
 package main
 
 import (
+	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/pivotal-cf/cf-redis-broker/backup"
-	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
-	"github.com/pivotal-cf/cf-redis-broker/redis"
+	"github.com/pivotal-cf/cf-redis-broker/backupconfig"
 	"github.com/pivotal-golang/lager"
 )
 
 func main() {
 	logger := lager.NewLogger("backup")
 
-	config, err := brokerconfig.ParseConfig(configPath())
+	config, err := backupconfig.Load(configPath())
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if !config.RedisConfiguration.BackupConfiguration.Enabled() {
-		return
-	}
-
-	localRepo := &redis.LocalRepository{
-		RedisConf: config.RedisConfiguration,
-	}
-
-	instances, err := localRepo.AllInstances()
-	if err != nil {
-		log.Fatal(err)
+	if config.S3Configuration.BucketName == "" || config.S3Configuration.EndpointUrl == "" {
+		logger.Info("s3 credentials not configured")
+		os.Exit(0)
 	}
 
 	backupErrors := []error{}
 
 	backupCreator := backup.Backup{
-		Config: &config,
+		Config: config,
 		Logger: logger,
 	}
 
-	for _, instance := range instances {
-		instancePath := localRepo.InstanceBaseDir(instance.ID)
-		err = backupCreator.Create(instancePath, instance.ID)
+	instanceDirs, err := ioutil.ReadDir(config.RedisDataDirectory)
+
+	for _, instanceDir := range instanceDirs {
+
+		basename := instanceDir.Name()
+		if strings.HasPrefix(basename, ".") {
+			continue
+		}
+
+		fullPath := filepath.Join(config.RedisDataDirectory, basename)
+		err = backupCreator.Create(fullPath, basename)
 		if err != nil {
 			backupErrors = append(backupErrors, err)
 			logger.Error("error backing up instance", err, lager.Data{
-				"instance_id": instance.ID,
+				"instance_id": basename,
 			})
 		}
 	}
@@ -55,9 +57,9 @@ func main() {
 }
 
 func configPath() string {
-	brokerConfigYamlPath := os.Getenv("BROKER_CONFIG_PATH")
-	if brokerConfigYamlPath == "" {
-		panic("BROKER_CONFIG_PATH not set")
+	path := os.Getenv("BACKUP_CONFIG_PATH")
+	if path == "" {
+		panic("BACKUP_CONFIG_PATH not set")
 	}
-	return brokerConfigYamlPath
+	return path
 }

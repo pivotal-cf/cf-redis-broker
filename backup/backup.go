@@ -7,14 +7,14 @@ import (
 	"path"
 
 	"github.com/pivotal-cf/cf-redis-broker/backup/s3bucket"
-	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
+	"github.com/pivotal-cf/cf-redis-broker/backupconfig"
 	"github.com/pivotal-cf/cf-redis-broker/redis/client"
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 	"github.com/pivotal-golang/lager"
 )
 
 type Backup struct {
-	Config *brokerconfig.Config
+	Config *backupconfig.Config
 	Logger lager.Logger
 }
 
@@ -42,13 +42,13 @@ func (backup Backup) Create(instancePath, instanceID string) error {
 
 func (backup Backup) getOrCreateBucket() (s3bucket.Bucket, error) {
 	s3Client := s3bucket.NewClient(
-		backup.Config.RedisConfiguration.BackupConfiguration.EndpointUrl,
-		backup.Config.RedisConfiguration.BackupConfiguration.S3Region,
-		backup.Config.RedisConfiguration.BackupConfiguration.AccessKeyId,
-		backup.Config.RedisConfiguration.BackupConfiguration.SecretAccessKey,
+		backup.Config.S3Configuration.EndpointUrl,
+		backup.Config.S3Configuration.Region,
+		backup.Config.S3Configuration.AccessKeyId,
+		backup.Config.S3Configuration.SecretAccessKey,
 	)
 
-	return s3Client.GetOrCreate(backup.Config.RedisConfiguration.BackupConfiguration.BucketName)
+	return s3Client.GetOrCreate(backup.Config.S3Configuration.BucketName)
 }
 
 func (backup Backup) createSnapshot(instancePath string) error {
@@ -57,7 +57,7 @@ func (backup Backup) createSnapshot(instancePath string) error {
 		return err
 	}
 
-	return client.CreateSnapshot(backup.Config.RedisConfiguration.BackupConfiguration.BGSaveTimeoutSeconds)
+	return client.CreateSnapshot(backup.Config.BGSaveTimeoutSeconds)
 }
 
 func (backup Backup) buildRedisClient(instancePath string) (*client.Client, error) {
@@ -66,7 +66,7 @@ func (backup Backup) buildRedisClient(instancePath string) (*client.Client, erro
 		return nil, err
 	}
 
-	return client.Connect(backup.Config.RedisConfiguration.Host, instanceConf)
+	return client.Connect("localhost", instanceConf)
 }
 
 func (backup Backup) uploadToS3(instanceID, pathToRdbFile string, bucket s3bucket.Bucket) error {
@@ -75,7 +75,7 @@ func (backup Backup) uploadToS3(instanceID, pathToRdbFile string, bucket s3bucke
 		return err
 	}
 
-	remotePath := fmt.Sprintf("%s/%s", backup.Config.RedisConfiguration.BackupConfiguration.Path, instanceID)
+	remotePath := fmt.Sprintf("%s/%s", backup.Config.S3Configuration.Path, instanceID)
 
 	backup.Logger.Info("Backing up instance", lager.Data{
 		"Local file":  pathToRdbFile,

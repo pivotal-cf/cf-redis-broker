@@ -19,9 +19,6 @@ import (
 
 	"encoding/json"
 
-	"github.com/cloudfoundry-incubator/candiedyaml"
-	"github.com/mitchellh/goamz/s3/s3test"
-
 	redisclient "github.com/garyburd/redigo/redis"
 	"github.com/pivotal-cf/cf-redis-broker/availability"
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
@@ -42,7 +39,6 @@ var monitorSession *gexec.Session
 var processMonitorPath string
 var backupExecutablePath string
 var brokerConfig brokerconfig.Config
-var previousBackupEndpointUrl string
 var fakeAgent *httptest.Server
 var agentRequests []*http.Request
 var agentResponseStatus = http.StatusOK
@@ -75,18 +71,8 @@ var _ = AfterEach(func() {
 })
 
 var _ = BeforeSuite(func() {
-	s3TestServerConfig := &s3test.Config{
-		Send409Conflict: true,
-	}
-	s3testServer, err := s3test.NewServer(s3TestServerConfig)
-	Ω(err).ToNot(HaveOccurred())
-
 	safelyResetAllDirectories()
 	loadBrokerConfig()
-
-	previousBackupEndpointUrl = brokerConfig.RedisConfiguration.BackupConfiguration.EndpointUrl
-	brokerConfig.RedisConfiguration.BackupConfiguration.EndpointUrl = s3testServer.URL()
-	saveBrokerConfig()
 
 	backupExecutablePath = buildExecutable("github.com/pivotal-cf/cf-redis-broker/cmd/backup")
 
@@ -102,8 +88,6 @@ var _ = BeforeSuite(func() {
 var _ = AfterSuite(func() {
 	stopFakeAgent()
 
-	brokerConfig.RedisConfiguration.BackupConfiguration.EndpointUrl = previousBackupEndpointUrl
-	saveBrokerConfig()
 	killProcess(brokerSession)
 })
 
@@ -139,14 +123,6 @@ func loadBrokerConfig() {
 	var err error
 	brokerConfig, err = brokerconfig.ParseConfig(brokerConfigPath())
 	Ω(err).NotTo(HaveOccurred())
-}
-
-func saveBrokerConfig() {
-	configFile, err := os.Create(brokerConfigPath())
-	Ω(err).ToNot(HaveOccurred())
-	encoder := candiedyaml.NewEncoder(configFile)
-	err = encoder.Encode(brokerConfig)
-	Ω(err).ToNot(HaveOccurred())
 }
 
 func brokerConfigPath() string {
