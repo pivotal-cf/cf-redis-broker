@@ -22,7 +22,6 @@ import (
 var _ = Describe("backups", func() {
 	var (
 		instanceIDs = []string{"foo", "bar"}
-		keysToWrite int
 
 		brokerConfigPath string
 		client           *s3.S3
@@ -35,7 +34,6 @@ var _ = Describe("backups", func() {
 	)
 
 	BeforeEach(func() {
-		keysToWrite = 1
 		brokerConfigPath = "broker.yml"
 		backupConfig := brokerConfig.RedisConfiguration.BackupConfiguration
 		s3Path = backupConfig.Path
@@ -64,7 +62,7 @@ var _ = Describe("backups", func() {
 			for _, instanceID := range instanceIDs {
 				status, _ := provisionInstance(instanceID, "shared")
 				Ω(status).To(Equal(http.StatusCreated))
-				bindAndWriteTestData(instanceID, keysToWrite)
+				bindAndWriteTestData(instanceID)
 
 				confPath := filepath.Join(brokerConfig.RedisConfiguration.InstanceDataDirectory, instanceID, "redis.conf")
 				lastSaveTimes[instanceID] = getLastSaveTime(instanceID, confPath)
@@ -145,11 +143,6 @@ var _ = Describe("backups", func() {
 		})
 
 		Context("when the backup process is aborted", func() {
-
-			BeforeEach(func() {
-				keysToWrite = 20
-			})
-
 			JustBeforeEach(func() {
 				backupExitStatusCode = backupSession.Kill().Wait().ExitCode()
 				Eventually(backupSession).Should(gexec.Exit())
@@ -187,7 +180,7 @@ var _ = Describe("backups", func() {
 				// killing redis will cause backup "A" to fail
 				killRedisProcess("A")
 
-				bindAndWriteTestData("B", keysToWrite)
+				bindAndWriteTestData("B")
 				backupSession = launchProcessWithBrokerConfig(backupExecutablePath, brokerConfigPath)
 				backupExitStatusCode = backupSession.Wait(time.Second * 10).ExitCode()
 
@@ -233,7 +226,7 @@ func getLastSaveTime(instanceID string, configPath string) int64 {
 	return time
 }
 
-func bindAndWriteTestData(instanceID string, size int) {
+func bindAndWriteTestData(instanceID string) {
 	status, bindingBytes := bindInstance(instanceID, "somebindingID")
 	Ω(status).To(Equal(http.StatusCreated))
 	bindingResponse := map[string]interface{}{}
@@ -242,7 +235,7 @@ func bindAndWriteTestData(instanceID string, size int) {
 	port := uint(credentials["port"].(float64))
 	redisClient := BuildRedisClient(port, credentials["host"].(string), credentials["password"].(string))
 	defer redisClient.Close()
-	for i := 0; i < size; i++ {
+	for i := 0; i < 20; i++ {
 		_, err := redisClient.Do("SET", fmt.Sprintf("foo%d", i), fmt.Sprintf("bar%d", i))
 		Ω(err).ToNot(HaveOccurred())
 	}
