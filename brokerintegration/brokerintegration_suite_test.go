@@ -185,12 +185,12 @@ func buildExecutable(sourcePath string) string {
 	return executable
 }
 
-func launchProcessWithBrokerConfig(processPath string, brokerConfigName string) *gexec.Session {
+func launchProcessWithBrokerConfig(executablePath string, brokerConfigName string) *gexec.Session {
 	brokerConfigFile, filePathErr := assetPath(brokerConfigName)
 	Ω(filePathErr).ToNot(HaveOccurred())
 
 	os.Setenv("BROKER_CONFIG_PATH", brokerConfigFile)
-	processCmd := exec.Command(processPath)
+	processCmd := exec.Command(executablePath)
 	processCmd.Stdout = GinkgoWriter
 	processCmd.Stderr = GinkgoWriter
 	return runCommand(processCmd)
