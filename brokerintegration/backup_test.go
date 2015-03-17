@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/fraenkel/candiedyaml"
+	"github.com/cloudfoundry-incubator/candiedyaml"
 	"github.com/mitchellh/goamz/aws"
 	"github.com/mitchellh/goamz/s3"
 	"github.com/mitchellh/goamz/s3/s3test"
