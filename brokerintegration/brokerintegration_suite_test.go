@@ -70,7 +70,6 @@ var _ = AfterEach(func() {
 })
 
 var _ = BeforeSuite(func() {
-	safelyResetAllDirectories()
 	loadBrokerConfig()
 
 	backupExecutablePath = buildExecutable("github.com/pivotal-cf/cf-redis-broker/cmd/backup")
