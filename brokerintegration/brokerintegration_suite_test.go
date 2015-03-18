@@ -2,10 +2,8 @@ package brokerintegration_test
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net"
-	"net/http"
 	"os"
 	"os/exec"
 	"path"
@@ -67,15 +65,11 @@ var _ = AfterSuite(func() {
 })
 
 func loadBrokerConfig() {
-	var err error
-	brokerConfig, err = brokerconfig.ParseConfig(brokerConfigPath())
-	Ω(err).NotTo(HaveOccurred())
-}
-
-func brokerConfigPath() string {
-	path, err := assetPath("broker.yml")
+	brokerConfigPath, err := assetPath("broker.yml")
 	Ω(err).ToNot(HaveOccurred())
-	return path
+
+	brokerConfig, err = brokerconfig.ParseConfig(brokerConfigPath)
+	Ω(err).NotTo(HaveOccurred())
 }
 
 func buildAndLaunchBroker(brokerConfigName string) *gexec.Session {
@@ -137,20 +131,6 @@ func assetPath(filename string) (string, error) {
 	return filepath.Abs(path.Join("assets", filename))
 }
 
-func executeHTTPRequest(method string, uri string) (int, []byte) {
-	client := &http.Client{}
-	req, err := http.NewRequest(method, uri, nil)
-	Ω(err).ToNot(HaveOccurred())
-	resp, err := client.Do(req)
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	Ω(err).ToNot(HaveOccurred())
-
-	Ω(err).ToNot(HaveOccurred())
-	return resp.StatusCode, body
-}
-
 func makeCatalogRequest() (int, []byte) {
 	return integration.ExecuteAuthenticatedHTTPRequest("GET", "http://localhost:3000/v2/catalog", brokerConfig.AuthConfiguration.Username, brokerConfig.AuthConfiguration.Password)
 }
@@ -199,7 +179,7 @@ func bindingURI(instanceID, bindingID string) string {
 	return instanceURI(instanceID) + "/service_bindings/" + bindingID
 }
 
-func BuildRedisClient(port uint, host string, password string) redisclient.Conn {
+func buildRedisClient(port uint, host string, password string) redisclient.Conn {
 	url := fmt.Sprintf("%s:%d", host, port)
 
 	client, err := redisclient.Dial("tcp", url)

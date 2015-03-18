@@ -62,7 +62,5 @@ var _ = Describe("Handler", func() {
 			Ω(len(debugInfo.Pool.Clusters)).Should(Equal(3))
 			Ω(len(debugInfo.Allocated.Clusters)).Should(Equal(0))
 		})
-
 	})
-
 })

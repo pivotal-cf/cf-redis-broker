@@ -53,7 +53,7 @@ var _ = Describe("restarting processes", func() {
 			host = credentials["host"].(string)
 			password = credentials["password"].(string)
 
-			client = BuildRedisClient(port, host, password)
+			client = buildRedisClient(port, host, password)
 		})
 
 		AfterEach(func() {
@@ -70,7 +70,7 @@ var _ = Describe("restarting processes", func() {
 
 			Ω(serviceAvailable(port)).Should(BeTrue())
 
-			client = BuildRedisClient(port, host, password)
+			client = buildRedisClient(port, host, password)
 
 			value, err := redisclient.String(client.Do("GET", "foo"))
 			Ω(err).ToNot(HaveOccurred())
@@ -125,7 +125,7 @@ var _ = Describe("restarting processes", func() {
 
 				Ω(serviceAvailable(port)).Should(BeTrue())
 
-				client = BuildRedisClient(port, host, password)
+				client = buildRedisClient(port, host, password)
 			})
 
 			It("Has the new memory limit", func() {

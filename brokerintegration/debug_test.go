@@ -1,6 +1,7 @@
 package brokerintegration_test
 
 import (
+	"io/ioutil"
 	"net/http"
 
 	. "github.com/onsi/ginkgo"
@@ -168,3 +169,17 @@ var _ = Describe("Debug", func() {
 		})
 	})
 })
+
+func executeHTTPRequest(method string, uri string) (int, []byte) {
+	client := &http.Client{}
+	req, err := http.NewRequest(method, uri, nil)
+	Ω(err).ToNot(HaveOccurred())
+	resp, err := client.Do(req)
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	Ω(err).ToNot(HaveOccurred())
+
+	Ω(err).ToNot(HaveOccurred())
+	return resp.StatusCode, body
+}

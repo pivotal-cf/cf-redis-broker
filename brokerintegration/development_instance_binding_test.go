@@ -52,7 +52,7 @@ var _ = Describe("Shared instance binding", func() {
 				port := uint(credentials["port"].(float64))
 				host := credentials["host"].(string)
 
-				client = BuildRedisClient(port, host, password)
+				client = buildRedisClient(port, host, password)
 			})
 
 			AfterEach(func() {

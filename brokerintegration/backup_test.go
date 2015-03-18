@@ -171,7 +171,7 @@ func bindAndWriteTestData(instanceID string) {
 	json.Unmarshal(bindingBytes, &bindingResponse)
 	credentials := bindingResponse["credentials"].(map[string]interface{})
 	port := uint(credentials["port"].(float64))
-	redisClient := BuildRedisClient(port, credentials["host"].(string), credentials["password"].(string))
+	redisClient := buildRedisClient(port, credentials["host"].(string), credentials["password"].(string))
 	defer redisClient.Close()
 	for i := 0; i < 20; i++ {
 		_, err := redisClient.Do("SET", fmt.Sprintf("foo%d", i), fmt.Sprintf("bar%d", i))
