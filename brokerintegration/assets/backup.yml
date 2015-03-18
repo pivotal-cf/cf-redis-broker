@@ -1,9 +1,9 @@
-"s3":
-  "endpoint_url": "http://127.0.0.1:54043"
-  "bucket_name": "redis-backups"
-  "access_key_id": "ABCDEABCDEABCDEABCDE"
-  "secret_access_key": "ABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDE"
-  "path": ""
-  "region": "fake-region-1"
-"bg_save_timeout": 600
-"redis_data_directory": "/tmp/redis-data-dir"
+s3:
+  endpoint_url: http://127.0.0.1:54043
+  bucket_name: redis-backups
+  access_key_id: ABCDEABCDEABCDEABCDE
+  secret_access_key: ABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDE
+  path: ""
+  region: fake-region-1
+bg_save_timeout: 600
+redis_data_directory: /tmp/redis-data-dir
