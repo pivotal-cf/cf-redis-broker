@@ -148,7 +148,7 @@ var _ = Describe("restarting processes", func() {
 
 		Context("when the processmonitor has received USR1", func() {
 			BeforeEach(func() {
-				sendUsr1ToProcessMonitor()
+				monitorSession.Signal(syscall.SIGUSR1)
 
 				killRedisProcess(instanceID)
 
@@ -201,8 +201,4 @@ func killRedisProcess(instanceID string) {
 func relaunchProcessMonitorWithConfig(processMonitorPath, brokerConfigName string) {
 	killProcess(monitorSession)
 	monitorSession = launchProcessWithBrokerConfig(processMonitorPath, brokerConfigName)
-}
-
-func sendUsr1ToProcessMonitor() {
-	monitorSession.Signal(syscall.SIGUSR1)
 }

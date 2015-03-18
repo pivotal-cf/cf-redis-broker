@@ -22,7 +22,6 @@ import (
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
 	"github.com/pivotal-cf/cf-redis-broker/debug"
 	"github.com/pivotal-cf/cf-redis-broker/integration"
-	"github.com/pivotal-cf/cf-redis-broker/process"
 
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/reporters"
@@ -44,11 +43,6 @@ func TestBrokerintegration(t *testing.T) {
 }
 
 func safelyResetAllDirectories() {
-	if monitorSession != nil {
-		checker := &process.ProcessChecker{}
-		Ω(checker.Alive(monitorSession.Command.Process.Pid)).Should(BeFalse())
-	}
-
 	removeAndRecreateDir("/tmp/redis-data-dir")
 	removeAndRecreateDir("/tmp/redis-log-dir")
 	removeAndRecreateDir("/tmp/redis-config-dir")
