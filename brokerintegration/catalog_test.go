@@ -194,3 +194,10 @@ var _ = Describe("Catalog", func() {
 		})
 	})
 })
+
+func switchBroker(config string) {
+	killProcess(brokerSession)
+	safelyResetAllDirectories()
+	brokerSession = buildAndLaunchBroker(config)
+	Ω(serviceAvailable(brokerPort)).Should(BeTrue())
+}

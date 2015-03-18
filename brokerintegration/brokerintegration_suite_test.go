@@ -60,10 +60,6 @@ var _ = BeforeEach(func() {
 	safelyResetAllDirectories()
 })
 
-var _ = AfterEach(func() {
-	waitUntilNoRunningRedis(10.0)
-})
-
 var _ = BeforeSuite(func() {
 	loadBrokerConfig()
 
@@ -120,13 +116,6 @@ func launchProcessWithBrokerConfig(executablePath string, brokerConfigName strin
 	processCmd.Stdout = GinkgoWriter
 	processCmd.Stderr = GinkgoWriter
 	return runCommand(processCmd)
-}
-
-func switchBroker(config string) {
-	killProcess(brokerSession)
-	safelyResetAllDirectories()
-	brokerSession = buildAndLaunchBroker(config)
-	Ω(serviceAvailable(brokerPort)).Should(BeTrue())
 }
 
 func killProcess(session *gexec.Session) {
