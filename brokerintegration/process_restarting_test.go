@@ -67,7 +67,7 @@ var _ = Describe("restarting processes", func() {
 
 			killRedisProcess(instanceID)
 
-			Ω(portAvailable(port)).Should(BeTrue())
+			Ω(serviceAvailable(port)).Should(BeTrue())
 
 			client = BuildRedisClient(port, host, password)
 
@@ -86,7 +86,7 @@ var _ = Describe("restarting processes", func() {
 				Ω(err).ShouldNot(HaveOccurred())
 				lockFile.Close()
 
-				redisRunningCheck := portAvailableChecker(port)
+				redisRunningCheck := serviceAvailableChecker(port)
 
 				Eventually(redisRunningCheck, time.Second*time.Duration(1)).Should(BeTrue())
 
@@ -109,7 +109,7 @@ var _ = Describe("restarting processes", func() {
 
 			monitorSession = launchProcessWithBrokerConfig(processMonitorPath, "broker.yml")
 
-			Ω(portAvailable(port)).Should(BeTrue())
+			Ω(serviceAvailable(port)).Should(BeTrue())
 
 			_, err = ioutil.ReadDir(logDirPath)
 			Ω(err).NotTo(HaveOccurred())
@@ -122,7 +122,7 @@ var _ = Describe("restarting processes", func() {
 
 				monitorSession = launchProcessWithBrokerConfig(processMonitorPath, "broker.yml.updated_maxmemory")
 
-				Ω(portAvailable(port)).Should(BeTrue())
+				Ω(serviceAvailable(port)).Should(BeTrue())
 
 				client = BuildRedisClient(port, host, password)
 			})

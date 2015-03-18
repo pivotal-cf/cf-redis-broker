@@ -23,7 +23,7 @@ var _ = Describe("Provision dedicated instance", func() {
 		BeforeEach(func() {
 			killProcess(brokerSession)
 			brokerSession = buildAndLaunchBroker("broker.yml")
-			Ω(portAvailable(brokerPort)).Should(BeTrue())
+			Ω(serviceAvailable(brokerPort)).Should(BeTrue())
 		})
 
 		It("retains state", func() {
@@ -43,13 +43,13 @@ var _ = Describe("Provision dedicated instance", func() {
 		BeforeEach(func() {
 			killProcess(brokerSession)
 			brokerSession = buildAndLaunchBroker("broker.yml-extra-node")
-			Ω(portAvailable(brokerPort)).Should(BeTrue())
+			Ω(serviceAvailable(brokerPort)).Should(BeTrue())
 		})
 
 		AfterEach(func() {
 			killProcess(brokerSession)
 			brokerSession = buildAndLaunchBroker("broker.yml")
-			Ω(portAvailable(brokerPort)).Should(BeTrue())
+			Ω(serviceAvailable(brokerPort)).Should(BeTrue())
 		})
 
 		It("retains state, and adds the extra node", func() {

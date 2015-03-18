@@ -72,7 +72,7 @@ var _ = BeforeSuite(func() {
 
 	brokerSession = buildAndLaunchBroker("broker.yml")
 
-	Ω(portAvailable(brokerPort)).Should(BeTrue())
+	Ω(serviceAvailable(brokerPort)).Should(BeTrue())
 })
 
 var _ = AfterSuite(func() {
@@ -131,7 +131,7 @@ func switchBroker(config string) {
 	killProcess(brokerSession)
 	safelyResetAllDirectories()
 	brokerSession = buildAndLaunchBroker(config)
-	Ω(portAvailable(brokerPort)).Should(BeTrue())
+	Ω(serviceAvailable(brokerPort)).Should(BeTrue())
 }
 
 func killProcess(session *gexec.Session) {
@@ -249,13 +249,13 @@ func BuildRedisClient(port uint, host string, password string) redisclient.Conn 
 	return client
 }
 
-func portAvailableChecker(port uint) func() bool {
+func serviceAvailableChecker(port uint) func() bool {
 	return func() bool {
-		return portAvailable(port)
+		return serviceAvailable(port)
 	}
 }
 
-func portAvailable(port uint) bool {
+func serviceAvailable(port uint) bool {
 	address, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("localhost:%d", port))
 	if err != nil {
 		return false
