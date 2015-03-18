@@ -26,26 +26,26 @@ var _ = Describe("Provision dedicated instance", func() {
 		})
 
 		It("returns 201", func() {
-			status, _ := provisionInstance(instanceID, "dedicated")
+			status, _ := brokerClient.ProvisionInstance(instanceID, "dedicated")
 			Expect(status).To(Equal(201))
 		})
 
 		It("returns empty JSON", func() {
-			_, body := provisionInstance(instanceID, "dedicated")
+			_, body := brokerClient.ProvisionInstance(instanceID, "dedicated")
 			Expect(body).To(MatchJSON("{}"))
 		})
 
 		It("does not start a shared Redis instance", func() {
-			provisionInstance(instanceID, "dedicated")
+			brokerClient.ProvisionInstance(instanceID, "dedicated")
 			Ω(getRedisProcessCount()).To(Equal(0))
 		})
 	})
 
 	Context("when the service instance limit has been met", func() {
 		BeforeEach(func() {
-			provisionInstance("1", "dedicated")
-			provisionInstance("2", "dedicated")
-			provisionInstance("3", "dedicated")
+			brokerClient.ProvisionInstance("1", "dedicated")
+			brokerClient.ProvisionInstance("2", "dedicated")
+			brokerClient.ProvisionInstance("3", "dedicated")
 		})
 
 		AfterEach(func() {
@@ -55,18 +55,18 @@ var _ = Describe("Provision dedicated instance", func() {
 		})
 
 		It("does not start a shared Redis instance", func() {
-			provisionInstance("4", "dedicated")
+			brokerClient.ProvisionInstance("4", "dedicated")
 			Ω(getRedisProcessCount()).To(Equal(0))
 		})
 
 		It("returns a 500", func() {
-			statusCode, _ := provisionInstance("4", "dedicated")
+			statusCode, _ := brokerClient.ProvisionInstance("4", "dedicated")
 			defer deprovisionInstance("4")
 			Ω(statusCode).To(Equal(500))
 		})
 
 		It("returns a useful error message in the correct JSON format", func() {
-			_, body := provisionInstance("4", "dedicated")
+			_, body := brokerClient.ProvisionInstance("4", "dedicated")
 			defer deprovisionInstance("4")
 
 			Ω(string(body)).To(MatchJSON(`{"description":"instance limit for this service has been reached"}`))
@@ -75,7 +75,7 @@ var _ = Describe("Provision dedicated instance", func() {
 
 	Context("when the service instance already exists", func() {
 		BeforeEach(func() {
-			provisionInstance(instanceID, "dedicated")
+			brokerClient.ProvisionInstance(instanceID, "dedicated")
 		})
 
 		AfterEach(func() {
@@ -84,7 +84,7 @@ var _ = Describe("Provision dedicated instance", func() {
 
 		It("should fail if we try to provision a second instance with the same ID", func() {
 			numRedisProcessesBeforeExec := getRedisProcessCount()
-			statusCode, body := provisionInstance(instanceID, "dedicated")
+			statusCode, body := brokerClient.ProvisionInstance(instanceID, "dedicated")
 			Ω(statusCode).To(Equal(409))
 
 			Ω(string(body)).To(MatchJSON(`{}`))

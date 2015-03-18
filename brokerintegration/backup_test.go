@@ -46,7 +46,7 @@ var _ = Describe("backups", func() {
 
 		BeforeEach(func() {
 			for _, instanceID := range instanceIDs {
-				status, _ := provisionInstance(instanceID, "shared")
+				status, _ := brokerClient.ProvisionInstance(instanceID, "shared")
 				Ω(status).To(Equal(http.StatusCreated))
 				bindAndWriteTestData(instanceID)
 			}

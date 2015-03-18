@@ -16,7 +16,7 @@ var _ = Describe("Multiple users", func() {
 	BeforeEach(func() {
 		instanceIDs = []string{uuid.NewRandom().String(), uuid.NewRandom().String()}
 		for _, instanceID := range instanceIDs {
-			statusCode, _ := provisionInstance(instanceID, "shared")
+			statusCode, _ := brokerClient.ProvisionInstance(instanceID, "shared")
 			Ω(statusCode).To(Equal(201))
 		}
 	})

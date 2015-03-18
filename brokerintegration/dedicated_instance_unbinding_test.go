@@ -16,7 +16,7 @@ var _ = Describe("Dedicated instance unbinding", func() {
 		instanceID = uuid.NewRandom().String()
 		bindingID = uuid.NewRandom().String()
 
-		code, _ := provisionInstance(instanceID, "dedicated")
+		code, _ := brokerClient.ProvisionInstance(instanceID, "dedicated")
 		Ω(code).Should(Equal(201))
 
 		status, _ := bindInstance(instanceID, bindingID)

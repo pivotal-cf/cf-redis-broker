@@ -26,7 +26,7 @@ var _ = Describe("Shared instance binding", func() {
 
 	Context("when the instance already exists", func() {
 		BeforeEach(func() {
-			code, _ := provisionInstance(instanceID, "shared")
+			code, _ := brokerClient.ProvisionInstance(instanceID, "shared")
 			Ω(code).To(Equal(201))
 		})
 

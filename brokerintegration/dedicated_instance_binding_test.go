@@ -26,7 +26,7 @@ var _ = Describe("Dedicated instance binding", func() {
 
 	Context("when the instance already exists", func() {
 		BeforeEach(func() {
-			code, _ := provisionInstance(instanceID, "dedicated")
+			code, _ := brokerClient.ProvisionInstance(instanceID, "dedicated")
 			Ω(code).To(Equal(201))
 		})
 

@@ -18,6 +18,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/pivotal-cf/cf-redis-broker/integration"
 
 	"github.com/pivotal-cf/cf-redis-broker/availability"
 )
@@ -35,10 +36,10 @@ var _ = Describe("restarting processes", func() {
 		configCommand := "CONFIG"
 
 		BeforeEach(func() {
-			monitorSession = launchProcessWithBrokerConfig(processMonitorPath, "broker.yml")
+			monitorSession = integration.LaunchProcessWithBrokerConfig(processMonitorPath, "broker.yml")
 
 			instanceID = uuid.NewRandom().String()
-			statusCode, _ := provisionInstance(instanceID, "shared")
+			statusCode, _ := brokerClient.ProvisionInstance(instanceID, "shared")
 			Ω(statusCode).To(Equal(201))
 
 			bindingID := uuid.NewRandom().String()
@@ -105,7 +106,7 @@ var _ = Describe("restarting processes", func() {
 			err = os.RemoveAll(logDirPath)
 			Ω(err).NotTo(HaveOccurred())
 
-			monitorSession = launchProcessWithBrokerConfig(processMonitorPath, "broker.yml")
+			monitorSession = integration.LaunchProcessWithBrokerConfig(processMonitorPath, "broker.yml")
 
 			Ω(serviceAvailable(port)).Should(BeTrue())
 
@@ -118,7 +119,7 @@ var _ = Describe("restarting processes", func() {
 				killProcess(monitorSession)
 				killRedisProcess(instanceID)
 
-				monitorSession = launchProcessWithBrokerConfig(processMonitorPath, "broker.yml.updated_maxmemory")
+				monitorSession = integration.LaunchProcessWithBrokerConfig(processMonitorPath, "broker.yml.updated_maxmemory")
 
 				Ω(serviceAvailable(port)).Should(BeTrue())
 
@@ -197,5 +198,5 @@ func killRedisProcess(instanceID string) {
 
 func relaunchProcessMonitorWithConfig(processMonitorPath, brokerConfigName string) {
 	killProcess(monitorSession)
-	monitorSession = launchProcessWithBrokerConfig(processMonitorPath, brokerConfigName)
+	monitorSession = integration.LaunchProcessWithBrokerConfig(processMonitorPath, brokerConfigName)
 }

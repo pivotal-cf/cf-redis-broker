@@ -30,9 +30,9 @@ var _ = Describe("Debug", func() {
 			var host string
 
 			BeforeEach(func() {
-				provisionInstance("INSTANCE-1", "dedicated")
-				provisionInstance("INSTANCE-2", "dedicated")
-				provisionInstance("INSTANCE-3", "dedicated")
+				brokerClient.ProvisionInstance("INSTANCE-1", "dedicated")
+				brokerClient.ProvisionInstance("INSTANCE-2", "dedicated")
+				brokerClient.ProvisionInstance("INSTANCE-3", "dedicated")
 
 				for _, cluster := range getDebugInfo().Allocated.Clusters {
 					if cluster.ID == "INSTANCE-3" {
@@ -42,7 +42,7 @@ var _ = Describe("Debug", func() {
 
 				deprovisionInstance("INSTANCE-3")
 
-				provisionInstance("NEW-INSTANCE", "dedicated")
+				brokerClient.ProvisionInstance("NEW-INSTANCE", "dedicated")
 			})
 
 			AfterEach(func() {
@@ -73,7 +73,7 @@ var _ = Describe("Debug", func() {
 
 		Context("when an instance is provisioned", func() {
 			BeforeEach(func() {
-				provisionInstance("SOME-GUID", "dedicated")
+				brokerClient.ProvisionInstance("SOME-GUID", "dedicated")
 			})
 
 			AfterEach(func() {
@@ -106,7 +106,7 @@ var _ = Describe("Debug", func() {
 				})
 
 				AfterEach(func() {
-					provisionInstance("SOME-GUID", "dedicated")
+					brokerClient.ProvisionInstance("SOME-GUID", "dedicated")
 				})
 
 				It("adds the cluster back to the Pool", func() {

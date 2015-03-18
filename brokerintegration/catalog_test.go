@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/pivotal-cf/brokerapi"
+	"github.com/pivotal-cf/cf-redis-broker/integration"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -198,6 +199,6 @@ var _ = Describe("Catalog", func() {
 func switchBroker(config string) {
 	killProcess(brokerSession)
 	safelyResetAllDirectories()
-	brokerSession = buildAndLaunchBroker(config)
+	brokerSession = integration.BuildAndLaunchBroker(config)
 	Ω(serviceAvailable(brokerPort)).Should(BeTrue())
 }

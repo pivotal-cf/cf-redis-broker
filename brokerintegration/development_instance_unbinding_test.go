@@ -11,7 +11,7 @@ var _ = Describe("Shared instance unbinding", func() {
 	invalidInputs := &HTTPExampleInputs{Method: "DELETE", URI: "http://localhost:3000/v2/service_instances/INVALID/service_bindings/bar"}
 
 	BeforeEach(func() {
-		code, _ := provisionInstance("foo", "shared")
+		code, _ := brokerClient.ProvisionInstance("foo", "shared")
 		Ω(code).Should(Equal(201))
 	})
 

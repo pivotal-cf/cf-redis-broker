@@ -24,7 +24,7 @@ var _ = Describe("Deprovisioning dedicated instance", func() {
 			instanceID = uuid.NewRandom().String()
 			httpInputs = HTTPExampleInputs{Method: "DELETE", URI: instanceURI(instanceID)}
 
-			code, _ := provisionInstance(instanceID, "dedicated")
+			code, _ := brokerClient.ProvisionInstance(instanceID, "dedicated")
 			Ω(code).Should(Equal(201))
 		})
 

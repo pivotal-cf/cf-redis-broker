@@ -4,6 +4,7 @@ import (
 	"code.google.com/p/go-uuid/uuid"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/pivotal-cf/cf-redis-broker/integration"
 )
 
 var _ = Describe("Provision dedicated instance", func() {
@@ -12,7 +13,7 @@ var _ = Describe("Provision dedicated instance", func() {
 
 	BeforeEach(func() {
 		instanceID = uuid.NewRandom().String()
-		provisionInstance(instanceID, "dedicated")
+		brokerClient.ProvisionInstance(instanceID, "dedicated")
 	})
 
 	AfterEach(func() {
@@ -22,7 +23,7 @@ var _ = Describe("Provision dedicated instance", func() {
 	Context("when the broker is restarted", func() {
 		BeforeEach(func() {
 			killProcess(brokerSession)
-			brokerSession = buildAndLaunchBroker("broker.yml")
+			brokerSession = integration.BuildAndLaunchBroker("broker.yml")
 			Ω(serviceAvailable(brokerPort)).Should(BeTrue())
 		})
 
@@ -42,13 +43,13 @@ var _ = Describe("Provision dedicated instance", func() {
 	Context("when the broker is restarted with a new node", func() {
 		BeforeEach(func() {
 			killProcess(brokerSession)
-			brokerSession = buildAndLaunchBroker("broker.yml-extra-node")
+			brokerSession = integration.BuildAndLaunchBroker("broker.yml-extra-node")
 			Ω(serviceAvailable(brokerPort)).Should(BeTrue())
 		})
 
 		AfterEach(func() {
 			killProcess(brokerSession)
-			brokerSession = buildAndLaunchBroker("broker.yml")
+			brokerSession = integration.BuildAndLaunchBroker("broker.yml")
 			Ω(serviceAvailable(brokerPort)).Should(BeTrue())
 		})
 
