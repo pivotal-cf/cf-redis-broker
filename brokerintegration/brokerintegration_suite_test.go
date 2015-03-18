@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"syscall"
 	"testing"
 	"time"
 
@@ -101,10 +100,6 @@ func removeAndRecreateDir(path string) {
 	Ω(err).ShouldNot(HaveOccurred())
 	err = os.MkdirAll(path, 0755)
 	Ω(err).ShouldNot(HaveOccurred())
-}
-
-func sendUsr1ToProcessMonitor() {
-	monitorSession.Signal(syscall.SIGUSR1)
 }
 
 func buildExecutable(sourcePath string) string {

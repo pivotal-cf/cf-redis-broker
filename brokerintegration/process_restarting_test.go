@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"code.google.com/p/go-uuid/uuid"
@@ -200,4 +201,8 @@ func killRedisProcess(instanceID string) {
 func relaunchProcessMonitorWithConfig(processMonitorPath, brokerConfigName string) {
 	killProcess(monitorSession)
 	monitorSession = launchProcessWithBrokerConfig(processMonitorPath, brokerConfigName)
+}
+
+func sendUsr1ToProcessMonitor() {
+	monitorSession.Signal(syscall.SIGUSR1)
 }
