@@ -44,8 +44,6 @@ func TestBrokerintegration(t *testing.T) {
 }
 
 func safelyResetAllDirectories() {
-	waitUntilNoRunningRedis(10.0)
-
 	if monitorSession != nil {
 		checker := &process.ProcessChecker{}
 		Ω(checker.Alive(monitorSession.Command.Process.Pid)).Should(BeFalse())
@@ -139,20 +137,6 @@ func getRedisProcessCount() int {
 	result, numberParseErr := strconv.Atoi(strings.TrimSpace(string(output)))
 	Ω(numberParseErr).NotTo(HaveOccurred())
 	return result
-}
-
-func waitUntilNoRunningRedis(timeout float64) {
-	if timeout < 0 {
-		panic("Timed out waiting for redises to shut down")
-	}
-
-	processCount := getRedisProcessCount()
-	if processCount == 0 {
-		return
-	}
-
-	time.Sleep(time.Millisecond * 100)
-	waitUntilNoRunningRedis(timeout - 0.1)
 }
 
 func assetPath(filename string) (string, error) {

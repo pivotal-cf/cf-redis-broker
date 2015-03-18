@@ -30,9 +30,6 @@ var _ = Describe("Deprovisioning shared instance", func() {
 			Ω(getRedisProcessCount()).To(Equal(1))
 
 			deprovisionInstance(instanceID)
-
-			// leave time for process to shutdown gracefully
-			waitUntilNoRunningRedis(10.0)
 			Ω(getRedisProcessCount()).To(Equal(0))
 		})
 	})
