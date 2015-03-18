@@ -191,12 +191,6 @@ func buildRedisClient(port uint, host string, password string) redisclient.Conn 
 	return client
 }
 
-func serviceAvailableChecker(port uint) func() bool {
-	return func() bool {
-		return serviceAvailable(port)
-	}
-}
-
 func serviceAvailable(port uint) bool {
 	address, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("localhost:%d", port))
 	if err != nil {

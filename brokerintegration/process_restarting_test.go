@@ -87,14 +87,11 @@ var _ = Describe("restarting processes", func() {
 				Ω(err).ShouldNot(HaveOccurred())
 				lockFile.Close()
 
-				redisRunningCheck := serviceAvailableChecker(port)
-
-				Eventually(redisRunningCheck, time.Second*time.Duration(1)).Should(BeTrue())
+				Ω(serviceAvailable(port)).Should(BeTrue())
 
 				killRedisProcess(instanceID)
 
-				Eventually(redisRunningCheck, time.Second*time.Duration(1)).Should(BeFalse())
-				Consistently(redisRunningCheck, durationForProcessMonitorToRestartInstance()).Should(BeFalse())
+				Consistently(func() bool { return serviceAvailable(port) }, durationForProcessMonitorToRestartInstance()).Should(BeFalse())
 			})
 		})
 
