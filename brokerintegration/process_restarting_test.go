@@ -29,6 +29,8 @@ var _ = Describe("restarting processes", func() {
 		var password string
 		var client redisclient.Conn
 
+		processMonitorPath := buildExecutable("github.com/pivotal-cf/cf-redis-broker/cmd/processmonitor")
+
 		configCommand := "CONFIG"
 
 		BeforeEach(func() {
@@ -139,7 +141,7 @@ var _ = Describe("restarting processes", func() {
 			})
 
 			AfterEach(func() {
-				relaunchProcessMonitorWithConfig("broker.yml")
+				relaunchProcessMonitorWithConfig(processMonitorPath, "broker.yml")
 			})
 		})
 
@@ -162,7 +164,7 @@ var _ = Describe("restarting processes", func() {
 
 			AfterEach(func() {
 				deprovisionInstance(instanceID)
-				relaunchProcessMonitorWithConfig("broker.yml")
+				relaunchProcessMonitorWithConfig(processMonitorPath, "broker.yml")
 			})
 		})
 	})
@@ -193,4 +195,9 @@ func killRedisProcess(instanceID string) {
 	Ω(err).ToNot(HaveOccurred())
 
 	process.Wait()
+}
+
+func relaunchProcessMonitorWithConfig(processMonitorPath, brokerConfigName string) {
+	killProcess(monitorSession)
+	monitorSession = launchProcessWithBrokerConfig(processMonitorPath, brokerConfigName)
 }

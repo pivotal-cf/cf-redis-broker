@@ -36,7 +36,6 @@ var brokerPort uint = 3000
 
 var brokerSession *gexec.Session
 var monitorSession *gexec.Session
-var processMonitorPath string
 var backupExecutablePath string
 var brokerConfig brokerconfig.Config
 var fakeAgent *httptest.Server
@@ -77,8 +76,6 @@ var _ = BeforeSuite(func() {
 	backupExecutablePath = buildExecutable("github.com/pivotal-cf/cf-redis-broker/cmd/backup")
 
 	brokerSession = buildAndLaunchBroker("broker.yml")
-
-	processMonitorPath = buildExecutable("github.com/pivotal-cf/cf-redis-broker/cmd/processmonitor")
 
 	startFakeAgent()
 
@@ -137,11 +134,6 @@ func removeAndRecreateDir(path string) {
 	Ω(err).ShouldNot(HaveOccurred())
 	err = os.MkdirAll(path, 0755)
 	Ω(err).ShouldNot(HaveOccurred())
-}
-
-func relaunchProcessMonitorWithConfig(brokerConfigName string) {
-	killProcess(monitorSession)
-	monitorSession = launchProcessWithBrokerConfig(processMonitorPath, brokerConfigName)
 }
 
 func sendUsr1ToProcessMonitor() {
