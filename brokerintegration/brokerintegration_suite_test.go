@@ -6,7 +6,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path"
@@ -38,9 +37,6 @@ var brokerSession *gexec.Session
 var monitorSession *gexec.Session
 var backupExecutablePath string
 var brokerConfig brokerconfig.Config
-var fakeAgent *httptest.Server
-var agentRequests []*http.Request
-var agentResponseStatus = http.StatusOK
 
 func TestBrokerintegration(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -76,40 +72,12 @@ var _ = BeforeSuite(func() {
 
 	brokerSession = buildAndLaunchBroker("broker.yml")
 
-	startFakeAgent()
-
 	Ω(portAvailable(brokerPort)).Should(BeTrue())
 })
 
 var _ = AfterSuite(func() {
-	fakeAgent.Close()
-
 	killProcess(brokerSession)
 })
-
-func startFakeAgent() {
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		agentRequests = append(agentRequests, r)
-
-		if agentResponseStatus != http.StatusOK {
-			http.Error(w, "", agentResponseStatus)
-			return
-		}
-
-		w.WriteHeader(agentResponseStatus)
-
-		if r.Method == "GET" {
-			w.Write([]byte("{\"port\": 12345, \"password\": \"super-secret\"}"))
-		}
-	})
-
-	listener, err := net.Listen("tcp", ":9876")
-	Ω(err).ShouldNot(HaveOccurred())
-
-	fakeAgent = httptest.NewUnstartedServer(handler)
-	fakeAgent.Listener = listener
-	fakeAgent.StartTLS()
-}
 
 func loadBrokerConfig() {
 	var err error
