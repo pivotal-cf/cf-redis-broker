@@ -33,7 +33,6 @@ func (migrator *ConfigMigrator) Migrate() error {
 		if err := moveDataFor("requirepass", redisPasswordFilePath, redisConfFilePath); err != nil {
 			return err
 		}
-
 	}
 	return nil
 }
