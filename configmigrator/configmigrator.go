@@ -8,6 +8,10 @@ import (
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 )
 
+const (
+	REDIS_PORT_FILENAME = "redis-server.port"
+)
+
 type ConfigMigrator struct {
 	RedisDataDir string
 }
@@ -15,15 +19,19 @@ type ConfigMigrator struct {
 func (migrator *ConfigMigrator) Migrate() error {
 	instanceDirs, _ := ioutil.ReadDir(migrator.RedisDataDir)
 	redisInstanceDir := path.Join(migrator.RedisDataDir, instanceDirs[0].Name())
-	redisPortFilePath := path.Join(redisInstanceDir, "redis.port")
+	redisPortFilePath := path.Join(redisInstanceDir, REDIS_PORT_FILENAME)
 	redisConfFilePath := path.Join(redisInstanceDir, "redis.conf")
 
-	redisConf, _ := redisconf.Load(redisConfFilePath)
+	redisConf, err := redisconf.Load(redisConfFilePath)
+	if err != nil {
+		return err
+	}
 
-	portBytes, _ := ioutil.ReadFile(redisPortFilePath)
-	redisConf.Set("port", string(portBytes))
-
-	redisConf.Save(redisConfFilePath)
-
-	return os.Remove(redisPortFilePath)
+	portBytes, err := ioutil.ReadFile(redisPortFilePath)
+	if err == nil {
+		redisConf.Set("port", string(portBytes))
+		redisConf.Save(redisConfFilePath)
+		return os.Remove(redisPortFilePath)
+	}
+	return nil
 }
