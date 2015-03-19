@@ -41,32 +41,40 @@ var _ = Describe("Migrating config", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		Context("and port is in redis-server.port", func() {
-			It("deletes the redis port file", func() {
+		Context("and port is in redis-server.port and password is in redis-server.password", func() {
+			It("deletes the redis port file and password file", func() {
 				redisConfFile := path.Join(instanceBaseDir, "redis.conf")
 				ioutil.WriteFile(redisConfFile, []byte("#port 63490"), 0777)
 
 				redisPortFilePath := path.Join(instanceBaseDir, REDIS_PORT_FILENAME)
 				ioutil.WriteFile(redisPortFilePath, []byte("3455"), 0777)
+				redisPasswordFilePath := path.Join(instanceBaseDir, REDIS_PASSWORD_FILENAME)
+				ioutil.WriteFile(redisPasswordFilePath, []byte("secret-password"), 0777)
 
 				configMigrator.Migrate()
 
 				_, err := os.Stat(redisPortFilePath)
 				Expect(os.IsNotExist(err)).To(BeTrue())
+				_, err = os.Stat(redisPasswordFilePath)
+				Expect(os.IsNotExist(err)).To(BeTrue())
 			})
 
-			It("copies the port from redis-server.port to redis.conf", func() {
+			It("copies the port and password to redis.conf", func() {
 				redisConfFile := path.Join(instanceBaseDir, "redis.conf")
 				ioutil.WriteFile(redisConfFile, []byte("#port 63490"), 0777)
 
 				redisPortFilePath := path.Join(instanceBaseDir, REDIS_PORT_FILENAME)
 				ioutil.WriteFile(redisPortFilePath, []byte("3455"), 0777)
+
+				redisPasswordFilePath := path.Join(instanceBaseDir, REDIS_PASSWORD_FILENAME)
+				ioutil.WriteFile(redisPasswordFilePath, []byte("secret-password"), 0777)
 
 				configMigrator.Migrate()
 
 				redisConfigValues, err := redisconf.Load(redisConfFile)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(redisConfigValues.Get("port")).To(Equal("3455"))
+				Expect(redisConfigValues.Get("requirepass")).To(Equal("secret-password"))
 			})
 
 			It("does not change the other values", func() {
@@ -86,6 +94,8 @@ var _ = Describe("Migrating config", func() {
 					ioutil.WriteFile(redisConfFile, []byte("#port 63490"), 0777)
 					redisPortFilePath := path.Join(instanceBaseDir, REDIS_PORT_FILENAME)
 					ioutil.WriteFile(redisPortFilePath, []byte("3455"), 0777)
+					redisPasswordFilePath := path.Join(instanceBaseDir, REDIS_PASSWORD_FILENAME)
+					ioutil.WriteFile(redisPasswordFilePath, []byte("secret-password"), 0777)
 
 					instance2BaseDir := path.Join(redisDataDirPath, "instance2")
 					os.Mkdir(instance2BaseDir, 0777)
@@ -93,6 +103,8 @@ var _ = Describe("Migrating config", func() {
 					ioutil.WriteFile(redis2ConfFile, []byte("#port 63490"), 0777)
 					redis2PortFilePath := path.Join(instance2BaseDir, REDIS_PORT_FILENAME)
 					ioutil.WriteFile(redis2PortFilePath, []byte("9482"), 0777)
+					redis2PasswordFilePath := path.Join(instance2BaseDir, REDIS_PASSWORD_FILENAME)
+					ioutil.WriteFile(redis2PasswordFilePath, []byte("secret-password2"), 0777)
 
 					configMigrator.Migrate()
 
@@ -129,16 +141,17 @@ var _ = Describe("Migrating config", func() {
 			})
 		})
 
-		Context("and port is already in redis.conf", func() {
+		Context("and data is already migrated", func() {
 			It("does nothing", func() {
 				redisConfFile := path.Join(instanceBaseDir, "redis.conf")
-				ioutil.WriteFile(redisConfFile, []byte("port 6349"), 0777)
+				ioutil.WriteFile(redisConfFile, []byte("port 6349\nrequirepass secret-password"), 0777)
 
 				configMigrator.Migrate()
 
 				redisConfigValues, err := redisconf.Load(path.Join(instanceBaseDir, "redis.conf"))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(redisConfigValues.Get("port")).To(Equal("6349"))
+				Expect(redisConfigValues.Get("requirepass")).To(Equal("secret-password"))
 			})
 		})
 
