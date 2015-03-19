@@ -146,7 +146,39 @@ var _ = Describe("Migrating config", func() {
 				redisConfFile := path.Join(instanceBaseDir, "redis.conf")
 				ioutil.WriteFile(redisConfFile, []byte("port 6349\nrequirepass secret-password"), 0777)
 
-				configMigrator.Migrate()
+				err := configMigrator.Migrate()
+				Expect(err).ToNot(HaveOccurred())
+
+				redisConfigValues, err := redisconf.Load(path.Join(instanceBaseDir, "redis.conf"))
+				Expect(err).ToNot(HaveOccurred())
+				Expect(redisConfigValues.Get("port")).To(Equal("6349"))
+				Expect(redisConfigValues.Get("requirepass")).To(Equal("secret-password"))
+			})
+		})
+
+		Context("and data is partially migrated", func() {
+			It("finishes the migration for the password", func() {
+				redisConfFile := path.Join(instanceBaseDir, "redis.conf")
+				ioutil.WriteFile(redisConfFile, []byte("port 6349\n#requirepass INSERT_PASSWORD_HERE"), 0777)
+				redisPasswordFilePath := path.Join(instanceBaseDir, REDIS_PASSWORD_FILENAME)
+				ioutil.WriteFile(redisPasswordFilePath, []byte("secret-password"), 0777)
+
+				err := configMigrator.Migrate()
+				Expect(err).ToNot(HaveOccurred())
+
+				redisConfigValues, err := redisconf.Load(path.Join(instanceBaseDir, "redis.conf"))
+				Expect(err).ToNot(HaveOccurred())
+				Expect(redisConfigValues.Get("port")).To(Equal("6349"))
+				Expect(redisConfigValues.Get("requirepass")).To(Equal("secret-password"))
+			})
+			It("finishes the migration for the port", func() {
+				redisConfFile := path.Join(instanceBaseDir, "redis.conf")
+				ioutil.WriteFile(redisConfFile, []byte("#port 1234\nrequirepass secret-password"), 0777)
+				redisPortFilePath := path.Join(instanceBaseDir, REDIS_PORT_FILENAME)
+				ioutil.WriteFile(redisPortFilePath, []byte("6349"), 0777)
+
+				err := configMigrator.Migrate()
+				Expect(err).ToNot(HaveOccurred())
 
 				redisConfigValues, err := redisconf.Load(path.Join(instanceBaseDir, "redis.conf"))
 				Expect(err).ToNot(HaveOccurred())

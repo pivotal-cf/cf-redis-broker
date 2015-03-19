@@ -26,31 +26,39 @@ func (migrator *ConfigMigrator) Migrate() error {
 		redisPasswordFilePath := path.Join(redisInstanceDir, REDIS_PASSWORD_FILENAME)
 		redisConfFilePath := path.Join(redisInstanceDir, "redis.conf")
 
-		var err error
-		var redisConf redisconf.Conf
-		var portBytes []byte
-		var passwordBytes []byte
-
-		if redisConf, err = redisconf.Load(redisConfFilePath); err != nil {
+		if err := moveDataFor("port", redisPortFilePath, redisConfFilePath); err != nil {
 			return err
 		}
 
-		if portBytes, err = ioutil.ReadFile(redisPortFilePath); err != nil {
+		if err := moveDataFor("requirepass", redisPasswordFilePath, redisConfFilePath); err != nil {
 			return err
 		}
 
-		if passwordBytes, err = ioutil.ReadFile(redisPasswordFilePath); err != nil {
-			return err
-		}
-
-		redisConf.Set("port", string(portBytes))
-		redisConf.Set("requirepass", string(passwordBytes))
-		if err = redisConf.Save(redisConfFilePath); err != nil {
-			return err
-		}
-
-		os.Remove(redisPortFilePath)
-		os.Remove(redisPasswordFilePath)
 	}
+	return nil
+}
+
+func moveDataFor(propertyName, fileName, redisConfFilePath string) error {
+	var fileContents []byte
+	var redisConf redisconf.Conf
+	var err error
+
+	if redisConf, err = redisconf.Load(redisConfFilePath); err != nil {
+		return err
+	}
+	if redisConf.Get(propertyName) != "" {
+		os.Remove(fileName)
+		return nil
+	}
+
+	if fileContents, err = ioutil.ReadFile(fileName); err != nil {
+		return err
+	}
+
+	redisConf.Set(propertyName, string(fileContents))
+	if err = redisConf.Save(redisConfFilePath); err != nil {
+		return err
+	}
+	os.Remove(fileName)
 	return nil
 }
