@@ -1,7 +1,6 @@
 package configmigrator
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -106,6 +105,28 @@ var _ = Describe("Migrating config", func() {
 					Expect(redisConfigValues.Get("port")).To(Equal("9482"))
 				})
 			})
+
+			Context("and it cannot write to redis.conf", func() {
+				It("returns an error", func() {
+					redisConfFile := path.Join(instanceBaseDir, "redis.conf")
+					ioutil.WriteFile(redisConfFile, []byte("foo bar"), 0000)
+
+					err := configMigrator.Migrate()
+					Expect(err).To(HaveOccurred())
+				})
+			})
+
+			Context("and it cannot read from the redis-server.port", func() {
+				It("returns an error", func() {
+					redisConfFile := path.Join(instanceBaseDir, "redis.conf")
+					ioutil.WriteFile(redisConfFile, []byte("#port 63490"), 0777)
+					redisPortFilePath := path.Join(instanceBaseDir, REDIS_PORT_FILENAME)
+					ioutil.WriteFile(redisPortFilePath, []byte("3455"), 0000)
+
+					err := configMigrator.Migrate()
+					Expect(err).To(HaveOccurred())
+				})
+			})
 		})
 
 		Context("and port is already in redis.conf", func() {
@@ -123,11 +144,9 @@ var _ = Describe("Migrating config", func() {
 
 		Context("and loading of the redis.conf file is failing", func() {
 			It("returns a error", func() {
-				redisConfFile := path.Join(instanceBaseDir, "redis.conf")
 				err := configMigrator.Migrate()
 
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(Equal(fmt.Sprintf("open %s: no such file or directory", redisConfFile)))
 			})
 		})
 	})

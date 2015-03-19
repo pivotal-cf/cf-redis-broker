@@ -24,17 +24,24 @@ func (migrator *ConfigMigrator) Migrate() error {
 		redisPortFilePath := path.Join(redisInstanceDir, REDIS_PORT_FILENAME)
 		redisConfFilePath := path.Join(redisInstanceDir, "redis.conf")
 
-		redisConf, err := redisconf.Load(redisConfFilePath)
-		if err != nil {
+		var err error
+		var redisConf redisconf.Conf
+		var portBytes []byte
+
+		if redisConf, err = redisconf.Load(redisConfFilePath); err != nil {
 			return err
 		}
 
-		portBytes, err := ioutil.ReadFile(redisPortFilePath)
-		if err == nil {
-			redisConf.Set("port", string(portBytes))
-			redisConf.Save(redisConfFilePath)
-			os.Remove(redisPortFilePath)
+		if portBytes, err = ioutil.ReadFile(redisPortFilePath); err != nil {
+			return err
 		}
+
+		redisConf.Set("port", string(portBytes))
+		if err = redisConf.Save(redisConfFilePath); err != nil {
+			return err
+		}
+
+		os.Remove(redisPortFilePath)
 	}
 	return nil
 }
