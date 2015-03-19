@@ -26,6 +26,13 @@ var _ = Describe("Migrating config", func() {
 		}
 	})
 
+	Context("when there is no data to migrate", func() {
+		It("does nothing", func() {
+			err := configMigrator.Migrate()
+			Expect(err).ToNot(HaveOccurred())
+		})
+	})
+
 	Context("when there is data to migrate", func() {
 		var instanceBaseDir string
 
@@ -35,7 +42,7 @@ var _ = Describe("Migrating config", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		Context("and port is in redis.port", func() {
+		Context("and port is in redis-server.port", func() {
 			It("deletes the redis port file", func() {
 				redisConfFile := path.Join(instanceBaseDir, "redis.conf")
 				ioutil.WriteFile(redisConfFile, []byte("#port 63490"), 0777)
@@ -49,7 +56,7 @@ var _ = Describe("Migrating config", func() {
 				Expect(os.IsNotExist(err)).To(BeTrue())
 			})
 
-			It("copies the port from redis.port to redis.conf", func() {
+			It("copies the port from redis-server.port to redis.conf", func() {
 				redisConfFile := path.Join(instanceBaseDir, "redis.conf")
 				ioutil.WriteFile(redisConfFile, []byte("#port 63490"), 0777)
 
@@ -58,7 +65,7 @@ var _ = Describe("Migrating config", func() {
 
 				configMigrator.Migrate()
 
-				redisConfigValues, err := redisconf.Load(path.Join(instanceBaseDir, "redis.conf"))
+				redisConfigValues, err := redisconf.Load(redisConfFile)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(redisConfigValues.Get("port")).To(Equal("3455"))
 			})
@@ -69,13 +76,39 @@ var _ = Describe("Migrating config", func() {
 
 				configMigrator.Migrate()
 
-				redisConfigValues, err := redisconf.Load(path.Join(instanceBaseDir, "redis.conf"))
+				redisConfigValues, err := redisconf.Load(redisConfFile)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(redisConfigValues.Get("foo")).To(Equal("bar"))
 			})
+
+			Context("and there are multiple instances to migrate", func() {
+				It("migrates all of them", func() {
+					redisConfFile := path.Join(instanceBaseDir, "redis.conf")
+					ioutil.WriteFile(redisConfFile, []byte("#port 63490"), 0777)
+					redisPortFilePath := path.Join(instanceBaseDir, REDIS_PORT_FILENAME)
+					ioutil.WriteFile(redisPortFilePath, []byte("3455"), 0777)
+
+					instance2BaseDir := path.Join(redisDataDirPath, "instance2")
+					os.Mkdir(instance2BaseDir, 0777)
+					redis2ConfFile := path.Join(instance2BaseDir, "redis.conf")
+					ioutil.WriteFile(redis2ConfFile, []byte("#port 63490"), 0777)
+					redis2PortFilePath := path.Join(instance2BaseDir, REDIS_PORT_FILENAME)
+					ioutil.WriteFile(redis2PortFilePath, []byte("9482"), 0777)
+
+					configMigrator.Migrate()
+
+					redisConfigValues, err := redisconf.Load(redisConfFile)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(redisConfigValues.Get("port")).To(Equal("3455"))
+
+					redisConfigValues, err = redisconf.Load(redis2ConfFile)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(redisConfigValues.Get("port")).To(Equal("9482"))
+				})
+			})
 		})
 
-		Context("and port is in redis.conf", func() {
+		Context("and port is already in redis.conf", func() {
 			It("does nothing", func() {
 				redisConfFile := path.Join(instanceBaseDir, "redis.conf")
 				ioutil.WriteFile(redisConfFile, []byte("port 6349"), 0777)
