@@ -39,6 +39,10 @@ func (brokerClient *BrokerClient) ProvisionInstance(instanceID string, plan stri
 		payloadBytes)
 }
 
+func (brokerClient *BrokerClient) MakeCatalogRequest() (int, []byte) {
+	return brokerClient.executeAuthenticatedRequest("GET", "http://localhost:3000/v2/catalog")
+}
+
 func (brokerClient *BrokerClient) BindInstance(instanceID, bindingID string) (int, []byte) {
 	return brokerClient.executeAuthenticatedRequest("PUT", brokerClient.bindingURI(instanceID, bindingID))
 }

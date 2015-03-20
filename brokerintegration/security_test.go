@@ -15,7 +15,7 @@ var _ = Describe("Broker Security", func() {
 
 		Context("With expected username and password", func() {
 			It("returns HTTP code 200", func() {
-				code, _ := makeCatalogRequest()
+				code, _ := brokerClient.MakeCatalogRequest()
 				Ω(code).To(Equal(200))
 			})
 		})

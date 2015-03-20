@@ -103,10 +103,6 @@ func assetPath(filename string) (string, error) {
 	return filepath.Abs(path.Join("assets", filename))
 }
 
-func makeCatalogRequest() (int, []byte) {
-	return integration.ExecuteAuthenticatedHTTPRequest("GET", "http://localhost:3000/v2/catalog", brokerConfig.AuthConfiguration.Username, brokerConfig.AuthConfiguration.Password)
-}
-
 func instanceURI(instanceID string) string {
 	return fmt.Sprintf("http://localhost:%d/v2/service_instances/%s", brokerPort, instanceID)
 }
