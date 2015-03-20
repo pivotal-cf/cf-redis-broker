@@ -33,12 +33,20 @@ func (brokerClient *BrokerClient) ProvisionInstance(instanceID string, plan stri
 	}
 
 	return ExecuteAuthenticatedHTTPRequestWithBody("PUT",
-		instanceURI(instanceID, brokerClient.Config.Port),
+		brokerClient.instanceURI(instanceID),
 		brokerClient.Config.AuthConfiguration.Username,
 		brokerClient.Config.AuthConfiguration.Password,
 		payloadBytes)
 }
 
-func instanceURI(instanceID, brokerPort string) string {
-	return fmt.Sprintf("http://localhost:%s/v2/service_instances/%s", brokerPort, instanceID)
+func (brokerClient *BrokerClient) BindInstance(instanceID, bindingID string) (int, []byte) {
+	return ExecuteAuthenticatedHTTPRequest("PUT", brokerClient.bindingURI(instanceID, bindingID), brokerClient.Config.AuthConfiguration.Username, brokerClient.Config.AuthConfiguration.Password)
+}
+
+func (brokerClient *BrokerClient) instanceURI(instanceID string) string {
+	return fmt.Sprintf("http://localhost:%s/v2/service_instances/%s", brokerClient.Config.Port, instanceID)
+}
+
+func (brokerClient *BrokerClient) bindingURI(instanceID, bindingID string) string {
+	return brokerClient.instanceURI(instanceID) + "/service_bindings/" + bindingID
 }

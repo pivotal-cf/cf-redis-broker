@@ -44,7 +44,7 @@ var _ = Describe("Dedicated instance binding", func() {
 			BeforeEach(func() {
 				debugInfo = getDebugInfo()
 
-				_, body := bindInstance(instanceID, bindingID)
+				_, body := brokerClient.BindInstance(instanceID, bindingID)
 
 				parsedJSON := struct {
 					Credentials map[string]interface{} `json:"credentials"`

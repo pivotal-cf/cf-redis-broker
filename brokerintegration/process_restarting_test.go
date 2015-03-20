@@ -43,7 +43,7 @@ var _ = Describe("restarting processes", func() {
 			Ω(statusCode).To(Equal(201))
 
 			bindingID := uuid.NewRandom().String()
-			statusCode, body := bindInstance(instanceID, bindingID)
+			statusCode, body := brokerClient.BindInstance(instanceID, bindingID)
 			Ω(statusCode).To(Equal(201))
 
 			var parsedJSON map[string]interface{}

@@ -19,7 +19,7 @@ var _ = Describe("Dedicated instance unbinding", func() {
 		code, _ := brokerClient.ProvisionInstance(instanceID, "dedicated")
 		Ω(code).Should(Equal(201))
 
-		status, _ := bindInstance(instanceID, bindingID)
+		status, _ := brokerClient.BindInstance(instanceID, bindingID)
 		Ω(status).Should(Equal(http.StatusCreated))
 	})
 

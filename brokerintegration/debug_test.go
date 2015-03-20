@@ -125,7 +125,7 @@ var _ = Describe("Debug", func() {
 
 			Context("when the instance is bound to", func() {
 				BeforeEach(func() {
-					status, _ := bindInstance("SOME-GUID", "foo-binding")
+					status, _ := brokerClient.BindInstance("SOME-GUID", "foo-binding")
 					Ω(status).Should(Equal(http.StatusCreated))
 				})
 

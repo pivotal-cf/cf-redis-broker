@@ -40,7 +40,7 @@ var _ = Describe("Shared instance binding", func() {
 			var client redigo.Conn
 
 			BeforeEach(func() {
-				_, body := bindInstance(instanceID, bindingID)
+				_, body := brokerClient.BindInstance(instanceID, bindingID)
 
 				var parsedJSON map[string]interface{}
 				json.Unmarshal(body, &parsedJSON)

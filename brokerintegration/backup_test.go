@@ -144,7 +144,7 @@ var _ = Describe("backups", func() {
 })
 
 func getLastSaveTime(instanceID string, configPath string) int64 {
-	status, bindingBytes := bindInstance(instanceID, "somebindingID")
+	status, bindingBytes := brokerClient.BindInstance(instanceID, "somebindingID")
 	Ω(status).To(Equal(http.StatusCreated))
 	bindingResponse := map[string]interface{}{}
 	json.Unmarshal(bindingBytes, &bindingResponse)
@@ -165,7 +165,7 @@ func getLastSaveTime(instanceID string, configPath string) int64 {
 }
 
 func bindAndWriteTestData(instanceID string) {
-	status, bindingBytes := bindInstance(instanceID, "somebindingID")
+	status, bindingBytes := brokerClient.BindInstance(instanceID, "somebindingID")
 	Ω(status).To(Equal(http.StatusCreated))
 	bindingResponse := map[string]interface{}{}
 	json.Unmarshal(bindingBytes, &bindingResponse)
