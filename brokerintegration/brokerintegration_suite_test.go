@@ -57,8 +57,6 @@ var _ = BeforeSuite(func() {
 
 	brokerClient = &integration.BrokerClient{Config: &brokerConfig}
 
-	backupExecutablePath = buildExecutable("github.com/pivotal-cf/cf-redis-broker/cmd/backup")
-
 	Ω(serviceAvailable(brokerPort)).Should(BeTrue())
 })
 

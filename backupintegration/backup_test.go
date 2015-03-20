@@ -1,4 +1,4 @@
-package brokerintegration_test
+package backupintegration_test
 
 import (
 	"encoding/json"
