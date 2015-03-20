@@ -22,7 +22,7 @@ var _ = Describe("Deprovisioning dedicated instance", func() {
 
 		BeforeEach(func() {
 			instanceID = uuid.NewRandom().String()
-			httpInputs = HTTPExampleInputs{Method: "DELETE", URI: instanceURI(instanceID)}
+			httpInputs = HTTPExampleInputs{Method: "DELETE", URI: brokerClient.InstanceURI(instanceID)}
 
 			code, _ := brokerClient.ProvisionInstance(instanceID, "dedicated")
 			Ω(code).Should(Equal(201))

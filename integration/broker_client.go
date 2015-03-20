@@ -33,7 +33,7 @@ func (brokerClient *BrokerClient) ProvisionInstance(instanceID string, plan stri
 	}
 
 	return ExecuteAuthenticatedHTTPRequestWithBody("PUT",
-		brokerClient.instanceURI(instanceID),
+		brokerClient.InstanceURI(instanceID),
 		brokerClient.Config.AuthConfiguration.Username,
 		brokerClient.Config.AuthConfiguration.Password,
 		payloadBytes)
@@ -44,25 +44,25 @@ func (brokerClient *BrokerClient) MakeCatalogRequest() (int, []byte) {
 }
 
 func (brokerClient *BrokerClient) BindInstance(instanceID, bindingID string) (int, []byte) {
-	return brokerClient.executeAuthenticatedRequest("PUT", brokerClient.bindingURI(instanceID, bindingID))
+	return brokerClient.executeAuthenticatedRequest("PUT", brokerClient.BindingURI(instanceID, bindingID))
 }
 
 func (brokerClient *BrokerClient) UnbindInstance(instanceID, bindingID string) (int, []byte) {
-	return brokerClient.executeAuthenticatedRequest("DELETE", brokerClient.bindingURI(instanceID, bindingID))
+	return brokerClient.executeAuthenticatedRequest("DELETE", brokerClient.BindingURI(instanceID, bindingID))
 }
 
 func (brokerClient *BrokerClient) DeprovisionInstance(instanceID string) (int, []byte) {
-	return brokerClient.executeAuthenticatedRequest("DELETE", brokerClient.instanceURI(instanceID))
+	return brokerClient.executeAuthenticatedRequest("DELETE", brokerClient.InstanceURI(instanceID))
 }
 
 func (brokerClient *BrokerClient) executeAuthenticatedRequest(httpMethod, url string) (int, []byte) {
 	return ExecuteAuthenticatedHTTPRequest(httpMethod, url, brokerClient.Config.AuthConfiguration.Username, brokerClient.Config.AuthConfiguration.Password)
 }
 
-func (brokerClient *BrokerClient) instanceURI(instanceID string) string {
+func (brokerClient *BrokerClient) InstanceURI(instanceID string) string {
 	return fmt.Sprintf("http://localhost:%s/v2/service_instances/%s", brokerClient.Config.Port, instanceID)
 }
 
-func (brokerClient *BrokerClient) bindingURI(instanceID, bindingID string) string {
-	return brokerClient.instanceURI(instanceID) + "/service_bindings/" + bindingID
+func (brokerClient *BrokerClient) BindingURI(instanceID, bindingID string) string {
+	return brokerClient.InstanceURI(instanceID) + "/service_bindings/" + bindingID
 }

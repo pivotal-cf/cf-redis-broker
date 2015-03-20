@@ -19,7 +19,7 @@ var _ = Describe("Provision shared instance", func() {
 	BeforeEach(func() {
 		instanceID = uuid.NewRandom().String()
 		initialRedisProcessCount = getRedisProcessCount()
-		serviceInstanceURI := instanceURI(instanceID)
+		serviceInstanceURI := brokerClient.InstanceURI(instanceID)
 		httpInputs = HTTPExampleInputs{
 			Method: "PUT",
 			URI:    serviceInstanceURI,

@@ -20,7 +20,7 @@ var _ = Describe("Dedicated instance binding", func() {
 		bindingID = uuid.NewRandom().String()
 		httpInputs = HTTPExampleInputs{
 			Method: "PUT",
-			URI:    bindingURI(instanceID, bindingID),
+			URI:    brokerClient.BindingURI(instanceID, bindingID),
 		}
 	})
 

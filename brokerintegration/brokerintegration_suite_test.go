@@ -103,14 +103,6 @@ func assetPath(filename string) (string, error) {
 	return filepath.Abs(path.Join("assets", filename))
 }
 
-func instanceURI(instanceID string) string {
-	return fmt.Sprintf("http://localhost:%d/v2/service_instances/%s", brokerPort, instanceID)
-}
-
-func bindingURI(instanceID, bindingID string) string {
-	return instanceURI(instanceID) + "/service_bindings/" + bindingID
-}
-
 func buildRedisClient(port uint, host string, password string) redisclient.Conn {
 	url := fmt.Sprintf("%s:%d", host, port)
 

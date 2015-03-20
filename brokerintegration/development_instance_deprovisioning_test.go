@@ -16,7 +16,7 @@ var _ = Describe("Deprovisioning shared instance", func() {
 		BeforeEach(func() {
 
 			instanceID = uuid.NewRandom().String()
-			httpInputs = HTTPExampleInputs{Method: "DELETE", URI: instanceURI(instanceID)}
+			httpInputs = HTTPExampleInputs{Method: "DELETE", URI: brokerClient.InstanceURI(instanceID)}
 
 			code, _ := brokerClient.ProvisionInstance(instanceID, "shared")
 			Ω(code).To(Equal(201))
