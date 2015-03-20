@@ -140,7 +140,7 @@ var _ = Describe("Debug", func() {
 
 				Context("then unbound", func() {
 					BeforeEach(func() {
-						status, _ := unbindInstance("SOME-GUID", "foo-binding")
+						status, _ := brokerClient.UnbindInstance("SOME-GUID", "foo-binding")
 						Ω(status).Should(Equal(http.StatusOK))
 					})
 

@@ -107,10 +107,6 @@ func makeCatalogRequest() (int, []byte) {
 	return integration.ExecuteAuthenticatedHTTPRequest("GET", "http://localhost:3000/v2/catalog", brokerConfig.AuthConfiguration.Username, brokerConfig.AuthConfiguration.Password)
 }
 
-func unbindInstance(instanceID, bindingID string) (int, []byte) {
-	return integration.ExecuteAuthenticatedHTTPRequest("DELETE", bindingURI(instanceID, bindingID), brokerConfig.AuthConfiguration.Username, brokerConfig.AuthConfiguration.Password)
-}
-
 func deprovisionInstance(instanceID string) (int, []byte) {
 	return integration.ExecuteAuthenticatedHTTPRequest("DELETE", instanceURI(instanceID), brokerConfig.AuthConfiguration.Username, brokerConfig.AuthConfiguration.Password)
 }

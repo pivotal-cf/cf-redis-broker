@@ -28,15 +28,15 @@ var _ = Describe("Dedicated instance unbinding", func() {
 	})
 
 	It("should respond correctly", func() {
-		code, body := unbindInstance(instanceID, bindingID)
+		code, body := brokerClient.UnbindInstance(instanceID, bindingID)
 		Ω(code).Should(Equal(200))
 		Ω(body).Should(MatchJSON("{}"))
 
-		code, body = unbindInstance(instanceID, bindingID)
+		code, body = brokerClient.UnbindInstance(instanceID, bindingID)
 		Ω(code).To(Equal(410))
 		Ω(body).Should(MatchJSON("{}"))
 
-		code, body = unbindInstance("NON-EXISTANT", bindingID)
+		code, body = brokerClient.UnbindInstance("NON-EXISTANT", bindingID)
 		Ω(code).To(Equal(404))
 		Ω(body).Should(MatchJSON("{}"))
 	})

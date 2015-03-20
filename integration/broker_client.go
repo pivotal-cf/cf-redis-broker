@@ -43,6 +43,10 @@ func (brokerClient *BrokerClient) BindInstance(instanceID, bindingID string) (in
 	return ExecuteAuthenticatedHTTPRequest("PUT", brokerClient.bindingURI(instanceID, bindingID), brokerClient.Config.AuthConfiguration.Username, brokerClient.Config.AuthConfiguration.Password)
 }
 
+func (brokerClient *BrokerClient) UnbindInstance(instanceID, bindingID string) (int, []byte) {
+	return ExecuteAuthenticatedHTTPRequest("DELETE", brokerClient.bindingURI(instanceID, bindingID), brokerClient.Config.AuthConfiguration.Username, brokerClient.Config.AuthConfiguration.Password)
+}
+
 func (brokerClient *BrokerClient) instanceURI(instanceID string) string {
 	return fmt.Sprintf("http://localhost:%s/v2/service_instances/%s", brokerClient.Config.Port, instanceID)
 }
