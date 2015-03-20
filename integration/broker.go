@@ -4,17 +4,16 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"path"
-	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
+	"github.com/pivotal-cf/cf-redis-broker/integration/helpers"
 )
 
 func LoadBrokerConfig(brokerFilename string) brokerconfig.Config {
-	brokerConfigPath, err := assetPath(brokerFilename)
+	brokerConfigPath, err := helpers.AssetPath(brokerFilename)
 	Ω(err).ToNot(HaveOccurred())
 
 	brokerConfig, err := brokerconfig.ParseConfig(brokerConfigPath)
@@ -38,7 +37,7 @@ func buildExecutable(sourcePath string) string {
 }
 
 func LaunchProcessWithBrokerConfig(executablePath string, brokerConfigName string) *gexec.Session {
-	brokerConfigFile, filePathErr := assetPath(brokerConfigName)
+	brokerConfigFile, filePathErr := helpers.AssetPath(brokerConfigName)
 	Ω(filePathErr).ToNot(HaveOccurred())
 
 	os.Setenv("BROKER_CONFIG_PATH", brokerConfigFile)
@@ -46,10 +45,6 @@ func LaunchProcessWithBrokerConfig(executablePath string, brokerConfigName strin
 	processCmd.Stdout = GinkgoWriter
 	processCmd.Stderr = GinkgoWriter
 	return runCommand(processCmd)
-}
-
-func assetPath(filename string) (string, error) {
-	return filepath.Abs(path.Join("assets", filename))
 }
 
 func runCommand(cmd *exec.Cmd) *gexec.Session {

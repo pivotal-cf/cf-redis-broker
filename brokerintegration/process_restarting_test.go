@@ -8,8 +8,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strconv"
-	"strings"
 	"syscall"
 	"time"
 
@@ -19,6 +17,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pivotal-cf/cf-redis-broker/integration"
+	"github.com/pivotal-cf/cf-redis-broker/integration/helpers"
 
 	"github.com/pivotal-cf/cf-redis-broker/availability"
 )
@@ -31,7 +30,7 @@ var _ = Describe("restarting processes", func() {
 		var password string
 		var client redisclient.Conn
 
-		processMonitorPath := buildExecutable("github.com/pivotal-cf/cf-redis-broker/cmd/processmonitor")
+		processMonitorPath := helpers.BuildExecutable("github.com/pivotal-cf/cf-redis-broker/cmd/processmonitor")
 
 		configCommand := "CONFIG"
 
@@ -54,11 +53,11 @@ var _ = Describe("restarting processes", func() {
 			host = credentials["host"].(string)
 			password = credentials["password"].(string)
 
-			client = buildRedisClient(port, host, password)
+			client = helpers.BuildRedisClient(port, host, password)
 		})
 
 		AfterEach(func() {
-			killProcess(monitorSession)
+			helpers.KillProcess(monitorSession)
 			client.Close()
 			brokerClient.DeprovisionInstance(instanceID)
 		})
@@ -67,11 +66,11 @@ var _ = Describe("restarting processes", func() {
 			_, err := client.Do("SET", "foo", "bar")
 			Ω(err).ShouldNot(HaveOccurred())
 
-			killRedisProcess(instanceID)
+			helpers.KillRedisProcess(instanceID, brokerConfig)
 
-			Ω(serviceAvailable(port)).Should(BeTrue())
+			Ω(helpers.ServiceAvailable(port)).Should(BeTrue())
 
-			client = buildRedisClient(port, host, password)
+			client = helpers.BuildRedisClient(port, host, password)
 
 			value, err := redisclient.String(client.Do("GET", "foo"))
 			Ω(err).ToNot(HaveOccurred())
@@ -88,11 +87,11 @@ var _ = Describe("restarting processes", func() {
 				Ω(err).ShouldNot(HaveOccurred())
 				lockFile.Close()
 
-				Ω(serviceAvailable(port)).Should(BeTrue())
+				Ω(helpers.ServiceAvailable(port)).Should(BeTrue())
 
-				killRedisProcess(instanceID)
+				helpers.KillRedisProcess(instanceID, brokerConfig)
 
-				Consistently(func() bool { return serviceAvailable(port) }, durationForProcessMonitorToRestartInstance()).Should(BeFalse())
+				Consistently(func() bool { return helpers.ServiceAvailable(port) }, durationForProcessMonitorToRestartInstance()).Should(BeFalse())
 			})
 		})
 
@@ -100,15 +99,15 @@ var _ = Describe("restarting processes", func() {
 			logDirPath, err := filepath.Abs(path.Join(brokerConfig.RedisConfiguration.InstanceLogDirectory, instanceID))
 			Ω(err).ToNot(HaveOccurred())
 
-			killProcess(monitorSession)
-			killRedisProcess(instanceID)
+			helpers.KillProcess(monitorSession)
+			helpers.KillRedisProcess(instanceID, brokerConfig)
 
 			err = os.RemoveAll(logDirPath)
 			Ω(err).NotTo(HaveOccurred())
 
 			monitorSession = integration.LaunchProcessWithBrokerConfig(processMonitorPath, "broker.yml")
 
-			Ω(serviceAvailable(port)).Should(BeTrue())
+			Ω(helpers.ServiceAvailable(port)).Should(BeTrue())
 
 			_, err = ioutil.ReadDir(logDirPath)
 			Ω(err).NotTo(HaveOccurred())
@@ -116,14 +115,14 @@ var _ = Describe("restarting processes", func() {
 
 		Context("when config (e.g. maxmemory) gets updated", func() {
 			BeforeEach(func() {
-				killProcess(monitorSession)
-				killRedisProcess(instanceID)
+				helpers.KillProcess(monitorSession)
+				helpers.KillRedisProcess(instanceID, brokerConfig)
 
 				monitorSession = integration.LaunchProcessWithBrokerConfig(processMonitorPath, "broker.yml.updated_maxmemory")
 
-				Ω(serviceAvailable(port)).Should(BeTrue())
+				Ω(helpers.ServiceAvailable(port)).Should(BeTrue())
 
-				client = buildRedisClient(port, host, password)
+				client = helpers.BuildRedisClient(port, host, password)
 			})
 
 			It("Has the new memory limit", func() {
@@ -148,7 +147,7 @@ var _ = Describe("restarting processes", func() {
 			BeforeEach(func() {
 				monitorSession.Signal(syscall.SIGUSR1)
 
-				killRedisProcess(instanceID)
+				helpers.KillRedisProcess(instanceID, brokerConfig)
 
 				allowTimeForProcessMonitorToRestartInstances()
 			})
@@ -177,26 +176,7 @@ func allowTimeForProcessMonitorToRestartInstances() {
 	time.Sleep(durationForProcessMonitorToRestartInstance())
 }
 
-func killRedisProcess(instanceID string) {
-	pidFilePath, err := filepath.Abs(path.Join(brokerConfig.RedisConfiguration.InstanceDataDirectory, instanceID, "redis-server.pid"))
-	Ω(err).ToNot(HaveOccurred())
-
-	fileContent, err := ioutil.ReadFile(pidFilePath)
-	Ω(err).ToNot(HaveOccurred())
-
-	pid, err := strconv.ParseInt(strings.TrimSpace(string(fileContent)), 10, 32)
-	Ω(err).ToNot(HaveOccurred())
-
-	process, err := os.FindProcess(int(pid))
-	Ω(err).ToNot(HaveOccurred())
-
-	err = process.Kill()
-	Ω(err).ToNot(HaveOccurred())
-
-	process.Wait()
-}
-
 func relaunchProcessMonitorWithConfig(processMonitorPath, brokerConfigName string) {
-	killProcess(monitorSession)
+	helpers.KillProcess(monitorSession)
 	monitorSession = integration.LaunchProcessWithBrokerConfig(processMonitorPath, brokerConfigName)
 }

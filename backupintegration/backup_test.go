@@ -16,6 +16,7 @@ import (
 	"github.com/mitchellh/goamz/s3/s3test"
 	"github.com/onsi/gomega/gexec"
 	"github.com/pivotal-cf/cf-redis-broker/backupconfig"
+	"github.com/pivotal-cf/cf-redis-broker/integration/helpers"
 	"github.com/pivotal-cf/cf-redis-broker/redis/client"
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 
@@ -130,7 +131,7 @@ var _ = Describe("backups", func() {
 
 		Context("when an instance backup fails", func() {
 			It("still backs up the other instances", func() {
-				killRedisProcess(instanceIDs[0])
+				helpers.KillRedisProcess(instanceIDs[0], brokerConfig)
 
 				backupExitStatusCode := runBackupWithConfig(backupExecutablePath, backupConfigPath).Wait(time.Second * 10).ExitCode()
 				Ω(backupExitStatusCode).Should(Equal(1))
@@ -171,7 +172,7 @@ func bindAndWriteTestData(instanceID string) {
 	json.Unmarshal(bindingBytes, &bindingResponse)
 	credentials := bindingResponse["credentials"].(map[string]interface{})
 	port := uint(credentials["port"].(float64))
-	redisClient := buildRedisClient(port, credentials["host"].(string), credentials["password"].(string))
+	redisClient := helpers.BuildRedisClient(port, credentials["host"].(string), credentials["password"].(string))
 	defer redisClient.Close()
 	for i := 0; i < 20; i++ {
 		_, err := redisClient.Do("SET", fmt.Sprintf("foo%d", i), fmt.Sprintf("bar%d", i))

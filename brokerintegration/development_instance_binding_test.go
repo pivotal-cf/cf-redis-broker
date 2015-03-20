@@ -7,6 +7,7 @@ import (
 	redigo "github.com/garyburd/redigo/redis"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/pivotal-cf/cf-redis-broker/integration/helpers"
 )
 
 var _ = Describe("Shared instance binding", func() {
@@ -52,7 +53,7 @@ var _ = Describe("Shared instance binding", func() {
 				port := uint(credentials["port"].(float64))
 				host := credentials["host"].(string)
 
-				client = buildRedisClient(port, host, password)
+				client = helpers.BuildRedisClient(port, host, password)
 			})
 
 			AfterEach(func() {

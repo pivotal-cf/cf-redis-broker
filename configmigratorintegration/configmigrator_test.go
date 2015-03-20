@@ -6,12 +6,12 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"path/filepath"
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
+	"github.com/pivotal-cf/cf-redis-broker/integration/helpers"
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 )
 
@@ -46,7 +46,9 @@ var _ = Describe("ConfigMigrator Intgration", func() {
 })
 
 func copyOverFromAssets(fileName, dir string) {
-	data, _ := ioutil.ReadFile(assetPath(fileName))
+	assetPath, err := helpers.AssetPath(fileName)
+	Ω(err).NotTo(HaveOccurred())
+	data, _ := ioutil.ReadFile(assetPath)
 	ioutil.WriteFile(path.Join(dir, fileName), data, 0644)
 }
 
@@ -60,18 +62,14 @@ func buildExecutable(sourcePath string) string {
 }
 
 func launchProcessWithBrokerConfig(executablePath string, brokerConfigName string) *gexec.Session {
-	brokerConfigFile := assetPath(brokerConfigName)
+	brokerConfigFile, err := helpers.AssetPath(brokerConfigName)
+	Ω(err).NotTo(HaveOccurred())
 
 	os.Setenv("BROKER_CONFIG_PATH", brokerConfigFile)
 	processCmd := exec.Command(executablePath)
 	processCmd.Stdout = GinkgoWriter
 	processCmd.Stderr = GinkgoWriter
 	return runCommand(processCmd)
-}
-
-func assetPath(filename string) string {
-	path, _ := filepath.Abs(path.Join("assets", filename))
-	return path
 }
 
 func runCommand(cmd *exec.Cmd) *gexec.Session {

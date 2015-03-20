@@ -1,25 +1,17 @@
 package brokerintegration_test
 
 import (
-	"fmt"
-	"log"
-	"net"
-	"os"
 	"os/exec"
-	"path"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	"encoding/json"
 
-	redisclient "github.com/garyburd/redigo/redis"
-	"github.com/pivotal-cf/cf-redis-broker/availability"
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
 	"github.com/pivotal-cf/cf-redis-broker/debug"
 	"github.com/pivotal-cf/cf-redis-broker/integration"
+	"github.com/pivotal-cf/cf-redis-broker/integration/helpers"
 
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/reporters"
@@ -41,14 +33,8 @@ func TestBrokerintegration(t *testing.T) {
 	RunSpecsWithDefaultAndCustomReporters(t, "Broker Integration Suite", []Reporter{junitReporter})
 }
 
-func safelyResetAllDirectories() {
-	removeAndRecreateDir("/tmp/redis-data-dir")
-	removeAndRecreateDir("/tmp/redis-log-dir")
-	removeAndRecreateDir("/tmp/redis-config-dir")
-}
-
 var _ = BeforeEach(func() {
-	safelyResetAllDirectories()
+	helpers.SafelyResetAllDirectories()
 })
 
 var _ = BeforeSuite(func() {
@@ -57,36 +43,15 @@ var _ = BeforeSuite(func() {
 
 	brokerClient = &integration.BrokerClient{Config: &brokerConfig}
 
-	Ω(serviceAvailable(brokerPort)).Should(BeTrue())
+	Ω(helpers.ServiceAvailable(brokerPort)).Should(BeTrue())
 })
 
 var _ = AfterSuite(func() {
-	killProcess(brokerSession)
+	helpers.KillProcess(brokerSession)
 })
 
-func removeAndRecreateDir(path string) {
-	err := os.RemoveAll(path)
-	Ω(err).ShouldNot(HaveOccurred())
-	err = os.MkdirAll(path, 0755)
-	Ω(err).ShouldNot(HaveOccurred())
-}
-
-func buildExecutable(sourcePath string) string {
-	executable, err := gexec.Build(sourcePath)
-	if err != nil {
-		log.Fatalf("executable %s could not be built: %s", sourcePath, err)
-		os.Exit(1)
-	}
-	return executable
-}
-
-func killProcess(session *gexec.Session) {
-	session.Terminate().Wait()
-	Eventually(session).Should(gexec.Exit())
-}
-
 func getRedisProcessCount() int {
-	scriptPath, filepathErr := assetPath("redis_process_count.sh")
+	scriptPath, filepathErr := helpers.AssetPath("redis_process_count.sh")
 	Ω(filepathErr).NotTo(HaveOccurred())
 
 	output, cmdErr := exec.Command(scriptPath).Output()
@@ -95,35 +60,6 @@ func getRedisProcessCount() int {
 	result, numberParseErr := strconv.Atoi(strings.TrimSpace(string(output)))
 	Ω(numberParseErr).NotTo(HaveOccurred())
 	return result
-}
-
-func assetPath(filename string) (string, error) {
-	return filepath.Abs(path.Join("assets", filename))
-}
-
-func buildRedisClient(port uint, host string, password string) redisclient.Conn {
-	url := fmt.Sprintf("%s:%d", host, port)
-
-	client, err := redisclient.Dial("tcp", url)
-	Ω(err).NotTo(HaveOccurred())
-
-	_, err = client.Do("AUTH", password)
-	Ω(err).NotTo(HaveOccurred())
-
-	return client
-}
-
-func serviceAvailable(port uint) bool {
-	address, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("localhost:%d", port))
-	if err != nil {
-		return false
-	}
-
-	if err = availability.Check(address, 10*time.Second); err != nil {
-		return false
-	}
-
-	return true
 }
 
 func getDebugInfo() debug.Info {

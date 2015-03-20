@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pivotal-cf/cf-redis-broker/integration"
+	"github.com/pivotal-cf/cf-redis-broker/integration/helpers"
 )
 
 var _ = Describe("Provision dedicated instance", func() {
@@ -22,9 +23,9 @@ var _ = Describe("Provision dedicated instance", func() {
 
 	Context("when the broker is restarted", func() {
 		BeforeEach(func() {
-			killProcess(brokerSession)
+			helpers.KillProcess(brokerSession)
 			brokerSession = integration.BuildAndLaunchBroker("broker.yml")
-			Ω(serviceAvailable(brokerPort)).Should(BeTrue())
+			Ω(helpers.ServiceAvailable(brokerPort)).Should(BeTrue())
 		})
 
 		It("retains state", func() {
@@ -42,15 +43,15 @@ var _ = Describe("Provision dedicated instance", func() {
 
 	Context("when the broker is restarted with a new node", func() {
 		BeforeEach(func() {
-			killProcess(brokerSession)
+			helpers.KillProcess(brokerSession)
 			brokerSession = integration.BuildAndLaunchBroker("broker.yml-extra-node")
-			Ω(serviceAvailable(brokerPort)).Should(BeTrue())
+			Ω(helpers.ServiceAvailable(brokerPort)).Should(BeTrue())
 		})
 
 		AfterEach(func() {
-			killProcess(brokerSession)
+			helpers.KillProcess(brokerSession)
 			brokerSession = integration.BuildAndLaunchBroker("broker.yml")
-			Ω(serviceAvailable(brokerPort)).Should(BeTrue())
+			Ω(helpers.ServiceAvailable(brokerPort)).Should(BeTrue())
 		})
 
 		It("retains state, and adds the extra node", func() {
