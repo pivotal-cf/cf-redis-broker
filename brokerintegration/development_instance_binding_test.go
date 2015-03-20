@@ -31,7 +31,7 @@ var _ = Describe("Shared instance binding", func() {
 		})
 
 		AfterEach(func() {
-			deprovisionInstance(instanceID)
+			brokerClient.DeprovisionInstance(instanceID)
 		})
 
 		HTTPResponseShouldContainExpectedHTTPStatusCode(&httpInputs, 201)

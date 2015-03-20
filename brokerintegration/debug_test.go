@@ -40,15 +40,15 @@ var _ = Describe("Debug", func() {
 					}
 				}
 
-				deprovisionInstance("INSTANCE-3")
+				brokerClient.DeprovisionInstance("INSTANCE-3")
 
 				brokerClient.ProvisionInstance("NEW-INSTANCE", "dedicated")
 			})
 
 			AfterEach(func() {
-				deprovisionInstance("NEW-INSTANCE")
-				deprovisionInstance("INSTANCE-2")
-				deprovisionInstance("INSTANCE-1")
+				brokerClient.DeprovisionInstance("NEW-INSTANCE")
+				brokerClient.DeprovisionInstance("INSTANCE-2")
+				brokerClient.DeprovisionInstance("INSTANCE-1")
 			})
 
 			It("reuses deprovisioned instance", func() {
@@ -77,7 +77,7 @@ var _ = Describe("Debug", func() {
 			})
 
 			AfterEach(func() {
-				status, _ := deprovisionInstance("SOME-GUID")
+				status, _ := brokerClient.DeprovisionInstance("SOME-GUID")
 				Ω(status).Should(Equal(200))
 			})
 
@@ -101,7 +101,7 @@ var _ = Describe("Debug", func() {
 
 			Context("then deprovisioned", func() {
 				BeforeEach(func() {
-					status, _ := deprovisionInstance("SOME-GUID")
+					status, _ := brokerClient.DeprovisionInstance("SOME-GUID")
 					Ω(status).Should(Equal(200))
 				})
 

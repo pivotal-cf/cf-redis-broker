@@ -33,7 +33,7 @@ var _ = Describe("Deprovisioning dedicated instance", func() {
 
 		It("tells node agent to deprovision instance", func() {
 			agentRequests = []*http.Request{}
-			deprovisionInstance(instanceID)
+			brokerClient.DeprovisionInstance(instanceID)
 			Expect(agentRequests).To(HaveLen(1))
 			Expect(agentRequests[0].Method).To(Equal("DELETE"))
 			Expect(agentRequests[0].URL.Path).To(Equal("/"))
@@ -46,17 +46,17 @@ var _ = Describe("Deprovisioning dedicated instance", func() {
 
 			AfterEach(func() {
 				agentResponseStatus = http.StatusOK
-				deprovisionInstance(instanceID)
+				brokerClient.DeprovisionInstance(instanceID)
 			})
 
 			It("returns failing error code", func() {
-				code, _ := deprovisionInstance(instanceID)
+				code, _ := brokerClient.DeprovisionInstance(instanceID)
 				Ω(code).Should(Equal(500))
 			})
 
 			It("does not deallocate the instance", func() {
 				intialAllocatedCount := getDebugInfo().Allocated.Count
-				deprovisionInstance(instanceID)
+				brokerClient.DeprovisionInstance(instanceID)
 				finalAllocatedCount := getDebugInfo().Allocated.Count
 				Ω(finalAllocatedCount).To(Equal(intialAllocatedCount))
 			})
@@ -66,7 +66,7 @@ var _ = Describe("Deprovisioning dedicated instance", func() {
 	Context("Deprovision missing instance", func() {
 		It("should fail if the instance being deprovisioned is missing", func() {
 			missingInstanceID := uuid.NewRandom().String()
-			code, _ := deprovisionInstance(missingInstanceID)
+			code, _ := brokerClient.DeprovisionInstance(missingInstanceID)
 			Ω(code).Should(Equal(410))
 		})
 	})

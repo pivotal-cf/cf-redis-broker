@@ -64,7 +64,7 @@ var _ = Describe("backups", func() {
 
 		AfterEach(func() {
 			for _, instanceID := range instanceIDs {
-				deprovisionInstance(instanceID)
+				brokerClient.DeprovisionInstance(instanceID)
 				bucket.Del(fmt.Sprintf("%s/%s", backupConfig.S3Configuration.Path, instanceID))
 			}
 

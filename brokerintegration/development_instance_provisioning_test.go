@@ -32,7 +32,7 @@ var _ = Describe("Provision shared instance", func() {
 
 	Context("when instance is created successfully", func() {
 		AfterEach(func() {
-			deprovisionInstance(instanceID)
+			brokerClient.DeprovisionInstance(instanceID)
 		})
 
 		It("returns 201", func() {
@@ -80,26 +80,26 @@ var _ = Describe("Provision shared instance", func() {
 		})
 
 		AfterEach(func() {
-			deprovisionInstance("1")
-			deprovisionInstance("2")
-			deprovisionInstance("3")
+			brokerClient.DeprovisionInstance("1")
+			brokerClient.DeprovisionInstance("2")
+			brokerClient.DeprovisionInstance("3")
 		})
 
 		It("does not start a Redis instance", func() {
 			brokerClient.ProvisionInstance("4", "shared")
-			defer deprovisionInstance("4")
+			defer brokerClient.DeprovisionInstance("4")
 			Ω(getRedisProcessCount()).To(Equal(initialRedisProcessCount + 3))
 		})
 
 		It("returns a 500", func() {
 			statusCode, _ := brokerClient.ProvisionInstance("4", "shared")
-			defer deprovisionInstance("4")
+			defer brokerClient.DeprovisionInstance("4")
 			Ω(statusCode).To(Equal(500))
 		})
 
 		It("returns a useful error message in the correct JSON format", func() {
 			_, body := brokerClient.ProvisionInstance("4", "shared")
-			defer deprovisionInstance("4")
+			defer brokerClient.DeprovisionInstance("4")
 
 			Ω(string(body)).To(MatchJSON(`{"description":"instance limit for this service has been reached"}`))
 		})
@@ -111,7 +111,7 @@ var _ = Describe("Provision shared instance", func() {
 		})
 
 		AfterEach(func() {
-			deprovisionInstance(instanceID)
+			brokerClient.DeprovisionInstance(instanceID)
 		})
 
 		It("should fail if we try to provision a second instance with the same ID", func() {

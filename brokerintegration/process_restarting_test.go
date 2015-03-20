@@ -60,7 +60,7 @@ var _ = Describe("restarting processes", func() {
 		AfterEach(func() {
 			killProcess(monitorSession)
 			client.Close()
-			deprovisionInstance(instanceID)
+			brokerClient.DeprovisionInstance(instanceID)
 		})
 
 		It("is restarted", func() {
@@ -162,7 +162,7 @@ var _ = Describe("restarting processes", func() {
 			})
 
 			AfterEach(func() {
-				deprovisionInstance(instanceID)
+				brokerClient.DeprovisionInstance(instanceID)
 				relaunchProcessMonitorWithConfig(processMonitorPath, "broker.yml")
 			})
 		})

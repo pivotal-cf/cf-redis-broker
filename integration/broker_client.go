@@ -40,11 +40,19 @@ func (brokerClient *BrokerClient) ProvisionInstance(instanceID string, plan stri
 }
 
 func (brokerClient *BrokerClient) BindInstance(instanceID, bindingID string) (int, []byte) {
-	return ExecuteAuthenticatedHTTPRequest("PUT", brokerClient.bindingURI(instanceID, bindingID), brokerClient.Config.AuthConfiguration.Username, brokerClient.Config.AuthConfiguration.Password)
+	return brokerClient.executeAuthenticatedRequest("PUT", brokerClient.bindingURI(instanceID, bindingID))
 }
 
 func (brokerClient *BrokerClient) UnbindInstance(instanceID, bindingID string) (int, []byte) {
-	return ExecuteAuthenticatedHTTPRequest("DELETE", brokerClient.bindingURI(instanceID, bindingID), brokerClient.Config.AuthConfiguration.Username, brokerClient.Config.AuthConfiguration.Password)
+	return brokerClient.executeAuthenticatedRequest("DELETE", brokerClient.bindingURI(instanceID, bindingID))
+}
+
+func (brokerClient *BrokerClient) DeprovisionInstance(instanceID string) (int, []byte) {
+	return brokerClient.executeAuthenticatedRequest("DELETE", brokerClient.instanceURI(instanceID))
+}
+
+func (brokerClient *BrokerClient) executeAuthenticatedRequest(httpMethod, url string) (int, []byte) {
+	return ExecuteAuthenticatedHTTPRequest(httpMethod, url, brokerClient.Config.AuthConfiguration.Username, brokerClient.Config.AuthConfiguration.Password)
 }
 
 func (brokerClient *BrokerClient) instanceURI(instanceID string) string {

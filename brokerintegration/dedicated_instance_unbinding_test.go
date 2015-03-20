@@ -24,7 +24,7 @@ var _ = Describe("Dedicated instance unbinding", func() {
 	})
 
 	AfterEach(func() {
-		deprovisionInstance(instanceID)
+		brokerClient.DeprovisionInstance(instanceID)
 	})
 
 	It("should respond correctly", func() {

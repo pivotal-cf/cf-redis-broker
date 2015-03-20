@@ -39,7 +39,7 @@ var _ = Describe("Multiple users", func() {
 
 	AfterEach(func() {
 		for _, instanceID := range instanceIDs {
-			deprovisionInstance(instanceID)
+			brokerClient.DeprovisionInstance(instanceID)
 		}
 	})
 })

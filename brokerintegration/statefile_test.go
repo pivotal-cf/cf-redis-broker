@@ -17,7 +17,7 @@ var _ = Describe("Provision dedicated instance", func() {
 	})
 
 	AfterEach(func() {
-		deprovisionInstance(instanceID)
+		brokerClient.DeprovisionInstance(instanceID)
 	})
 
 	Context("when the broker is restarted", func() {

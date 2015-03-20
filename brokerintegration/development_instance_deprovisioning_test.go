@@ -29,7 +29,7 @@ var _ = Describe("Deprovisioning shared instance", func() {
 
 			Ω(getRedisProcessCount()).To(Equal(1))
 
-			deprovisionInstance(instanceID)
+			brokerClient.DeprovisionInstance(instanceID)
 			Ω(getRedisProcessCount()).To(Equal(0))
 		})
 	})
@@ -37,7 +37,7 @@ var _ = Describe("Deprovisioning shared instance", func() {
 	Context("Deprovision missing instance", func() {
 		It("should fail if the instance being deprovisioned is missing", func() {
 			missingInstanceID := uuid.NewRandom().String()
-			code, _ := deprovisionInstance(missingInstanceID)
+			code, _ := brokerClient.DeprovisionInstance(missingInstanceID)
 			Ω(code).To(Equal(410))
 		})
 	})

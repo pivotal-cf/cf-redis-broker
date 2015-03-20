@@ -16,7 +16,7 @@ var _ = Describe("Shared instance unbinding", func() {
 	})
 
 	AfterEach(func() {
-		deprovisionInstance("foo")
+		brokerClient.DeprovisionInstance("foo")
 	})
 
 	Context("with valid instance", func() {
