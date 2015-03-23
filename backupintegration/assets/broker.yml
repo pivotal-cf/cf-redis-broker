@@ -15,7 +15,7 @@ redis:
     - server1.127.0.0.1.xip.io
     - server2.127.0.0.1.xip.io
     - server3.127.0.0.1.xip.io
-    port: 6379
+    port: 6480
     statefile_path: /tmp/redis-config-dir/statefile.json
 auth:
   password: secret

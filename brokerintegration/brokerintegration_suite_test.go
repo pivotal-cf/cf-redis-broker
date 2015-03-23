@@ -1,6 +1,7 @@
 package brokerintegration_test
 
 import (
+	"net/http"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -26,6 +27,8 @@ var monitorSession *gexec.Session
 var backupExecutablePath string
 var brokerConfig brokerconfig.Config
 var brokerClient *integration.BrokerClient
+var agentRequests []*http.Request
+var agentResponseStatus = http.StatusOK
 
 func TestBrokerintegration(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -45,6 +48,7 @@ var _ = BeforeSuite(func() {
 	brokerClient = &integration.BrokerClient{Config: &brokerConfig}
 
 	Ω(helpers.ServiceAvailable(brokerPort)).Should(BeTrue())
+	startFakeAgent(&agentRequests, &agentResponseStatus)
 })
 
 var _ = AfterSuite(func() {

@@ -14,12 +14,8 @@ import (
 var _ = Describe("Deprovisioning dedicated instance", func() {
 	var instanceID string
 	var httpInputs HTTPExampleInputs
-	var agentRequests []*http.Request
-	var agentResponseStatus = http.StatusOK
 
 	Context("Deprovision running instance", func() {
-		startFakeAgent(&agentRequests, &agentResponseStatus)
-
 		BeforeEach(func() {
 			instanceID = uuid.NewRandom().String()
 			httpInputs = HTTPExampleInputs{Method: "DELETE", URI: brokerClient.InstanceURI(instanceID)}

@@ -34,20 +34,29 @@ func main() {
 
 	instanceDirs, err := ioutil.ReadDir(config.RedisDataDirectory)
 
-	for _, instanceDir := range instanceDirs {
-
-		basename := instanceDir.Name()
-		if strings.HasPrefix(basename, ".") {
-			continue
-		}
-
-		fullPath := filepath.Join(config.RedisDataDirectory, basename)
-		err = backupCreator.Create(fullPath, basename)
+	if instanceDirs[0].Name() == "redis.conf" {
+		err := backupCreator.Create(config.RedisDataDirectory, "ded-in-backip")
 		if err != nil {
 			backupErrors = append(backupErrors, err)
-			logger.Error("error backing up instance", err, lager.Data{
-				"instance_id": basename,
-			})
+			logger.Error("error backing up dedicated instance", err)
+		}
+	} else {
+
+		for _, instanceDir := range instanceDirs {
+
+			basename := instanceDir.Name()
+			if strings.HasPrefix(basename, ".") {
+				continue
+			}
+
+			fullPath := filepath.Join(config.RedisDataDirectory, basename)
+			err = backupCreator.Create(fullPath, basename)
+			if err != nil {
+				backupErrors = append(backupErrors, err)
+				logger.Error("error backing up instance", err, lager.Data{
+					"instance_id": basename,
+				})
+			}
 		}
 	}
 
