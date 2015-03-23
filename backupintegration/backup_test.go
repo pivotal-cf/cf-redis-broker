@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"time"
 
@@ -60,8 +61,10 @@ var _ = Describe("backups", func() {
 		Context("when its a dedicated instance to back up", func() {
 			var redisRunner *integration.RedisRunner
 			var confPath string
+			var instanceID string
 
 			BeforeEach(func() {
+				instanceID = uuid.NewRandom().String()
 				confPath = filepath.Join(brokerConfig.RedisConfiguration.InstanceDataDirectory, "redis.conf")
 				assetPath, _ := helpers.AssetPath("redis-dedicated.conf")
 				redisConfContents, _ := ioutil.ReadFile(assetPath)
@@ -75,16 +78,30 @@ var _ = Describe("backups", func() {
 			})
 
 			It("Should backup to S3", func() {
-				instanceID := uuid.NewRandom().String()
 				status, _ := brokerClient.ProvisionInstance(instanceID, "dedicated")
 				Ω(status).To(Equal(http.StatusCreated))
 				lastSaveTime := getLastSaveTime(instanceID, confPath)
 
 				backupSession := runBackupWithConfig(backupExecutablePath, backupConfigPath)
-
 				backupExitStatusCode := backupSession.Wait(time.Second * 10).ExitCode()
 				Expect(backupExitStatusCode).To(Equal(0))
+
 				Expect(getLastSaveTime(instanceID, confPath)).To(BeNumerically(">", lastSaveTime))
+			})
+
+			It("uploads redis instance RDB file to the correct S3 bucket", func() {
+				status, _ := brokerClient.ProvisionInstance(instanceID, "dedicated")
+				Ω(status).To(Equal(http.StatusCreated))
+
+				bindAndWriteTestData(instanceID)
+				backupSession := runBackupWithConfig(backupExecutablePath, backupConfigPath)
+
+				backupSession.Wait(time.Second * 10).ExitCode()
+				fmt.Println("Reading from:", fmt.Sprintf("%s/%s", backupConfig.S3Configuration.Path, backupConfig.NodeID))
+				retrievedBackupBytes, err := bucket.Get(fmt.Sprintf("%s/%s", backupConfig.S3Configuration.Path, backupConfig.NodeID))
+				Ω(err).NotTo(HaveOccurred())
+				originalData, _ := ioutil.ReadFile(path.Join(backupConfig.RedisDataDirectory, "dump.rdb"))
+				Ω(retrievedBackupBytes).To(Equal(originalData))
 			})
 		})
 

@@ -60,6 +60,10 @@ var _ = Describe("Config", func() {
 			It("Has the correct redis_data_directory", func() {
 				Expect(config.RedisDataDirectory).To(Equal("/the/path/to/redis/data"))
 			})
+
+			It("Has the correct node id", func() {
+				Expect(config.NodeID).To(Equal("dedicated-node-0"))
+			})
 		})
 	})
 })

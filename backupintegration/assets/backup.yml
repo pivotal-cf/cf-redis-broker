@@ -7,3 +7,4 @@ s3:
   region: fake-region-1
 bg_save_timeout: 600
 redis_data_directory: /tmp/redis-data-dir
+node_id: dedicated-node-0

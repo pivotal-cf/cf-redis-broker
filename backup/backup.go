@@ -18,13 +18,12 @@ type Backup struct {
 	Logger lager.Logger
 }
 
-func (backup Backup) Create(instancePath, instanceID string) error {
-	if err := backup.createSnapshot(instancePath); err != nil {
+func (backup Backup) Create(configPath, instanceDataPath, instanceID string) error {
+	if err := backup.createSnapshot(configPath); err != nil {
 		return err
 	}
 
-	pathToRdbFile := path.Join(instancePath, "db", "dump.rdb")
-
+	pathToRdbFile := path.Join(instanceDataPath, "dump.rdb")
 	if !fileExists(pathToRdbFile) {
 		backup.Logger.Info("dump.rdb not found, skipping instance backup", lager.Data{
 			"Local file": pathToRdbFile,
@@ -36,7 +35,6 @@ func (backup Backup) Create(instancePath, instanceID string) error {
 	if err != nil {
 		return err
 	}
-
 	return backup.uploadToS3(instanceID, pathToRdbFile, bucket)
 }
 

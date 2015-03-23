@@ -4,7 +4,9 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/pivotal-cf/cf-redis-broker/backup"
@@ -34,8 +36,11 @@ func main() {
 
 	instanceDirs, err := ioutil.ReadDir(config.RedisDataDirectory)
 
-	if instanceDirs[0].Name() == "redis.conf" {
-		err := backupCreator.Create(config.RedisDataDirectory, "ded-in-backip")
+	if isDedicatedInstance(instanceDirs) {
+		instanceDataPath := filepath.Join(config.RedisDataDirectory)
+		configPath := filepath.Join(config.RedisDataDirectory)
+
+		err := backupCreator.Create(configPath, instanceDataPath, config.NodeID)
 		if err != nil {
 			backupErrors = append(backupErrors, err)
 			logger.Error("error backing up dedicated instance", err)
@@ -49,8 +54,9 @@ func main() {
 				continue
 			}
 
-			fullPath := filepath.Join(config.RedisDataDirectory, basename)
-			err = backupCreator.Create(fullPath, basename)
+			instanceDataPath := path.Join(config.RedisDataDirectory, basename, "db")
+			configPath := path.Join(config.RedisDataDirectory, basename)
+			err = backupCreator.Create(configPath, instanceDataPath, basename)
 			if err != nil {
 				backupErrors = append(backupErrors, err)
 				logger.Error("error backing up instance", err, lager.Data{
@@ -71,4 +77,11 @@ func configPath() string {
 		panic("BACKUP_CONFIG_PATH not set")
 	}
 	return path
+}
+
+func isDedicatedInstance(instanceDirs []os.FileInfo) bool {
+	dedicatedInstance := sort.Search(len(instanceDirs), func(i int) bool {
+		return instanceDirs[i].Name() == "redis.conf"
+	})
+	return dedicatedInstance < len(instanceDirs)
 }
