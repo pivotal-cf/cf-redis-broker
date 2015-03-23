@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"path"
-	"path/filepath"
 	"sort"
 	"strings"
 
@@ -37,10 +36,7 @@ func main() {
 	instanceDirs, err := ioutil.ReadDir(config.RedisDataDirectory)
 
 	if isDedicatedInstance(instanceDirs) {
-		instanceDataPath := filepath.Join(config.RedisDataDirectory)
-		configPath := filepath.Join(config.RedisDataDirectory)
-
-		err := backupCreator.Create(configPath, instanceDataPath, config.NodeID)
+		err := backupCreator.Create(config.RedisDataDirectory, config.RedisDataDirectory, config.NodeID)
 		if err != nil {
 			backupErrors = append(backupErrors, err)
 			logger.Error("error backing up dedicated instance", err)
@@ -54,8 +50,8 @@ func main() {
 				continue
 			}
 
-			instanceDataPath := path.Join(config.RedisDataDirectory, basename, "db")
 			configPath := path.Join(config.RedisDataDirectory, basename)
+			instanceDataPath := path.Join(configPath, "db")
 			err = backupCreator.Create(configPath, instanceDataPath, basename)
 			if err != nil {
 				backupErrors = append(backupErrors, err)

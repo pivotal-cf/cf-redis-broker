@@ -97,7 +97,6 @@ var _ = Describe("backups", func() {
 				backupSession := runBackupWithConfig(backupExecutablePath, backupConfigPath)
 
 				backupSession.Wait(time.Second * 10).ExitCode()
-				fmt.Println("Reading from:", fmt.Sprintf("%s/%s", backupConfig.S3Configuration.Path, backupConfig.NodeID))
 				retrievedBackupBytes, err := bucket.Get(fmt.Sprintf("%s/%s", backupConfig.S3Configuration.Path, backupConfig.NodeID))
 				Ω(err).NotTo(HaveOccurred())
 				originalData, _ := ioutil.ReadFile(path.Join(backupConfig.RedisDataDirectory, "dump.rdb"))
