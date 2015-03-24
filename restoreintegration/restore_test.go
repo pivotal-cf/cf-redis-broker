@@ -17,8 +17,7 @@ import (
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 
-	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
-	"github.com/pivotal-cf/cf-redis-broker/redis"
+	"github.com/pivotal-cf/cf-redis-broker/restoreconfig"
 )
 
 var _ = Describe("restore", func() {
@@ -32,7 +31,7 @@ var _ = Describe("restore", func() {
 	var monitLogDir string
 	var redisSession *gexec.Session
 
-	var config brokerconfig.Config
+	var config restoreconfig.Config
 
 	BeforeEach(func() {
 		err := copyFile(filepath.Join("..", "brokerintegration", "assets", "redis.conf"), "/tmp/redis.conf")
@@ -42,11 +41,11 @@ var _ = Describe("restore", func() {
 		err = os.Chmod("/tmp/monit", 0755)
 		Ω(err).ShouldNot(HaveOccurred())
 
-		configPath := filepath.Join("assets", "broker.yml")
-		config, _ = brokerconfig.ParseConfig(configPath)
+		configPath := filepath.Join("assets", "restore.yml")
+		config, _ = restoreconfig.Load(configPath)
 
 		instanceID = "test_instance"
-		testInstanceDir = filepath.Join(config.RedisConfiguration.InstanceDataDirectory, instanceID)
+		testInstanceDir = filepath.Join(config.RedisDataDirectory, instanceID)
 		testDataDir = filepath.Join(testInstanceDir, "db")
 		os.RemoveAll(testInstanceDir)
 		os.MkdirAll(testDataDir, 0777)
@@ -58,7 +57,7 @@ var _ = Describe("restore", func() {
 
 		sourceRdbPath = filepath.Join("assets", "dump.rdb")
 		restoreCommand = exec.Command(restoreExecutablePath, instanceID, sourceRdbPath)
-		restoreCommand.Env = append(os.Environ(), "BROKER_CONFIG_PATH="+configPath)
+		restoreCommand.Env = append(os.Environ(), "RESTORE_CONFIG_PATH="+configPath)
 		restoreCommand.Env = append(restoreCommand.Env, "MONIT_LOG_FILE="+monitLogFile)
 
 		fakeChownPath := "assets"
@@ -101,11 +100,7 @@ var _ = Describe("restore", func() {
 	})
 
 	AfterEach(func() {
-		localRepo := &redis.LocalRepository{
-			RedisConf: config.RedisConfiguration,
-		}
-
-		pid, err := localRepo.InstancePid(instanceID)
+		pid, err := config.InstancePid(instanceID)
 		if err == nil {
 			syscall.Kill(pid, syscall.SIGKILL)
 		}

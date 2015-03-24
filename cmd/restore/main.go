@@ -13,11 +13,11 @@ import (
 	"time"
 
 	"github.com/pivotal-cf/cf-redis-broker/availability"
-	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
 	"github.com/pivotal-cf/cf-redis-broker/process"
 	"github.com/pivotal-cf/cf-redis-broker/redis"
 	"github.com/pivotal-cf/cf-redis-broker/redis/client"
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
+	"github.com/pivotal-cf/cf-redis-broker/restoreconfig"
 	"github.com/pivotal-cf/cf-redis-broker/system"
 	"github.com/pivotal-golang/lager"
 )
@@ -80,14 +80,14 @@ func main() {
 	logger := lager.NewLogger("redis-restore")
 
 	startStep("Loading config")
-	config, err := brokerconfig.ParseConfig(configPath())
+	config, err := restoreconfig.Load(restoreConfigPath())
 	if err != nil {
 		finishStepFatal("Could not load config")
 	}
 	finishStep("OK")
 
 	monitExecutablePath := config.MonitExecutablePath
-	instanceDirPath := filepath.Join(config.RedisConfiguration.InstanceDataDirectory, instanceID)
+	instanceDirPath := filepath.Join(config.RedisDataDirectory, instanceID)
 	dataDirPath := filepath.Join(instanceDirPath, "db")
 
 	startStep("Checking instance directory and backup file")
@@ -108,17 +108,13 @@ func main() {
 	}
 	finishStep("OK")
 
-	localRepo := &redis.LocalRepository{
-		RedisConf: config.RedisConfiguration,
-	}
-
 	commandRunner := system.OSCommandRunner{
 		Logger: logger,
 	}
 
 	processController := &redis.OSProcessController{
 		CommandRunner:             commandRunner,
-		InstanceInformer:          localRepo,
+		InstanceInformer:          &config,
 		Logger:                    logger,
 		ProcessChecker:            &process.ProcessChecker{},
 		ProcessKiller:             &process.ProcessKiller{},
@@ -136,7 +132,7 @@ func main() {
 
 	instance := &redis.Instance{ID: instanceID, Host: "localhost", Port: 6379}
 
-	pidfilePath := localRepo.InstancePidFilePath(instanceID)
+	pidfilePath := config.InstancePidFilePath(instanceID)
 
 	startStep("Stopping Redis")
 	err = processController.Kill(instance)
@@ -154,7 +150,7 @@ func main() {
 			"--daemonize", "yes",
 			"--dir", dataDirPath,
 		},
-		time.Duration(config.RedisConfiguration.StartRedisTimeoutSeconds)*time.Second,
+		time.Duration(config.StartRedisTimeoutSeconds)*time.Second,
 	)
 	if err != nil {
 		finishStep("ERROR")
@@ -173,7 +169,7 @@ func main() {
 		logger.Fatal("connecting-to-redis", err)
 	}
 
-	err = client.WaitUntilRedisNotLoading(config.RedisConfiguration.StartRedisTimeoutSeconds * 1000)
+	err = client.WaitUntilRedisNotLoading(config.StartRedisTimeoutSeconds * 1000)
 	if err != nil {
 		finishStep("ERROR")
 		logger.Fatal("starting-redis", err)
@@ -213,7 +209,7 @@ func main() {
 	finishStep("OK")
 
 	startStep("Setting correct permissions on appendonly file")
-	aofPath := path.Join(localRepo.InstanceDataDir(instance.ID), "appendonly.aof")
+	aofPath := path.Join(config.InstanceDataDir(instance.ID), "appendonly.aof")
 	err = chownAof("vcap", aofPath)
 	if err != nil {
 		finishStep("ERROR")
@@ -306,10 +302,10 @@ func monit(executablePath string, args []string) (string, error) {
 	return string(outputBytes), nil
 }
 
-func configPath() string {
-	brokerConfigYamlPath := os.Getenv("BROKER_CONFIG_PATH")
-	if brokerConfigYamlPath == "" {
-		return "/var/vcap/jobs/cf-redis-broker/config/broker.yml"
+func restoreConfigPath() string {
+	restoreConfigYamlPath := os.Getenv("RESTORE_CONFIG_PATH")
+	if restoreConfigYamlPath == "" {
+		return "/var/vcap/jobs/cf-redis-broker/config/restore.yml"
 	}
-	return brokerConfigYamlPath
+	return restoreConfigYamlPath
 }
