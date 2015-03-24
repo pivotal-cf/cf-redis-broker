@@ -11,6 +11,7 @@ type Config struct {
 	BGSaveTimeoutSeconds int             `yaml:"bg_save_timeout"`
 	RedisDataDirectory   string          `yaml:"redis_data_directory"`
 	NodeID               string          `yaml:"node_id"`
+	DedicatedInstance    bool            `yaml:"dedicated_instance"`
 }
 
 type S3Configuration struct {

@@ -45,15 +45,14 @@ var _ = Describe("backups", func() {
 			client         *s3.S3
 			bucket         *s3.Bucket
 			oldS3ServerURL string
+			s3TestServer   *s3test.Server
 		)
 
 		BeforeEach(func() {
-			backupConfigPath = filepath.Join("assets", "backup.yml")
-			s3TestServer := startS3TestServer()
-			backupConfig = loadBackupConfig(backupConfigPath)
-			oldS3ServerURL = swapS3UrlInBackupConfig(backupConfig, backupConfigPath, s3TestServer.URL())
-			client, bucket = configureS3ClientAndBucket(backupConfig)
+			s3TestServer = startS3TestServer()
+		})
 
+		JustBeforeEach(func() {
 			err := bucket.PutBucket("")
 			Ω(err).ShouldNot(HaveOccurred())
 		})
@@ -64,6 +63,11 @@ var _ = Describe("backups", func() {
 			var instanceID string
 
 			BeforeEach(func() {
+				backupConfigPath = filepath.Join("assets", "backup-dedicated.yml")
+				backupConfig = loadBackupConfig(backupConfigPath)
+				oldS3ServerURL = swapS3UrlInBackupConfig(backupConfig, backupConfigPath, s3TestServer.URL())
+				client, bucket = configureS3ClientAndBucket(backupConfig)
+
 				instanceID = uuid.NewRandom().String()
 				confPath = filepath.Join(brokerConfig.RedisConfiguration.InstanceDataDirectory, "redis.conf")
 				assetPath, _ := helpers.AssetPath("redis-dedicated.conf")
@@ -117,6 +121,11 @@ var _ = Describe("backups", func() {
 			var instanceIDs = []string{"foo", "bar"}
 
 			BeforeEach(func() {
+				backupConfigPath = filepath.Join("assets", "backup-shared.yml")
+				backupConfig = loadBackupConfig(backupConfigPath)
+				oldS3ServerURL = swapS3UrlInBackupConfig(backupConfig, backupConfigPath, s3TestServer.URL())
+				client, bucket = configureS3ClientAndBucket(backupConfig)
+
 				for _, instanceID := range instanceIDs {
 					status, _ := brokerClient.ProvisionInstance(instanceID, "shared")
 					Ω(status).To(Equal(http.StatusCreated))

@@ -1,5 +1,5 @@
 s3:
-  endpoint_url: http://127.0.0.1:54043
+  endpoint_url: http://127.0.0.1:63529
   bucket_name: redis-backups
   access_key_id: ABCDEABCDEABCDEABCDE
   secret_access_key: ABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDE
@@ -8,3 +8,4 @@ s3:
 bg_save_timeout: 600
 redis_data_directory: /tmp/redis-data-dir
 node_id: dedicated-node-0
+dedicated_instance: true

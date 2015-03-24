@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"path"
-	"sort"
 	"strings"
 
 	"github.com/pivotal-cf/cf-redis-broker/backup"
@@ -35,7 +34,7 @@ func main() {
 
 	instanceDirs, err := ioutil.ReadDir(config.RedisDataDirectory)
 
-	if isDedicatedInstance(instanceDirs) {
+	if config.DedicatedInstance {
 		err := backupCreator.Create(config.RedisDataDirectory, config.RedisDataDirectory, config.NodeID)
 		if err != nil {
 			backupErrors = append(backupErrors, err)
@@ -73,11 +72,4 @@ func configPath() string {
 		panic("BACKUP_CONFIG_PATH not set")
 	}
 	return path
-}
-
-func isDedicatedInstance(instanceDirs []os.FileInfo) bool {
-	dedicatedInstance := sort.Search(len(instanceDirs), func(i int) bool {
-		return instanceDirs[i].Name() == "redis.conf"
-	})
-	return dedicatedInstance < len(instanceDirs)
 }

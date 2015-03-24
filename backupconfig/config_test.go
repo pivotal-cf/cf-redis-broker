@@ -64,6 +64,10 @@ var _ = Describe("Config", func() {
 			It("Has the correct node id", func() {
 				Expect(config.NodeID).To(Equal("dedicated-node-0"))
 			})
+
+			It("has the correct dedicated_instance", func() {
+				Expect(config.DedicatedInstance).To(BeTrue())
+			})
 		})
 	})
 })
