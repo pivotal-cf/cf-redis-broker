@@ -15,6 +15,7 @@ type Config struct {
 	RedisDataDirectory        string `yaml:"redis_data_directory"`
 	RedisServerExecutablePath string `yaml:"redis_server_executable_path"`
 	StartRedisTimeoutSeconds  int    `yaml:"start_redis_timeout_seconds"`
+	DedicatedInstance         bool   `yaml:"dedicated_instance"`
 }
 
 func Load(restoreConfigPath string) (Config, error) {
@@ -32,6 +33,10 @@ func Load(restoreConfigPath string) (Config, error) {
 }
 
 func (config *Config) InstancePidFilePath(instanceID string) string {
+	if config.DedicatedInstance {
+		return path.Join(config.RedisDataDirectory, "redis-server.pid")
+	}
+
 	return path.Join(config.RedisDataDirectory, instanceID, "redis-server.pid")
 }
 
@@ -54,5 +59,8 @@ func (config *Config) InstancePid(instanceID string) (pid int, err error) {
 }
 
 func (config *Config) InstanceDataDir(instanceID string) string {
+	if config.DedicatedInstance {
+		return config.RedisDataDirectory
+	}
 	return path.Join(config.RedisDataDirectory, instanceID, "db")
 }
