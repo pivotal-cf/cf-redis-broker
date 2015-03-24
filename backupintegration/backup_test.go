@@ -102,6 +102,15 @@ var _ = Describe("backups", func() {
 				originalData, _ := ioutil.ReadFile(path.Join(backupConfig.RedisDataDirectory, "dump.rdb"))
 				Ω(retrievedBackupBytes).To(Equal(originalData))
 			})
+
+			Context("when an instance backup fails", func() {
+				It("returns non-zero exit code", func() {
+					redisRunner.Stop()
+
+					backupExitStatusCode := runBackupWithConfig(backupExecutablePath, backupConfigPath).Wait(time.Second * 10).ExitCode()
+					Ω(backupExitStatusCode).ShouldNot(Equal(0))
+				})
+			})
 		})
 
 		Context("when there are shared-vm instances to back up", func() {
