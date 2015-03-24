@@ -120,7 +120,8 @@ var _ = Describe("restore", func() {
 		session, err := gexec.Start(restoreCommand, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
 
-		Eventually(session, "20s").Should(gexec.Exit(2))
+		Eventually(session, "20s").Should(gexec.Exit(1))
+		Eventually(session.Err).Should(gbytes.Say("usage: restore <instance_id> <rdb_path>"))
 	})
 
 	It("exits with a non zero status if the instance directory does not exist", func() {

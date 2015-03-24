@@ -69,6 +69,11 @@ func finishStepFatal(description string) {
 
 func main() {
 	fmt.Println("Starting redis restore")
+
+	if len(os.Args) != 3 {
+		log.Fatalf("usage: restore <instance_id> <rdb_path>")
+	}
+
 	instanceID := os.Args[1]
 	rdbPath := os.Args[2]
 
