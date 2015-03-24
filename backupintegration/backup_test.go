@@ -57,6 +57,10 @@ var _ = Describe("backups", func() {
 			Ω(err).ShouldNot(HaveOccurred())
 		})
 
+		AfterEach(func() {
+			swapS3UrlInBackupConfig(backupConfig, backupConfigPath, oldS3ServerURL)
+		})
+
 		Context("when its a dedicated instance to back up", func() {
 			var redisRunner *integration.RedisRunner
 			var confPath string
@@ -140,7 +144,6 @@ var _ = Describe("backups", func() {
 				}
 
 				bucket.DelBucket()
-				swapS3UrlInBackupConfig(backupConfig, backupConfigPath, oldS3ServerURL)
 			})
 
 			Context("when the backup command completes successfully", func() {
