@@ -17,18 +17,23 @@ import (
 	"github.com/pivotal-cf/cf-redis-broker/restoreconfig"
 )
 
+const (
+	sharedPlan    string = "shared"
+	dedicatedPlan string = "dedicated"
+)
+
 var _ = Describe("restore", func() {
 	var restoreCommand *exec.Cmd
 
 	var instanceID string
 	var sourceRdbPath string
-	var testDataDir string
 	var redisSession *gexec.Session
 
 	var config restoreconfig.Config
 
 	BeforeEach(func() {
 		instanceID = "test_instance"
+		sourceRdbPath = filepath.Join("assets", "dump.rdb")
 		err := copyFile(filepath.Join("..", "brokerintegration", "assets", "redis.conf"), "/tmp/redis.conf")
 		Ω(err).ShouldNot(HaveOccurred())
 		err = copyFile(filepath.Join("assets", "monit"), "/tmp/monit")
@@ -49,7 +54,9 @@ var _ = Describe("restore", func() {
 
 	Describe("common to plans", func() {
 		BeforeEach(func() {
-			config, testDataDir, sourceRdbPath, restoreCommand, redisSession = setupRedisTestForPlan(instanceID, false)
+			config = loadRestoreConfig(sharedPlan)
+			redisSession = startRedisSession(config, instanceID, sharedPlan)
+			restoreCommand = buildRestoreCommand(sourceRdbPath, instanceID, sharedPlan)
 		})
 
 		It("exits with a non zero status if no arguments are provided", func() {
@@ -122,7 +129,9 @@ var _ = Describe("restore", func() {
 
 	Describe("shared plan", func() {
 		BeforeEach(func() {
-			config, testDataDir, sourceRdbPath, restoreCommand, redisSession = setupRedisTestForPlan(instanceID, false)
+			config = loadRestoreConfig(sharedPlan)
+			redisSession = startRedisSession(config, instanceID, sharedPlan)
+			restoreCommand = buildRestoreCommand(sourceRdbPath, instanceID, sharedPlan)
 		})
 
 		It("exits with a non zero status if the instance directory does not exist", func() {
@@ -135,7 +144,7 @@ var _ = Describe("restore", func() {
 		})
 
 		It("creates a new RDB file in the instance directory", func() {
-			newRdbPath := filepath.Join(testDataDir, "dump.rdb")
+			newRdbPath := filepath.Join(config.InstanceDataDir(instanceID), "dump.rdb")
 
 			_, err := os.Stat(newRdbPath)
 			Expect(os.IsNotExist(err)).To(BeTrue())
@@ -154,7 +163,7 @@ var _ = Describe("restore", func() {
 		})
 
 		It("creates a new AOF file in the instance directory", func() {
-			aofPath := filepath.Join(testDataDir, "appendonly.aof")
+			aofPath := filepath.Join(config.InstanceDataDir(instanceID), "appendonly.aof")
 
 			_, err := os.Stat(aofPath)
 			Expect(os.IsNotExist(err)).To(BeTrue())
@@ -173,11 +182,13 @@ var _ = Describe("restore", func() {
 
 	Describe("dedicated plan", func() {
 		BeforeEach(func() {
-			config, testDataDir, sourceRdbPath, restoreCommand, redisSession = setupRedisTestForPlan(instanceID, true)
+			config = loadRestoreConfig(dedicatedPlan)
+			redisSession = startRedisSession(config, instanceID, dedicatedPlan)
+			restoreCommand = buildRestoreCommand(sourceRdbPath, instanceID, dedicatedPlan)
 		})
 
 		It("creates a new RDB file in the instance directory", func() {
-			newRdbPath := filepath.Join(testDataDir, "dump.rdb")
+			newRdbPath := filepath.Join(config.InstanceDataDir(instanceID), "dump.rdb")
 
 			_, err := os.Stat(newRdbPath)
 			Expect(os.IsNotExist(err)).To(BeTrue())
@@ -196,7 +207,7 @@ var _ = Describe("restore", func() {
 		})
 
 		It("creates a new AOF file in the instance directory", func() {
-			aofPath := filepath.Join(testDataDir, "appendonly.aof")
+			aofPath := filepath.Join(config.InstanceDataDir(instanceID), "appendonly.aof")
 
 			_, err := os.Stat(aofPath)
 			Expect(os.IsNotExist(err)).To(BeTrue())
@@ -213,53 +224,24 @@ var _ = Describe("restore", func() {
 	})
 })
 
-func setupRedisTestForPlan(instanceID string, dedicated bool) (config restoreconfig.Config, testDataDir, sourceRdbPath string, restoreCommand *exec.Cmd, redisSession *gexec.Session) {
-	var configPath string
-	if dedicated {
-		configPath = filepath.Join("assets", "restore-dedicated.yml")
-	} else {
-		configPath = filepath.Join("assets", "restore-shared.yml")
-	}
-
-	config, _ = restoreconfig.Load(configPath)
-
+func startRedisSession(config restoreconfig.Config, instanceID, planName string) (redisSession *gexec.Session) {
 	var testInstanceDir string
-	if dedicated {
-		testDataDir = filepath.Join(config.RedisDataDirectory)
+	testDataDir := config.InstanceDataDir(instanceID)
+	if planName == dedicatedPlan {
 		testInstanceDir = testDataDir
 		os.RemoveAll(testDataDir)
 	} else {
 		testInstanceDir = filepath.Join(config.RedisDataDirectory, instanceID)
-		testDataDir = filepath.Join(testInstanceDir, "db")
 		os.RemoveAll(testInstanceDir)
 	}
 	os.MkdirAll(testDataDir, 0777)
-
-	monitLogDir, err := ioutil.TempDir("", "monit-test-logs")
-	Expect(err).NotTo(HaveOccurred())
-
-	monitLogFile := filepath.Join(monitLogDir, "monit.log")
-	sourceRdbPath = filepath.Join("assets", "dump.rdb")
-	restoreCommand = exec.Command(restoreExecutablePath, instanceID, sourceRdbPath)
-	restoreCommand.Env = append(os.Environ(), "RESTORE_CONFIG_PATH="+configPath)
-	restoreCommand.Env = append(restoreCommand.Env, "MONIT_LOG_FILE="+monitLogFile)
-
-	fakeChownPath := "assets"
-	for i, envVar := range restoreCommand.Env {
-		parts := strings.Split(envVar, "=")
-		if parts[0] == "PATH" {
-			path := fakeChownPath + ":" + parts[1]
-
-			restoreCommand.Env[i] = "PATH=" + path
-		}
-	}
 
 	pidfilePath := filepath.Join(testInstanceDir, "redis-server.pid")
 	redisCmd := exec.Command("redis-server",
 		"--pidfile", pidfilePath,
 		"--daemonize", "yes",
 	)
-
+	var err error
 	redisSession, err = gexec.Start(redisCmd, GinkgoWriter, GinkgoWriter)
 	Expect(err).ToNot(HaveOccurred())
 
@@ -282,7 +264,37 @@ func setupRedisTestForPlan(instanceID string, dedicated bool) (config restorecon
 		Fail("Test timed out waiting for redis to write PID file.")
 	}
 
-	return config, testDataDir, sourceRdbPath, restoreCommand, redisSession
+	return redisSession
+}
+
+func loadRestoreConfig(planName string) restoreconfig.Config {
+	configPath := filepath.Join("assets", "restore-"+planName+".yml")
+
+	config, err := restoreconfig.Load(configPath)
+	Expect(err).ToNot(HaveOccurred())
+	return config
+}
+
+func buildRestoreCommand(sourceRdbPath, instanceID, planName string) *exec.Cmd {
+	configPath := filepath.Join("assets", "restore-"+planName+".yml")
+	monitLogDir, err := ioutil.TempDir("", "monit-test-logs")
+	Expect(err).NotTo(HaveOccurred())
+
+	monitLogFile := filepath.Join(monitLogDir, "monit.log")
+	restoreCommand := exec.Command(restoreExecutablePath, instanceID, sourceRdbPath)
+	restoreCommand.Env = append(os.Environ(), "RESTORE_CONFIG_PATH="+configPath)
+	restoreCommand.Env = append(restoreCommand.Env, "MONIT_LOG_FILE="+monitLogFile)
+
+	fakeChownPath := "assets"
+	for i, envVar := range restoreCommand.Env {
+		parts := strings.Split(envVar, "=")
+		if parts[0] == "PATH" {
+			path := fakeChownPath + ":" + parts[1]
+
+			restoreCommand.Env[i] = "PATH=" + path
+		}
+	}
+	return restoreCommand
 }
 
 func copyFile(sourcePath, destinationPath string) error {
