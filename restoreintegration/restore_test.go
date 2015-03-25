@@ -210,8 +210,8 @@ var _ = Describe("restore", func() {
 			monitLogBytes, err := ioutil.ReadFile(monitLogFile)
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(string(monitLogBytes)).To(ContainSubstring("stopping redis-server"))
-			Expect(string(monitLogBytes)).To(ContainSubstring("starting redis-server"))
+			Expect(string(monitLogBytes)).To(ContainSubstring("stopping redis"))
+			Expect(string(monitLogBytes)).To(ContainSubstring("starting redis"))
 		})
 
 		It("creates a new RDB file in the instance directory", func() {

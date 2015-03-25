@@ -139,7 +139,7 @@ func main() {
 
 	startStep("Stopping Redis")
 	if config.DedicatedInstance {
-		err = stopViaMonit(monitExecutablePath, "redis-server")
+		err = stopViaMonit(monitExecutablePath, "redis")
 	} else {
 		err = processController.Kill(instance)
 	}
@@ -227,7 +227,7 @@ func main() {
 
 	startStep("Restarting Redis process watcher/redis")
 	if config.DedicatedInstance {
-		err = startViaMonit(monitExecutablePath, "redis-server")
+		err = startViaMonit(monitExecutablePath, "redis")
 	} else {
 		err = startViaMonit(monitExecutablePath, "process-watcher")
 	}
