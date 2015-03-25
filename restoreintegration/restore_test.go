@@ -194,8 +194,24 @@ var _ = Describe("restore", func() {
 
 			Eventually(session, "20s").Should(gexec.Exit(0))
 
-			_, err = ioutil.ReadFile(monitLogFile)
-			Expect(err.Error()).To(MatchRegexp("no such file or directory"))
+			monitLogBytes, err := ioutil.ReadFile(monitLogFile)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(string(monitLogBytes)).ToNot(ContainSubstring("stopping process-watcher"))
+			Expect(string(monitLogBytes)).ToNot(ContainSubstring("starting process-watcher"))
+		})
+
+		It("stops and then start the redis-server via monit", func() {
+			session, err := gexec.Start(restoreCommand, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+
+			Eventually(session, "20s").Should(gexec.Exit(0))
+
+			monitLogBytes, err := ioutil.ReadFile(monitLogFile)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(string(monitLogBytes)).To(ContainSubstring("stopping redis-server"))
+			Expect(string(monitLogBytes)).To(ContainSubstring("starting redis-server"))
 		})
 
 		It("creates a new RDB file in the instance directory", func() {

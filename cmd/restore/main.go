@@ -115,7 +115,7 @@ func main() {
 	if config.DedicatedInstance {
 		finishStep("Skipped")
 	} else {
-		err = stopProcessWatcher(monitExecutablePath)
+		err = stopViaMonit(monitExecutablePath, "process-watcher")
 		if err != nil {
 			finishStep("ERROR")
 			logger.Fatal("stop-process-watcher", err)
@@ -138,7 +138,12 @@ func main() {
 	pidfilePath := config.InstancePidFilePath(instanceID)
 
 	startStep("Stopping Redis")
-	err = processController.Kill(instance)
+	if config.DedicatedInstance {
+		err = stopViaMonit(monitExecutablePath, "redis-server")
+	} else {
+		err = processController.Kill(instance)
+	}
+
 	if err != nil {
 		finishStep("ERROR")
 		logger.Fatal("killing-redis", err)
@@ -220,17 +225,18 @@ func main() {
 	}
 	finishStep("OK")
 
-	startStep("Restarting Redis process watcher")
+	startStep("Restarting Redis process watcher/redis")
 	if config.DedicatedInstance {
-		finishStep("Skipped")
+		err = startViaMonit(monitExecutablePath, "redis-server")
 	} else {
-		err = startProcessWatcher(monitExecutablePath)
-		if err != nil {
-			finishStep("ERROR")
-			logger.Fatal("start-process-watcher", err)
-		}
-		finishStep("OK")
+		err = startViaMonit(monitExecutablePath, "process-watcher")
 	}
+
+	if err != nil {
+		finishStep("ERROR")
+		logger.Fatal("start redis/process watcher", err)
+	}
+	finishStep("OK")
 
 	fmt.Println("Restore completed successfully")
 }
@@ -245,27 +251,13 @@ func chownAof(user, aofPath string) error {
 	return nil
 }
 
-func startProcessWatcher(monitExecutablePath string) error {
-	_, err := monit(monitExecutablePath, []string{"start", "process-watcher"})
+func startViaMonit(monitExecutablePath, processName string) error {
+	_, err := monit(monitExecutablePath, []string{"start", processName})
 	if err != nil {
 		return err
 	}
 
-	err = waitUntilMonitStatus(monitExecutablePath, "running", monitProcessRunningTimeoutMilliseconds)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func stopProcessWatcher(monitExecutablePath string) error {
-	_, err := monit(monitExecutablePath, []string{"stop", "process-watcher"})
-	if err != nil {
-		return err
-	}
-
-	err = waitUntilMonitStatus(monitExecutablePath, "not monitored", monitProcessNotMonitoredTimeoutMilliseconds)
+	err = waitUntilMonitStatus(monitExecutablePath, processName, "running", monitProcessRunningTimeoutMilliseconds)
 	if err != nil {
 		return err
 	}
@@ -273,7 +265,21 @@ func stopProcessWatcher(monitExecutablePath string) error {
 	return nil
 }
 
-func waitUntilMonitStatus(monitExecutablePath, status string, timeoutMilliseconds int) error {
+func stopViaMonit(monitExecutablePath, processName string) error {
+	_, err := monit(monitExecutablePath, []string{"stop", processName})
+	if err != nil {
+		return err
+	}
+
+	err = waitUntilMonitStatus(monitExecutablePath, processName, "not monitored", monitProcessNotMonitoredTimeoutMilliseconds)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func waitUntilMonitStatus(monitExecutablePath, processName, status string, timeoutMilliseconds int) error {
 	timeRemaining := timeoutMilliseconds
 	for {
 		output, err := monit(monitExecutablePath, []string{"summary"})
@@ -281,7 +287,7 @@ func waitUntilMonitStatus(monitExecutablePath, status string, timeoutMillisecond
 			return err
 		}
 
-		pattern := fmt.Sprintf("Process\\s+'process-watcher'\\s+%s\\n", status)
+		pattern := fmt.Sprintf("Process\\s+'%s'\\s+%s\\n", processName, status)
 		matched, err := regexp.MatchString(pattern, output)
 		if err != nil {
 			return err
@@ -294,7 +300,7 @@ func waitUntilMonitStatus(monitExecutablePath, status string, timeoutMillisecond
 		time.Sleep(monitStatusCheckIntervalMilliseconds * time.Millisecond)
 		timeRemaining -= monitStatusCheckIntervalMilliseconds
 		if timeRemaining < 0 {
-			return fmt.Errorf("Process process-watcher did not reach '%s' after %d ms", status, timeoutMilliseconds)
+			return fmt.Errorf("Process %s did not reach '%s' after %d ms", processName, status, timeoutMilliseconds)
 		}
 	}
 }

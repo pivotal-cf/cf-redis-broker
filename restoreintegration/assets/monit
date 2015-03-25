@@ -42,40 +42,44 @@ def time_since_modified()
   Time.now - File.mtime(ENV.fetch('MONIT_LOG_FILE'))
 end
 
-def summary_output(status)
-  "\nThe Monit daemon 5.2.4 uptime: 3m \n\nProcess 'process-watcher'           #{status}\nProcess 'cf-redis-broker'           running\nProcess 'broker-nginx'              running\nSystem 'system_2b19201b-fc5e-4c3a-b5c8-d75e131064e8' running\n\n"
+def summary_output(process_name, status)
+  "\nThe Monit daemon 5.2.4 uptime: 3m \n\nProcess '#{process_name}'           #{status}\nProcess 'cf-redis-broker'           running\nProcess 'broker-nginx'              running\nSystem 'system_2b19201b-fc5e-4c3a-b5c8-d75e131064e8' running\n\n"
 end
 
 if action == 'start'
-  log "starting process-watcher"
+  log "starting #{ARGV.fetch(1)}"
 elsif action == "stop"
-  log "stopping process-watcher"
+  log "stopping #{ARGV.fetch(1)}"
+  if ARGV.fetch(1) == "redis-server"
+    system 'kill -9 $(ps xa |  grep "redis-server \*:6379" | cut -d " " -f1)'
+  end
 elsif action == "summary"
 
   # search log file for last instance of stopping or starting process
-  matches = read().scan /^(starting|stopping)/
+  matches = read().scan /^(starting|stopping) (.*)/
   if matches.length > 0
     last_action = matches.last[0]
+    last_process_name = matches.last[1]
   else
     last_action = 'none'
   end
 
   case last_action
   when 'none'
-    puts summary_output("running")
+    puts summary_output(last_process_name, "running")
   when 'stopping'
     if time_since_modified() > 1.0 / TIME_SPEEDUP_MULTIPLIER
-      puts summary_output("not monitored")
+      puts summary_output(last_process_name, "not monitored")
     else
-      puts summary_output("not monitored - stop pending")
+      puts summary_output(last_process_name, "not monitored - stop pending")
     end
   when 'starting'
     if time_since_modified() > 10.0 / TIME_SPEEDUP_MULTIPLIER
-      puts summary_output("running")
+      puts summary_output(last_process_name, "running")
     elsif time_since_modified() > 1.0 / TIME_SPEEDUP_MULTIPLIER
-      puts summary_output("initializing")
+      puts summary_output(last_process_name, "initializing")
     else
-      puts summary_output("not monitored - start pending")
+      puts summary_output(last_process_name, "not monitored - start pending")
     end
   else
     fail "Couldn't parse fake monit log file"
