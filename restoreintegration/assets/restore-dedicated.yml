@@ -1,3 +1,4 @@
 monit_executable_path: /tmp/monit
 redis_data_directory: /tmp/instance_dir
 start_redis_timeout_seconds: 3
+dedicated_instance: true

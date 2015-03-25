@@ -87,8 +87,7 @@ func main() {
 	finishStep("OK")
 
 	monitExecutablePath := config.MonitExecutablePath
-	instanceDirPath := filepath.Join(config.RedisDataDirectory, instanceID)
-	dataDirPath := filepath.Join(instanceDirPath, "db")
+	instanceDirPath := config.InstanceDataDir(instanceID)
 
 	startStep("Checking instance directory and backup file")
 	if _, err := os.Stat(instanceDirPath); os.IsNotExist(err) {
@@ -101,7 +100,7 @@ func main() {
 	finishStep("OK")
 
 	startStep("Copying backup file to instance directory")
-	err = copyRdbFileIntoInstance(rdbPath, dataDirPath)
+	err = copyRdbFileIntoInstance(rdbPath, instanceDirPath)
 	if err != nil {
 		finishStep("ERROR")
 		logger.Fatal("copy-rdb", err)
@@ -148,7 +147,7 @@ func main() {
 		[]string{
 			"--pidfile", pidfilePath,
 			"--daemonize", "yes",
-			"--dir", dataDirPath,
+			"--dir", instanceDirPath,
 		},
 		time.Duration(config.StartRedisTimeoutSeconds)*time.Second,
 	)
@@ -209,7 +208,7 @@ func main() {
 	finishStep("OK")
 
 	startStep("Setting correct permissions on appendonly file")
-	aofPath := path.Join(config.InstanceDataDir(instance.ID), "appendonly.aof")
+	aofPath := path.Join(instanceDirPath, "appendonly.aof")
 	err = chownAof("vcap", aofPath)
 	if err != nil {
 		finishStep("ERROR")

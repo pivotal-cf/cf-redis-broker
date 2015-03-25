@@ -3,7 +3,6 @@ package restoreintegration_test
 // restore <INSTANCE_ID> /path/to/dump.rdb
 
 import (
-	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -20,7 +19,7 @@ import (
 	"github.com/pivotal-cf/cf-redis-broker/restoreconfig"
 )
 
-var _ = Describe("restore", func() {
+var _ = Describe("restore shared", func() {
 	var restoreCommand *exec.Cmd
 
 	var instanceID string
@@ -41,7 +40,7 @@ var _ = Describe("restore", func() {
 		err = os.Chmod("/tmp/monit", 0755)
 		Ω(err).ShouldNot(HaveOccurred())
 
-		configPath := filepath.Join("assets", "restore.yml")
+		configPath := filepath.Join("assets", "restore-shared.yml")
 		config, _ = restoreconfig.Load(configPath)
 
 		instanceID = "test_instance"
@@ -138,7 +137,7 @@ var _ = Describe("restore", func() {
 	})
 
 	It("exits with a non zero status if the config cannot be loaded", func() {
-		restoreCommand.Env = []string{"BROKER_CONFIG_PATH=foo"}
+		restoreCommand.Env = []string{"RESTORE_CONFIG_PATH=foo"}
 		session, err := gexec.Start(restoreCommand, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -221,20 +220,3 @@ var _ = Describe("restore", func() {
 		Eventually(pkillSession).Should(gexec.Exit(1))
 	})
 })
-
-func copyFile(sourcePath, destinationPath string) error {
-	source, err := os.Open(sourcePath)
-	if err != nil {
-		return err
-	}
-	defer source.Close()
-
-	destination, err := os.Create(destinationPath)
-	if err != nil {
-		return err
-	}
-	defer destination.Close()
-
-	_, err = io.Copy(destination, source)
-	return err
-}

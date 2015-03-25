@@ -13,6 +13,10 @@ unless ARGV.fetch(0) == "vcap:vcap"
   fail "First argument is not `vcap:vcap`"
 end
 
-unless ARGV.fetch(1) == "/tmp/instance_dir/test_instance/db/appendonly.aof"
+case ARGV.fetch(1) 
+when "/tmp/instance_dir/test_instance/db/appendonly.aof", "/tmp/instance_dir/appendonly.aof"
+  return exit(0)
+else
   fail "Second argument is not `/tmp/instance_dir/test_instance/db/appendonly.aof`"
 end
+
