@@ -28,6 +28,7 @@ var _ = Describe("restore", func() {
 	var instanceID string
 	var sourceRdbPath string
 	var redisSession *gexec.Session
+	var monitLogFile string
 
 	var config restoreconfig.Config
 
@@ -40,7 +41,7 @@ var _ = Describe("restore", func() {
 		Ω(err).ShouldNot(HaveOccurred())
 		err = os.Chmod("/tmp/monit", 0755)
 		Ω(err).ShouldNot(HaveOccurred())
-
+		monitLogFile = setupMonitLogFile()
 	})
 
 	AfterEach(func() {
@@ -56,7 +57,7 @@ var _ = Describe("restore", func() {
 		BeforeEach(func() {
 			config = loadRestoreConfig(sharedPlan)
 			redisSession = startRedisSession(config, instanceID, sharedPlan)
-			restoreCommand = buildRestoreCommand(sourceRdbPath, instanceID, sharedPlan)
+			restoreCommand = buildRestoreCommand(sourceRdbPath, monitLogFile, instanceID, sharedPlan)
 		})
 
 		It("exits with a non zero status if no arguments are provided", func() {
@@ -85,19 +86,6 @@ var _ = Describe("restore", func() {
 			Eventually(session.Err).Should(gbytes.Say("Could not load config"))
 			Eventually(session, "20s").Should(gexec.Exit(1))
 		})
-
-		// 	It("stops and then starts the process-watcher", func() {
-		// 		session, err := gexec.Start(restoreCommand, GinkgoWriter, GinkgoWriter)
-		// 		Expect(err).NotTo(HaveOccurred())
-
-		// 		Eventually(session, "20s").Should(gexec.Exit(0))
-
-		// 		monitLogBytes, err := ioutil.ReadFile(monitLogFile)
-		// 		Expect(err).ToNot(HaveOccurred())
-
-		// 		Expect(string(monitLogBytes)).To(ContainSubstring("stopping process-watcher"))
-		// 		Expect(string(monitLogBytes)).To(ContainSubstring("starting process-watcher"))
-		// 	})
 
 		It("stops redis", func() {
 			session, err := gexec.Start(restoreCommand, GinkgoWriter, GinkgoWriter)
@@ -131,7 +119,7 @@ var _ = Describe("restore", func() {
 		BeforeEach(func() {
 			config = loadRestoreConfig(sharedPlan)
 			redisSession = startRedisSession(config, instanceID, sharedPlan)
-			restoreCommand = buildRestoreCommand(sourceRdbPath, instanceID, sharedPlan)
+			restoreCommand = buildRestoreCommand(sourceRdbPath, monitLogFile, instanceID, sharedPlan)
 		})
 
 		It("exits with a non zero status if the instance directory does not exist", func() {
@@ -141,6 +129,19 @@ var _ = Describe("restore", func() {
 
 			Eventually(session.Err).Should(gbytes.Say("Instance not found"))
 			Eventually(session, "20s").Should(gexec.Exit(1))
+		})
+
+		It("stops and then starts the process-watcher", func() {
+			session, err := gexec.Start(restoreCommand, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+
+			Eventually(session, "20s").Should(gexec.Exit(0))
+
+			monitLogBytes, err := ioutil.ReadFile(monitLogFile)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(string(monitLogBytes)).To(ContainSubstring("stopping process-watcher"))
+			Expect(string(monitLogBytes)).To(ContainSubstring("starting process-watcher"))
 		})
 
 		It("creates a new RDB file in the instance directory", func() {
@@ -184,7 +185,17 @@ var _ = Describe("restore", func() {
 		BeforeEach(func() {
 			config = loadRestoreConfig(dedicatedPlan)
 			redisSession = startRedisSession(config, instanceID, dedicatedPlan)
-			restoreCommand = buildRestoreCommand(sourceRdbPath, instanceID, dedicatedPlan)
+			restoreCommand = buildRestoreCommand(sourceRdbPath, monitLogFile, instanceID, dedicatedPlan)
+		})
+
+		It("doesnt stop and then start the process-watcher", func() {
+			session, err := gexec.Start(restoreCommand, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+
+			Eventually(session, "20s").Should(gexec.Exit(0))
+
+			_, err = ioutil.ReadFile(monitLogFile)
+			Expect(err.Error()).To(MatchRegexp("no such file or directory"))
 		})
 
 		It("creates a new RDB file in the instance directory", func() {
@@ -275,12 +286,8 @@ func loadRestoreConfig(planName string) restoreconfig.Config {
 	return config
 }
 
-func buildRestoreCommand(sourceRdbPath, instanceID, planName string) *exec.Cmd {
+func buildRestoreCommand(sourceRdbPath, monitLogFile, instanceID, planName string) *exec.Cmd {
 	configPath := filepath.Join("assets", "restore-"+planName+".yml")
-	monitLogDir, err := ioutil.TempDir("", "monit-test-logs")
-	Expect(err).NotTo(HaveOccurred())
-
-	monitLogFile := filepath.Join(monitLogDir, "monit.log")
 	restoreCommand := exec.Command(restoreExecutablePath, instanceID, sourceRdbPath)
 	restoreCommand.Env = append(os.Environ(), "RESTORE_CONFIG_PATH="+configPath)
 	restoreCommand.Env = append(restoreCommand.Env, "MONIT_LOG_FILE="+monitLogFile)
@@ -312,4 +319,11 @@ func copyFile(sourcePath, destinationPath string) error {
 
 	_, err = io.Copy(destination, source)
 	return err
+}
+
+func setupMonitLogFile() string {
+	monitLogDir, err := ioutil.TempDir("", "monit-test-logs")
+	Expect(err).NotTo(HaveOccurred())
+
+	return filepath.Join(monitLogDir, "monit.log")
 }

@@ -111,6 +111,18 @@ func main() {
 		Logger: logger,
 	}
 
+	startStep("Disabling Redis process watcher")
+	if config.DedicatedInstance {
+		finishStep("Skipped")
+	} else {
+		err = stopProcessWatcher(monitExecutablePath)
+		if err != nil {
+			finishStep("ERROR")
+			logger.Fatal("stop-process-watcher", err)
+		}
+		finishStep("OK")
+	}
+
 	processController := &redis.OSProcessController{
 		CommandRunner:             commandRunner,
 		InstanceInformer:          &config,
@@ -120,14 +132,6 @@ func main() {
 		WaitUntilConnectableFunc:  availability.Check,
 		RedisServerExecutablePath: config.RedisServerExecutablePath,
 	}
-
-	startStep("Disabling Redis process watcher")
-	err = stopProcessWatcher(monitExecutablePath)
-	if err != nil {
-		finishStep("ERROR")
-		logger.Fatal("stop-process-watcher", err)
-	}
-	finishStep("OK")
 
 	instance := &redis.Instance{ID: instanceID, Host: "localhost", Port: 6379}
 
@@ -217,12 +221,16 @@ func main() {
 	finishStep("OK")
 
 	startStep("Restarting Redis process watcher")
-	err = startProcessWatcher(monitExecutablePath)
-	if err != nil {
-		finishStep("ERROR")
-		logger.Fatal("start-process-watcher", err)
+	if config.DedicatedInstance {
+		finishStep("Skipped")
+	} else {
+		err = startProcessWatcher(monitExecutablePath)
+		if err != nil {
+			finishStep("ERROR")
+			logger.Fatal("start-process-watcher", err)
+		}
+		finishStep("OK")
 	}
-	finishStep("OK")
 
 	fmt.Println("Restore completed successfully")
 }
