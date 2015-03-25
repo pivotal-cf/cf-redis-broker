@@ -1,7 +1,6 @@
 package restoreintegration_test
 
 import (
-	"io"
 	"log"
 	"os"
 
@@ -33,20 +32,3 @@ func buildExecutable(sourcePath string) string {
 var _ = BeforeSuite(func() {
 	restoreExecutablePath = buildExecutable("github.com/pivotal-cf/cf-redis-broker/cmd/restore")
 })
-
-func copyFile(sourcePath, destinationPath string) error {
-	source, err := os.Open(sourcePath)
-	if err != nil {
-		return err
-	}
-	defer source.Close()
-
-	destination, err := os.Create(destinationPath)
-	if err != nil {
-		return err
-	}
-	defer destination.Close()
-
-	_, err = io.Copy(destination, source)
-	return err
-}
