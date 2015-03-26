@@ -265,6 +265,8 @@ func startRedisSession(config restoreconfig.Config, instanceID, planName string)
 
 	pidfilePath := filepath.Join(testInstanceDir, "redis-server.pid")
 	redisCmd := exec.Command("redis-server",
+		"--dir", testInstanceDir,
+		"--save", "900", "1",
 		"--pidfile", pidfilePath,
 		"--daemonize", "yes",
 	)

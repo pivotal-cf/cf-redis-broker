@@ -51,7 +51,7 @@ if action == 'start'
 elsif action == "stop"
   log "stopping #{ARGV.fetch(1)}"
   if ARGV.fetch(1) == "redis"
-    system 'pkill -9 redis-server'
+    system 'pkill redis-server'
   end
 elsif action == "summary"
 

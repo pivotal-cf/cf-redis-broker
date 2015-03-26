@@ -99,14 +99,6 @@ func main() {
 	}
 	finishStep("OK")
 
-	startStep("Copying backup file to instance directory")
-	err = copyRdbFileIntoInstance(rdbPath, instanceDirPath)
-	if err != nil {
-		finishStep("ERROR")
-		logger.Fatal("copy-rdb", err)
-	}
-	finishStep("OK")
-
 	commandRunner := system.OSCommandRunner{
 		Logger: logger,
 	}
@@ -147,6 +139,14 @@ func main() {
 	if err != nil {
 		finishStep("ERROR")
 		logger.Fatal("killing-redis", err)
+	}
+	finishStep("OK")
+
+	startStep("Copying backup file to instance directory")
+	err = copyRdbFileIntoInstance(rdbPath, instanceDirPath)
+	if err != nil {
+		finishStep("ERROR")
+		logger.Fatal("copy-rdb", err)
 	}
 	finishStep("OK")
 
