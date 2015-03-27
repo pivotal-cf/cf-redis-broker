@@ -36,7 +36,7 @@ var _ = Describe("s3bucket", func() {
 			})
 
 			It("returns the bucket and no error", func() {
-				client := s3bucket.NewClient(fakeS3EndpointURL, "region", "accessKey", "secretKey")
+				client := s3bucket.NewClient(fakeS3EndpointURL, "accessKey", "secretKey")
 				bucket, err := client.GetOrCreate(bucketName)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(bucket.Name).To(Equal(bucketName))
@@ -49,7 +49,7 @@ var _ = Describe("s3bucket", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(bucketList.Buckets).To(HaveLen(0))
 
-				client := s3bucket.NewClient(fakeS3EndpointURL, "region", "accessKey", "secretKey")
+				client := s3bucket.NewClient(fakeS3EndpointURL, "accessKey", "secretKey")
 				_, err = client.GetOrCreate(bucketName)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -60,7 +60,7 @@ var _ = Describe("s3bucket", func() {
 			})
 
 			It("returns the bucket and no error", func() {
-				client := s3bucket.NewClient(fakeS3EndpointURL, "region", "accessKey", "secretKey")
+				client := s3bucket.NewClient(fakeS3EndpointURL, "accessKey", "secretKey")
 				bucket, err := client.GetOrCreate(bucketName)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(bucket.Name).To(Equal(bucketName))
@@ -74,7 +74,7 @@ var _ = Describe("s3bucket", func() {
 
 		Context("when goamz returns an error", func() {
 			It("returns the same error", func() {
-				client := s3bucket.NewClient("not-a-real-endpoint", "region", "accessKey", "secretKey")
+				client := s3bucket.NewClient("not-a-real-endpoint", "accessKey", "secretKey")
 				_, err := client.GetOrCreate(bucketName)
 				Expect(err).To(MatchError(ContainSubstring("unsupported protocol scheme")))
 			})
@@ -88,7 +88,7 @@ var _ = Describe("s3bucket", func() {
 
 		BeforeEach(func() {
 			var err error
-			bucket, err = s3bucket.NewClient(fakeS3EndpointURL, "region", "accessKey", "secretKey").GetOrCreate(bucketName)
+			bucket, err = s3bucket.NewClient(fakeS3EndpointURL, "accessKey", "secretKey").GetOrCreate(bucketName)
 			Expect(err).NotTo(HaveOccurred())
 		})
 

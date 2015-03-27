@@ -4,7 +4,6 @@ s3:
   access_key_id: ABCDEABCDEABCDEABCDE
   secret_access_key: ABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDE
   path: ""
-  region: fake-region-1
 bg_save_timeout: 600
 redis_data_directory: /tmp/redis-data-dir
 node_id: dedicated-node-0

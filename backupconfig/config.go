@@ -20,7 +20,6 @@ type S3Configuration struct {
 	AccessKeyId     string `yaml:"access_key_id"`
 	SecretAccessKey string `yaml:"secret_access_key"`
 	Path            string `yaml:"path"`
-	Region          string `yaml:"region"`
 }
 
 func Load(path string) (*Config, error) {

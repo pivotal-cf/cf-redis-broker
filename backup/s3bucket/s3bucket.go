@@ -19,19 +19,12 @@ type Bucket struct {
 
 var S3RegionNotFoundErr error = errors.New("S3 region not found")
 
-func NewClient(endpointUrl, regionName, accessKey, secretKey string) Client {
-	region := aws.Region{
-		Name:                 regionName,
-		S3Endpoint:           endpointUrl,
-		S3LocationConstraint: true,
-	}
-
+func NewClient(endpointUrl, accessKey, secretKey string) Client {
 	auth := aws.Auth{
 		AccessKey: accessKey,
 		SecretKey: secretKey,
 	}
-
-	s3Client := s3.New(auth, region)
+	s3Client := s3.New(auth, getRegion(endpointUrl))
 	return Client{
 		s3Client: s3Client,
 	}
@@ -57,4 +50,18 @@ func (client Client) GetOrCreate(bucketName string) (Bucket, error) {
 
 func (bucket Bucket) Upload(data []byte, path string) error {
 	return bucket.s3Bucket.Put(path, data, "", "")
+}
+
+func getRegion(endpointUrl string) aws.Region {
+	for _, region := range aws.Regions {
+		if endpointUrl == region.S3Endpoint {
+			return region
+		}
+	}
+
+	return aws.Region{
+		Name:                 "custom-region",
+		S3Endpoint:           endpointUrl,
+		S3LocationConstraint: true,
+	}
 }

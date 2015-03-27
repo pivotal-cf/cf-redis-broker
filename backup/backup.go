@@ -41,7 +41,6 @@ func (backup Backup) Create(configPath, instanceDataPath, instanceID string) err
 func (backup Backup) getOrCreateBucket() (s3bucket.Bucket, error) {
 	s3Client := s3bucket.NewClient(
 		backup.Config.S3Configuration.EndpointUrl,
-		backup.Config.S3Configuration.Region,
 		backup.Config.S3Configuration.AccessKeyId,
 		backup.Config.S3Configuration.SecretAccessKey,
 	)

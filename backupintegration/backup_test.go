@@ -292,7 +292,7 @@ func configureS3ClientAndBucket(backupConfig *backupconfig.Config) (*s3.S3, *s3.
 		AccessKey: backupConfig.S3Configuration.AccessKeyId,
 		SecretKey: backupConfig.S3Configuration.SecretAccessKey,
 	}, aws.Region{
-		Name:                 backupConfig.S3Configuration.Region,
+		Name:                 "custom-region",
 		S3Endpoint:           backupConfig.S3Configuration.EndpointUrl,
 		S3LocationConstraint: true,
 	})

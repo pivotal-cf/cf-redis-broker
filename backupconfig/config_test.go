@@ -49,10 +49,6 @@ var _ = Describe("Config", func() {
 				Expect(config.S3Configuration.Path).To(Equal("some-s3-path"))
 			})
 
-			It("Has the correct region", func() {
-				Expect(config.S3Configuration.Region).To(Equal("some-region"))
-			})
-
 			It("Has the correct bg_save_timeout", func() {
 				Expect(config.BGSaveTimeoutSeconds).To(Equal(10))
 			})

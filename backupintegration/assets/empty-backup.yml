@@ -4,6 +4,5 @@
   "access_key_id": ""
   "secret_access_key": ""
   "path": ""
-  "region": ""
 "bg_save_timeout": 600
 "redis_data_directory": "/tmp/redis-data-dir"
