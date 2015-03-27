@@ -157,6 +157,7 @@ func main() {
 			"--pidfile", pidfilePath,
 			"--daemonize", "yes",
 			"--dir", instanceDirPath,
+			"--bind", "127.0.0.1",
 		},
 		time.Duration(config.StartRedisTimeoutSeconds)*time.Second,
 	)
