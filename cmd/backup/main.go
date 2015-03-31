@@ -25,42 +25,48 @@ func main() {
 		os.Exit(0)
 	}
 
-	backupErrors := []error{}
-
-	backupCreator := backup.Backup{
+	backupCreator := &backup.Backup{
 		Config: config,
 		Logger: logger,
 	}
+	backupErrors := map[string]error{}
 
 	if config.DedicatedInstance {
-		err := backupCreator.Create(config.RedisDataDirectory, "", config.NodeID, "dedicated-vm")
-		if err != nil {
-			backupErrors = append(backupErrors, err)
-			logger.Error("error backing up dedicated instance", err)
+		if err := backupCreator.Create(config.RedisDataDirectory, "", config.NodeID, "dedicated-vm"); err != nil {
+			backupErrors[config.NodeID] = err
 		}
 	} else {
-		instanceDirs, err := ioutil.ReadDir(config.RedisDataDirectory)
-		for _, instanceDir := range instanceDirs {
-
-			basename := instanceDir.Name()
-			if strings.HasPrefix(basename, ".") {
-				continue
-			}
-
-			instancePath := path.Join(config.RedisDataDirectory, basename)
-			err = backupCreator.Create(instancePath, "db", basename, "shared-vm")
-			if err != nil {
-				backupErrors = append(backupErrors, err)
-				logger.Error("error backing up instance", err, lager.Data{
-					"instance_id": basename,
-				})
-			}
-		}
+		backupErrors = backupSharedVMInstances(backupCreator, config.RedisDataDirectory)
 	}
 
 	if len(backupErrors) > 0 {
-		log.Fatal(backupErrors)
+		for instanceID, err := range backupErrors {
+			logger.Error("backup-failed", err, lager.Data{
+				"instance_id": instanceID,
+			})
+		}
+		os.Exit(1)
 	}
+}
+
+func backupSharedVMInstances(backupCreator *backup.Backup, instancesDir string) map[string]error {
+	instanceDirs, err := ioutil.ReadDir(instancesDir)
+	if err != nil {
+		return map[string]error{"all-shared-vm-instances": err}
+	}
+
+	errors := map[string]error{}
+	for _, instanceDir := range instanceDirs {
+		basename := instanceDir.Name()
+		if strings.HasPrefix(basename, ".") {
+			continue
+		}
+
+		if err := backupCreator.Create(path.Join(instancesDir, basename), "db", basename, "shared-vm"); err != nil {
+			errors[basename] = err
+		}
+	}
+	return errors
 }
 
 func configPath() string {
