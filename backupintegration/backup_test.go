@@ -80,15 +80,18 @@ var _ = Describe("backups", func() {
 				ioutil.WriteFile(confPath, redisConfContents, 0777)
 				redisRunner = &integration.RedisRunner{}
 				redisRunner.Start([]string{confPath, "--port", "6480"})
+
+				status, _ := brokerClient.ProvisionInstance(instanceID, "dedicated")
+				Ω(status).To(Equal(http.StatusCreated))
+				bindAndWriteTestData(instanceID)
 			})
 
 			AfterEach(func() {
+				brokerClient.DeprovisionInstance(instanceID)
 				redisRunner.Stop()
 			})
 
-			It("Should backup to S3", func() {
-				status, _ := brokerClient.ProvisionInstance(instanceID, "dedicated")
-				Ω(status).To(Equal(http.StatusCreated))
+			It("causes redis to SAVE/BGSAVE before backing up", func() {
 				lastSaveTime := getLastSaveTime(instanceID, confPath)
 
 				backupSession := runBackupWithConfig(backupExecutablePath, backupConfigPath)
@@ -99,10 +102,6 @@ var _ = Describe("backups", func() {
 			})
 
 			It("uploads redis instance RDB file to the correct S3 bucket", func() {
-				status, _ := brokerClient.ProvisionInstance(instanceID, "dedicated")
-				Ω(status).To(Equal(http.StatusCreated))
-
-				bindAndWriteTestData(instanceID)
 				timestamp := getCurrentTimestamp()
 				backupSession := runBackupWithConfig(backupExecutablePath, backupConfigPath)
 
@@ -165,7 +164,7 @@ var _ = Describe("backups", func() {
 					}
 				})
 
-				It("runs a background save", func() {
+				It("causes redis to SAVE/BGSAVE before backing up", func() {
 					instanceID := instanceIDs[0]
 					confPath := filepath.Join(brokerConfig.RedisConfiguration.InstanceDataDirectory, instanceID, "redis.conf")
 					lastSaveTime := getLastSaveTime(instanceID, confPath)
