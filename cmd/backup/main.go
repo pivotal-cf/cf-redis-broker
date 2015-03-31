@@ -2,7 +2,6 @@ package main
 
 import (
 	"io/ioutil"
-	"log"
 	"os"
 	"path"
 	"strings"
@@ -15,9 +14,14 @@ import (
 func main() {
 	logger := lager.NewLogger("backup")
 
-	config, err := backupconfig.Load(configPath())
+	configPath := os.Getenv("BACKUP_CONFIG_PATH")
+	if configPath == "" {
+		logger.Fatal("BACKUP_CONFIG_PATH not set", nil)
+	}
+
+	config, err := backupconfig.Load(configPath)
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal("backup-config-load-failed", err)
 	}
 
 	if config.S3Configuration.BucketName == "" || config.S3Configuration.EndpointUrl == "" {
@@ -40,11 +44,7 @@ func main() {
 	}
 
 	if len(backupErrors) > 0 {
-		for instanceID, err := range backupErrors {
-			logger.Error("backup-failed", err, lager.Data{
-				"instance_id": instanceID,
-			})
-		}
+		logBackupErrors(backupErrors, logger)
 		os.Exit(1)
 	}
 }
@@ -69,10 +69,10 @@ func backupSharedVMInstances(backupCreator *backup.Backup, instancesDir string) 
 	return errors
 }
 
-func configPath() string {
-	path := os.Getenv("BACKUP_CONFIG_PATH")
-	if path == "" {
-		panic("BACKUP_CONFIG_PATH not set")
+func logBackupErrors(errors map[string]error, logger lager.Logger) {
+	for instanceID, err := range errors {
+		logger.Error("backup-failed", err, lager.Data{
+			"instance_id": instanceID,
+		})
 	}
-	return path
 }
