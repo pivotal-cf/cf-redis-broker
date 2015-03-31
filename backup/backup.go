@@ -55,21 +55,17 @@ func (backup Backup) getOrCreateBucket() (s3bucket.Bucket, error) {
 }
 
 func (backup Backup) createSnapshot(instancePath string) error {
-	client, err := backup.buildRedisClient(instancePath)
+	instanceConf, err := redisconf.Load(path.Join(instancePath, "redis.conf"))
+	if err != nil {
+		return err
+	}
+
+	client, err := client.Connect("localhost", instanceConf)
 	if err != nil {
 		return err
 	}
 
 	return client.CreateSnapshot(backup.Config.BGSaveTimeoutSeconds)
-}
-
-func (backup Backup) buildRedisClient(instancePath string) (*client.Client, error) {
-	instanceConf, err := redisconf.Load(path.Join(instancePath, "redis.conf"))
-	if err != nil {
-		return nil, err
-	}
-
-	return client.Connect("localhost", instanceConf)
 }
 
 func (backup Backup) uploadToS3(instanceID, planName, pathToRdbFile string, timestamp string, bucket s3bucket.Bucket) error {
