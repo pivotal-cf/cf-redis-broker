@@ -22,15 +22,10 @@ func LoadBrokerConfig(brokerFilename string) brokerconfig.Config {
 	return brokerConfig
 }
 
-func BuildAndLaunchBroker(brokerConfigName string) *gexec.Session {
-	brokerPath := buildExecutable("github.com/pivotal-cf/cf-redis-broker/cmd/broker")
-	return LaunchProcessWithBrokerConfig(brokerPath, brokerConfigName)
-}
-
-func buildExecutable(sourcePath string) string {
-	executable, err := gexec.Build(sourcePath)
+func BuildBroker() string {
+	executable, err := gexec.Build("github.com/pivotal-cf/cf-redis-broker/cmd/broker")
 	if err != nil {
-		log.Fatalf("executable %s could not be built: %s", sourcePath, err)
+		log.Fatalf("broker could not be built: %s", err)
 		os.Exit(1)
 	}
 	return executable

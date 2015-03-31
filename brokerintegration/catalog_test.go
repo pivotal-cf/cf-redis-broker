@@ -200,6 +200,6 @@ var _ = Describe("Catalog", func() {
 func switchBroker(config string) {
 	helpers.KillProcess(brokerSession)
 	helpers.SafelyResetAllDirectories()
-	brokerSession = integration.BuildAndLaunchBroker(config)
+	brokerSession = integration.LaunchProcessWithBrokerConfig(brokerExecutablePath, config)
 	Ω(helpers.ServiceAvailable(brokerPort)).Should(BeTrue())
 }

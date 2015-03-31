@@ -24,7 +24,7 @@ var _ = Describe("Provision dedicated instance", func() {
 	Context("when the broker is restarted", func() {
 		BeforeEach(func() {
 			helpers.KillProcess(brokerSession)
-			brokerSession = integration.BuildAndLaunchBroker("broker.yml")
+			brokerSession = integration.LaunchProcessWithBrokerConfig(brokerExecutablePath, "broker.yml")
 			Ω(helpers.ServiceAvailable(brokerPort)).Should(BeTrue())
 		})
 
@@ -44,13 +44,13 @@ var _ = Describe("Provision dedicated instance", func() {
 	Context("when the broker is restarted with a new node", func() {
 		BeforeEach(func() {
 			helpers.KillProcess(brokerSession)
-			brokerSession = integration.BuildAndLaunchBroker("broker.yml-extra-node")
+			brokerSession = integration.LaunchProcessWithBrokerConfig(brokerExecutablePath, "broker.yml-extra-node")
 			Ω(helpers.ServiceAvailable(brokerPort)).Should(BeTrue())
 		})
 
 		AfterEach(func() {
 			helpers.KillProcess(brokerSession)
-			brokerSession = integration.BuildAndLaunchBroker("broker.yml")
+			brokerSession = integration.LaunchProcessWithBrokerConfig(brokerExecutablePath, "broker.yml")
 			Ω(helpers.ServiceAvailable(brokerPort)).Should(BeTrue())
 		})
 

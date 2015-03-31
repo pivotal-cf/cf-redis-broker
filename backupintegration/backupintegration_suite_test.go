@@ -35,7 +35,7 @@ var _ = BeforeEach(func() {
 var _ = BeforeSuite(func() {
 	helpers.SafelyResetAllDirectories()
 	brokerConfig = integration.LoadBrokerConfig("broker.yml")
-	brokerSession = integration.BuildAndLaunchBroker("broker.yml")
+	brokerSession = integration.LaunchProcessWithBrokerConfig(integration.BuildBroker(), "broker.yml")
 
 	brokerClient = &integration.BrokerClient{Config: &brokerConfig}
 

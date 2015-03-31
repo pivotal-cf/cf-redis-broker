@@ -24,6 +24,7 @@ var brokerPort uint = 3000
 
 var brokerSession *gexec.Session
 var monitorSession *gexec.Session
+var brokerExecutablePath string
 var backupExecutablePath string
 var brokerConfig brokerconfig.Config
 var brokerClient *integration.BrokerClient
@@ -42,9 +43,11 @@ var _ = BeforeEach(func() {
 
 var _ = BeforeSuite(func() {
 	helpers.SafelyResetAllDirectories()
-	brokerConfig = integration.LoadBrokerConfig("broker.yml")
-	brokerSession = integration.BuildAndLaunchBroker("broker.yml")
 
+	brokerExecutablePath = integration.BuildBroker()
+	brokerSession = integration.LaunchProcessWithBrokerConfig(brokerExecutablePath, "broker.yml")
+
+	brokerConfig = integration.LoadBrokerConfig("broker.yml")
 	brokerClient = &integration.BrokerClient{Config: &brokerConfig}
 
 	Ω(helpers.ServiceAvailable(brokerPort)).Should(BeTrue())
