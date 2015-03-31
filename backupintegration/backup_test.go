@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"code.google.com/p/go-uuid/uuid"
@@ -102,10 +103,11 @@ var _ = Describe("backups", func() {
 				Ω(status).To(Equal(http.StatusCreated))
 
 				bindAndWriteTestData(instanceID)
+				timestamp := getCurrentTimestamp()
 				backupSession := runBackupWithConfig(backupExecutablePath, backupConfigPath)
 
 				backupSession.Wait(time.Second * 10).ExitCode()
-				retrievedBackupBytes, err := bucket.Get(fmt.Sprintf("%s/%s_dedicated-vm_redis_backup.tgz", backupConfig.S3Configuration.Path, backupConfig.NodeID))
+				retrievedBackupBytes, err := bucket.Get(backupFilename(backupConfig.S3Configuration.Path, timestamp, backupConfig.NodeID, "dedicated-vm"))
 				Ω(err).NotTo(HaveOccurred())
 				originalData, _ := ioutil.ReadFile(path.Join(backupConfig.RedisDataDirectory, "dump.rdb"))
 				Ω(retrievedBackupBytes).To(Equal(originalData))
@@ -132,7 +134,7 @@ var _ = Describe("backups", func() {
 
 				for _, instanceID := range instanceIDs {
 					status, _ := brokerClient.ProvisionInstance(instanceID, "shared")
-					Ω(status).To(Equal(http.StatusCreated))
+					Expect(status).To(Equal(http.StatusCreated))
 					bindAndWriteTestData(instanceID)
 				}
 			})
@@ -154,11 +156,12 @@ var _ = Describe("backups", func() {
 				})
 
 				It("uploads redis instance RDB files to the correct S3 bucket", func() {
+					timestamp := getCurrentTimestamp()
 					runBackupWithConfig(backupExecutablePath, backupConfigPath).Wait(time.Second * 10)
 					for _, instanceID := range instanceIDs {
-						retrievedBackupBytes, err := bucket.Get(fmt.Sprintf("%s/%s_shared-vm_redis_backup.tgz", backupConfig.S3Configuration.Path, instanceID))
-						Ω(err).NotTo(HaveOccurred())
-						Ω(retrievedBackupBytes).To(Equal(readRdbFile(instanceID)))
+						retrievedBackupBytes, err := bucket.Get(backupFilename(backupConfig.S3Configuration.Path, timestamp, instanceID, "shared-vm"))
+						Expect(err).NotTo(HaveOccurred())
+						Expect(retrievedBackupBytes).To(Equal(readRdbFile(instanceID)))
 					}
 				})
 
@@ -176,10 +179,11 @@ var _ = Describe("backups", func() {
 					err := bucket.DelBucket()
 					Ω(err).NotTo(HaveOccurred())
 
+					timestamp := getCurrentTimestamp()
 					runBackupWithConfig(backupExecutablePath, backupConfigPath).Wait(time.Second * 10)
 
 					for _, instanceID := range instanceIDs {
-						retrievedBackupBytes, err := bucket.Get(fmt.Sprintf("%s/%s_shared-vm_redis_backup.tgz", backupConfig.S3Configuration.Path, instanceID))
+						retrievedBackupBytes, err := bucket.Get(backupFilename(backupConfig.S3Configuration.Path, timestamp, instanceID, "shared-vm"))
 						Ω(err).NotTo(HaveOccurred())
 						Ω(retrievedBackupBytes).ShouldNot(BeEmpty())
 					}
@@ -194,9 +198,10 @@ var _ = Describe("backups", func() {
 				})
 
 				It("does not leave any files on s3", func() {
+					timestamp := getCurrentTimestamp()
 					runBackupWithConfig(backupExecutablePath, backupConfigPath).Kill().Wait()
 					for _, instanceID := range instanceIDs {
-						_, err := bucket.Get(fmt.Sprintf("%s/%s", backupConfig.S3Configuration.Path, instanceID))
+						_, err := bucket.Get(backupFilename(backupConfig.S3Configuration.Path, timestamp, instanceID, "shared-vm"))
 						Ω(err).Should(MatchError("The specified key does not exist."))
 					}
 				})
@@ -206,10 +211,11 @@ var _ = Describe("backups", func() {
 				It("still backs up the other instances", func() {
 					helpers.KillRedisProcess(instanceIDs[0], brokerConfig)
 
+					timestamp := getCurrentTimestamp()
 					backupExitStatusCode := runBackupWithConfig(backupExecutablePath, backupConfigPath).Wait(time.Second * 10).ExitCode()
 					Ω(backupExitStatusCode).Should(Equal(1))
 
-					retrievedBackupBytes, err := bucket.Get(fmt.Sprintf("%s/%s_shared-vm_redis_backup.tgz", backupConfig.S3Configuration.Path, instanceIDs[1]))
+					retrievedBackupBytes, err := bucket.Get(backupFilename(backupConfig.S3Configuration.Path, timestamp, instanceIDs[1], "shared-vm"))
 					Ω(err).NotTo(HaveOccurred())
 					Ω(retrievedBackupBytes).ShouldNot(BeEmpty())
 				})
@@ -217,6 +223,30 @@ var _ = Describe("backups", func() {
 		})
 	})
 })
+
+func getCurrentTimestamp() string {
+	// http://golang.org/pkg/time/#pkg-constants if you need to understand these crazy layouts
+	const desiredTimeLayout = "200601021504"
+	const secondsTimeLayout = "05"
+
+	// delay until the next minute if we're in the last 55 seconds of the current one
+	seconds, _ := strconv.Atoi(time.Now().Format(secondsTimeLayout))
+	for seconds > 55 {
+		time.Sleep(time.Second)
+		seconds, _ = strconv.Atoi(time.Now().Format(secondsTimeLayout))
+	}
+
+	return time.Now().Format(desiredTimeLayout)
+}
+
+func backupFilename(path, timestamp, instanceID, planName string) string {
+	return fmt.Sprintf(
+		"%s/%s_%s_%s_redis_backup.tgz",
+		path,
+		timestamp,
+		instanceID,
+		planName)
+}
 
 func getLastSaveTime(instanceID string, configPath string) int64 {
 	status, bindingBytes := brokerClient.BindInstance(instanceID, uuid.New())

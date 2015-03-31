@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"time"
 
 	"github.com/pivotal-cf/cf-redis-broker/backup/s3bucket"
 	"github.com/pivotal-cf/cf-redis-broker/backupconfig"
@@ -18,10 +19,15 @@ type Backup struct {
 	Logger lager.Logger
 }
 
+// http://golang.org/pkg/time/#pkg-constants if you need to understand these crazy layouts
+const timeFormat = "200601021504"
+
 func (backup Backup) Create(configPath, instanceDataPath, instanceID, planName string) error {
 	if err := backup.createSnapshot(configPath); err != nil {
 		return err
 	}
+
+	timestamp := time.Now().Format(timeFormat)
 
 	pathToRdbFile := path.Join(instanceDataPath, "dump.rdb")
 	if !fileExists(pathToRdbFile) {
@@ -35,7 +41,7 @@ func (backup Backup) Create(configPath, instanceDataPath, instanceID, planName s
 	if err != nil {
 		return err
 	}
-	return backup.uploadToS3(instanceID, planName, pathToRdbFile, bucket)
+	return backup.uploadToS3(instanceID, planName, pathToRdbFile, timestamp, bucket)
 }
 
 func (backup Backup) getOrCreateBucket() (s3bucket.Bucket, error) {
@@ -66,13 +72,13 @@ func (backup Backup) buildRedisClient(instancePath string) (*client.Client, erro
 	return client.Connect("localhost", instanceConf)
 }
 
-func (backup Backup) uploadToS3(instanceID, planName, pathToRdbFile string, bucket s3bucket.Bucket) error {
+func (backup Backup) uploadToS3(instanceID, planName, pathToRdbFile string, timestamp string, bucket s3bucket.Bucket) error {
 	rdbBytes, err := ioutil.ReadFile(pathToRdbFile)
 	if err != nil {
 		return err
 	}
 
-	remotePath := fmt.Sprintf("%s/%s_%s_redis_backup.tgz", backup.Config.S3Configuration.Path, instanceID, planName)
+	remotePath := fmt.Sprintf("%s/%s_%s_%s_redis_backup.tgz", backup.Config.S3Configuration.Path, timestamp, instanceID, planName)
 
 	backup.Logger.Info("Backing up instance", lager.Data{
 		"Local file":  pathToRdbFile,
