@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
 	"time"
 
 	"github.com/pivotal-cf/cf-redis-broker/backup/s3bucket"
@@ -19,20 +20,20 @@ type Backup struct {
 	Logger lager.Logger
 }
 
-// http://golang.org/pkg/time/#pkg-constants if you need to understand these crazy layouts
+// http://golang.org/pkg/time/#pkg-constants if you need to understand this crazy layout
 const timeFormat = "200601021504"
 
-func (backup Backup) Create(configPath, instanceDataPath, instanceID, planName string) error {
-	if err := backup.createSnapshot(configPath); err != nil {
+func (backup Backup) Create(instancePath, dataSubDir, instanceID, planName string) error {
+	if err := backup.createSnapshot(instancePath); err != nil {
 		return err
 	}
 
 	timestamp := time.Now().Format(timeFormat)
 
-	pathToRdbFile := path.Join(instanceDataPath, "dump.rdb")
-	if !fileExists(pathToRdbFile) {
+	rdbFilePath := filepath.Join(instancePath, dataSubDir, "dump.rdb")
+	if !fileExists(rdbFilePath) {
 		backup.Logger.Info("dump.rdb not found, skipping instance backup", lager.Data{
-			"Local file": pathToRdbFile,
+			"Local file": rdbFilePath,
 		})
 		return nil
 	}
@@ -41,7 +42,7 @@ func (backup Backup) Create(configPath, instanceDataPath, instanceID, planName s
 	if err != nil {
 		return err
 	}
-	return backup.uploadToS3(instanceID, planName, pathToRdbFile, timestamp, bucket)
+	return backup.uploadToS3(instanceID, planName, rdbFilePath, timestamp, bucket)
 }
 
 func (backup Backup) getOrCreateBucket() (s3bucket.Bucket, error) {
@@ -68,8 +69,8 @@ func (backup Backup) createSnapshot(instancePath string) error {
 	return client.CreateSnapshot(backup.Config.BGSaveTimeoutSeconds)
 }
 
-func (backup Backup) uploadToS3(instanceID, planName, pathToRdbFile string, timestamp string, bucket s3bucket.Bucket) error {
-	rdbBytes, err := ioutil.ReadFile(pathToRdbFile)
+func (backup Backup) uploadToS3(instanceID, planName, rdbFilePath string, timestamp string, bucket s3bucket.Bucket) error {
+	rdbBytes, err := ioutil.ReadFile(rdbFilePath)
 	if err != nil {
 		return err
 	}
@@ -77,7 +78,7 @@ func (backup Backup) uploadToS3(instanceID, planName, pathToRdbFile string, time
 	remotePath := fmt.Sprintf("%s/%s_%s_%s_redis_backup.tgz", backup.Config.S3Configuration.Path, timestamp, instanceID, planName)
 
 	backup.Logger.Info("Backing up instance", lager.Data{
-		"Local file":  pathToRdbFile,
+		"Local file":  rdbFilePath,
 		"Remote file": remotePath,
 	})
 

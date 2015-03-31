@@ -32,16 +32,14 @@ func main() {
 		Logger: logger,
 	}
 
-	instanceDirs, err := ioutil.ReadDir(config.RedisDataDirectory)
-
 	if config.DedicatedInstance {
-		err := backupCreator.Create(config.RedisDataDirectory, config.RedisDataDirectory, config.NodeID, "dedicated-vm")
+		err := backupCreator.Create(config.RedisDataDirectory, "", config.NodeID, "dedicated-vm")
 		if err != nil {
 			backupErrors = append(backupErrors, err)
 			logger.Error("error backing up dedicated instance", err)
 		}
 	} else {
-
+		instanceDirs, err := ioutil.ReadDir(config.RedisDataDirectory)
 		for _, instanceDir := range instanceDirs {
 
 			basename := instanceDir.Name()
@@ -49,9 +47,8 @@ func main() {
 				continue
 			}
 
-			configPath := path.Join(config.RedisDataDirectory, basename)
-			instanceDataPath := path.Join(configPath, "db")
-			err = backupCreator.Create(configPath, instanceDataPath, basename, "shared-vm")
+			instancePath := path.Join(config.RedisDataDirectory, basename)
+			err = backupCreator.Create(instancePath, "db", basename, "shared-vm")
 			if err != nil {
 				backupErrors = append(backupErrors, err)
 				logger.Error("error backing up instance", err, lager.Data{
