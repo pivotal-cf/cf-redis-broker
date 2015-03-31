@@ -18,7 +18,7 @@ type Backup struct {
 	Logger lager.Logger
 }
 
-func (backup Backup) Create(configPath, instanceDataPath, instanceID string) error {
+func (backup Backup) Create(configPath, instanceDataPath, instanceID, planName string) error {
 	if err := backup.createSnapshot(configPath); err != nil {
 		return err
 	}
@@ -35,7 +35,7 @@ func (backup Backup) Create(configPath, instanceDataPath, instanceID string) err
 	if err != nil {
 		return err
 	}
-	return backup.uploadToS3(instanceID, pathToRdbFile, bucket)
+	return backup.uploadToS3(instanceID, planName, pathToRdbFile, bucket)
 }
 
 func (backup Backup) getOrCreateBucket() (s3bucket.Bucket, error) {
@@ -66,13 +66,13 @@ func (backup Backup) buildRedisClient(instancePath string) (*client.Client, erro
 	return client.Connect("localhost", instanceConf)
 }
 
-func (backup Backup) uploadToS3(instanceID, pathToRdbFile string, bucket s3bucket.Bucket) error {
+func (backup Backup) uploadToS3(instanceID, planName, pathToRdbFile string, bucket s3bucket.Bucket) error {
 	rdbBytes, err := ioutil.ReadFile(pathToRdbFile)
 	if err != nil {
 		return err
 	}
 
-	remotePath := fmt.Sprintf("%s/%s", backup.Config.S3Configuration.Path, instanceID)
+	remotePath := fmt.Sprintf("%s/%s_%s_redis_backup.tgz", backup.Config.S3Configuration.Path, instanceID, planName)
 
 	backup.Logger.Info("Backing up instance", lager.Data{
 		"Local file":  pathToRdbFile,

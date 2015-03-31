@@ -105,7 +105,7 @@ var _ = Describe("backups", func() {
 				backupSession := runBackupWithConfig(backupExecutablePath, backupConfigPath)
 
 				backupSession.Wait(time.Second * 10).ExitCode()
-				retrievedBackupBytes, err := bucket.Get(fmt.Sprintf("%s/%s", backupConfig.S3Configuration.Path, backupConfig.NodeID))
+				retrievedBackupBytes, err := bucket.Get(fmt.Sprintf("%s/%s_dedicated-vm_redis_backup.tgz", backupConfig.S3Configuration.Path, backupConfig.NodeID))
 				Ω(err).NotTo(HaveOccurred())
 				originalData, _ := ioutil.ReadFile(path.Join(backupConfig.RedisDataDirectory, "dump.rdb"))
 				Ω(retrievedBackupBytes).To(Equal(originalData))
@@ -156,7 +156,7 @@ var _ = Describe("backups", func() {
 				It("uploads redis instance RDB files to the correct S3 bucket", func() {
 					runBackupWithConfig(backupExecutablePath, backupConfigPath).Wait(time.Second * 10)
 					for _, instanceID := range instanceIDs {
-						retrievedBackupBytes, err := bucket.Get(fmt.Sprintf("%s/%s", backupConfig.S3Configuration.Path, instanceID))
+						retrievedBackupBytes, err := bucket.Get(fmt.Sprintf("%s/%s_shared-vm_redis_backup.tgz", backupConfig.S3Configuration.Path, instanceID))
 						Ω(err).NotTo(HaveOccurred())
 						Ω(retrievedBackupBytes).To(Equal(readRdbFile(instanceID)))
 					}
@@ -179,7 +179,7 @@ var _ = Describe("backups", func() {
 					runBackupWithConfig(backupExecutablePath, backupConfigPath).Wait(time.Second * 10)
 
 					for _, instanceID := range instanceIDs {
-						retrievedBackupBytes, err := bucket.Get(fmt.Sprintf("%s/%s", backupConfig.S3Configuration.Path, instanceID))
+						retrievedBackupBytes, err := bucket.Get(fmt.Sprintf("%s/%s_shared-vm_redis_backup.tgz", backupConfig.S3Configuration.Path, instanceID))
 						Ω(err).NotTo(HaveOccurred())
 						Ω(retrievedBackupBytes).ShouldNot(BeEmpty())
 					}
@@ -209,7 +209,7 @@ var _ = Describe("backups", func() {
 					backupExitStatusCode := runBackupWithConfig(backupExecutablePath, backupConfigPath).Wait(time.Second * 10).ExitCode()
 					Ω(backupExitStatusCode).Should(Equal(1))
 
-					retrievedBackupBytes, err := bucket.Get(fmt.Sprintf("%s/%s", backupConfig.S3Configuration.Path, instanceIDs[1]))
+					retrievedBackupBytes, err := bucket.Get(fmt.Sprintf("%s/%s_shared-vm_redis_backup.tgz", backupConfig.S3Configuration.Path, instanceIDs[1]))
 					Ω(err).NotTo(HaveOccurred())
 					Ω(retrievedBackupBytes).ShouldNot(BeEmpty())
 				})
