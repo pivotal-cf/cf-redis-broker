@@ -103,13 +103,24 @@ var _ = Describe("backups", func() {
 
 			It("uploads redis instance RDB file to the correct S3 bucket", func() {
 				timestamp := getCurrentTimestamp()
-				backupSession := runBackupWithConfig(backupExecutablePath, backupConfigPath)
+				runBackupWithConfig(backupExecutablePath, backupConfigPath).Wait(time.Second * 10)
 
-				backupSession.Wait(time.Second * 10).ExitCode()
 				retrievedBackupBytes, err := bucket.Get(backupFilename(backupConfig.S3Configuration.Path, timestamp, backupConfig.NodeID, "dedicated-vm"))
 				Ω(err).NotTo(HaveOccurred())
 				originalData, _ := ioutil.ReadFile(path.Join(backupConfig.RedisDataDirectory, "dump.rdb"))
 				Ω(retrievedBackupBytes).To(Equal(originalData))
+			})
+
+			It("creates the bucket if it does not exist and uploads a file for each instance", func() {
+				err := bucket.DelBucket()
+				Ω(err).NotTo(HaveOccurred())
+
+				timestamp := getCurrentTimestamp()
+				runBackupWithConfig(backupExecutablePath, backupConfigPath).Wait(time.Second * 10)
+
+				retrievedBackupBytes, err := bucket.Get(backupFilename(backupConfig.S3Configuration.Path, timestamp, backupConfig.NodeID, "dedicated-vm"))
+				Ω(err).NotTo(HaveOccurred())
+				Ω(retrievedBackupBytes).ShouldNot(BeEmpty())
 			})
 
 			Context("when an instance backup fails", func() {
