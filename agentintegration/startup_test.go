@@ -35,7 +35,7 @@ var _ = Describe("Startup", func() {
 	Context("When redis.conf does not exist", func() {
 		BeforeEach(func() {
 			session = startAgentWithConfig(config)
-			Eventually(isListeningChecker("localhost:9876")).Should(BeTrue())
+			Eventually(listening("localhost:9876")).Should(BeTrue())
 		})
 
 		AfterEach(func() {
@@ -68,7 +68,7 @@ var _ = Describe("Startup", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			session = startAgentWithConfig(config)
-			Eventually(isListeningChecker("localhost:9876")).Should(BeTrue())
+			Eventually(listening("localhost:9876")).Should(BeTrue())
 
 			Eventually(fileExistsChecker(confPath)).Should(BeTrue())
 
@@ -93,7 +93,7 @@ var _ = Describe("Startup", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			session = startAgentWithConfig(config)
-			Eventually(isListeningChecker("localhost:9876")).Should(BeTrue())
+			Eventually(listening("localhost:9876")).Should(BeTrue())
 		})
 
 		AfterEach(func() {

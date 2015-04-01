@@ -97,7 +97,7 @@ func startAgentWithDefaultConfig() *gexec.Session {
 	}
 
 	session := startAgentWithConfig(config)
-	Eventually(isListeningChecker("localhost:9876")).Should(BeTrue())
+	Eventually(listening("localhost:9876")).Should(BeTrue())
 	return session
 }
 
@@ -167,16 +167,12 @@ func fileExists(path string) bool {
 	return true
 }
 
-func isListeningChecker(uri string) func() bool {
+func listening(uri string) func() bool {
 	return func() bool {
-		return isListening(uri)
+		address, err := net.ResolveTCPAddr("tcp", uri)
+		Expect(err).ToNot(HaveOccurred())
+
+		_, err = net.DialTCP("tcp", nil, address)
+		return err == nil
 	}
-}
-
-func isListening(uri string) bool {
-	address, err := net.ResolveTCPAddr("tcp", uri)
-	Expect(err).ToNot(HaveOccurred())
-
-	_, err = net.DialTCP("tcp", nil, address)
-	return err == nil
 }
