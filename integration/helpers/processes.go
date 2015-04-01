@@ -18,7 +18,6 @@ func BuildExecutable(sourcePath string) string {
 	executable, err := gexec.Build(sourcePath)
 	if err != nil {
 		log.Fatalf("executable %s could not be built: %s", sourcePath, err)
-		os.Exit(1)
 	}
 	return executable
 }

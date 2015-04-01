@@ -7,6 +7,7 @@ import (
 
 	redisclient "github.com/garyburd/redigo/redis"
 	. "github.com/onsi/gomega"
+	"github.com/pivotal-cf/cf-redis-broker/integration/helpers"
 )
 
 type RedisRunner struct {
@@ -27,10 +28,7 @@ func (runner *RedisRunner) Start(redisArgs []string) {
 
 	runner.process = command.Process
 
-	Eventually(func() error {
-		_, err := redisclient.Dial("tcp", ":6480")
-		return err
-	}).ShouldNot(HaveOccurred())
+	Expect(helpers.ServiceAvailable(6480)).To(BeTrue())
 }
 
 func (runner *RedisRunner) Stop() {
