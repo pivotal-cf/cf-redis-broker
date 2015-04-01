@@ -5,11 +5,8 @@ import (
 	"io/ioutil"
 	"os/exec"
 	"path/filepath"
-	"strconv"
-	"strings"
 
 	"github.com/cloudfoundry-incubator/candiedyaml"
-	"github.com/garyburd/redigo/redis"
 	"github.com/onsi/gomega/gexec"
 
 	"github.com/pivotal-cf/cf-redis-broker/agentconfig"
@@ -30,15 +27,6 @@ func TestAgentintegration(t *testing.T) {
 	RegisterFailHandler(Fail)
 	junitReporter := reporters.NewJUnitReporter("junit_agentintegration.xml")
 	RunSpecsWithDefaultAndCustomReporters(t, "Agent Integration Suite", []Reporter{junitReporter})
-}
-
-func redisNotWritingAof(redisConn redis.Conn) func() bool {
-	return func() bool {
-		out, _ := redis.String(redisConn.Do("INFO", "persistence"))
-		return strings.Contains(out, "aof_pending_rewrite:0") &&
-			strings.Contains(out, "aof_rewrite_scheduled:0") &&
-			strings.Contains(out, "aof_rewrite_in_progress:0")
-	}
 }
 
 func startAgentWithConfig(config *agentconfig.Config) *gexec.Session {
@@ -94,21 +82,4 @@ func startAgentWithDefaultConfig() *gexec.Session {
 func stopAgent(session *gexec.Session) {
 	helpers.KillProcess(session)
 	helpers.ResetTestDirs()
-}
-
-func startRedis(confPath string) (*gexec.Session, redis.Conn) {
-	redisSession, err := gexec.Start(exec.Command("redis-server", confPath), GinkgoWriter, GinkgoWriter)
-	Ω(err).ShouldNot(HaveOccurred())
-
-	conf, err := redisconf.Load(confPath)
-	Ω(err).ShouldNot(HaveOccurred())
-
-	port, err := strconv.Atoi(conf.Get("port"))
-	Ω(err).ShouldNot(HaveOccurred())
-
-	Expect(helpers.ServiceAvailable(uint(port))).To(BeTrue())
-
-	redisConn := helpers.BuildRedisClient(uint(port), "localhost", conf.Get("requirepass"))
-
-	return redisSession, redisConn
 }

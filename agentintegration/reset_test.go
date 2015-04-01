@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/garyburd/redigo/redis"
@@ -107,6 +108,15 @@ func startRedisAndBlockUntilUp() (*gexec.Session, string) {
 	return session, aofPath
 }
 
+func redisNotWritingAof(redisConn redis.Conn) func() bool {
+	return func() bool {
+		out, _ := redis.String(redisConn.Do("INFO", "persistence"))
+		return strings.Contains(out, "aof_pending_rewrite:0") &&
+			strings.Contains(out, "aof_rewrite_scheduled:0") &&
+			strings.Contains(out, "aof_rewrite_in_progress:0")
+	}
+}
+
 func doResetRequest(c chan<- bool) {
 	defer GinkgoRecover()
 
@@ -140,6 +150,20 @@ func checkRedisStopAndStart(c chan<- bool) {
 	Expect(helpers.ServiceAvailable(uint(port))).To(BeTrue())
 
 	c <- true
+}
+
+func startRedis(confPath string) (*gexec.Session, redis.Conn) {
+	redisSession, err := gexec.Start(exec.Command("redis-server", confPath), GinkgoWriter, GinkgoWriter)
+	Ω(err).ShouldNot(HaveOccurred())
+
+	conf, err := redisconf.Load(confPath)
+	Ω(err).ShouldNot(HaveOccurred())
+
+	port, err := strconv.Atoi(conf.Get("port"))
+	Ω(err).ShouldNot(HaveOccurred())
+
+	Expect(helpers.ServiceAvailable(uint(port))).To(BeTrue())
+	return redisSession, helpers.BuildRedisClient(uint(port), "localhost", conf.Get("requirepass"))
 }
 
 func stopRedisAndDeleteData(redisConn redis.Conn, aofPath string) {
