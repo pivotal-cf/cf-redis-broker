@@ -94,7 +94,7 @@ func startRedisAndBlockUntilUp() (*gexec.Session, string) {
 	aofPath := filepath.Join(cwd, "appendonly.aof")
 
 	Eventually(redisNotWritingAof(connection)).Should(BeTrue())
-	Eventually(fileExistsChecker(aofPath)).Should(BeTrue())
+	Eventually(fileExists(aofPath)).Should(BeTrue())
 
 	return session, aofPath
 }

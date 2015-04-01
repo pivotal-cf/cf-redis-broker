@@ -44,7 +44,7 @@ var _ = Describe("Startup", func() {
 		})
 
 		It("Copies redis.conf from the default path and adds a password", func() {
-			Eventually(fileExistsChecker(confPath)).Should(BeTrue())
+			Eventually(fileExists(confPath)).Should(BeTrue())
 
 			conf, err := redisconf.Load(confPath)
 			Expect(err).ToNot(HaveOccurred())
@@ -54,7 +54,7 @@ var _ = Describe("Startup", func() {
 		})
 
 		It("Creates a new password each time", func() {
-			Eventually(fileExistsChecker(confPath)).Should(BeTrue())
+			Eventually(fileExists(confPath)).Should(BeTrue())
 
 			conf, err := redisconf.Load(confPath)
 			Expect(err).ToNot(HaveOccurred())
@@ -70,7 +70,7 @@ var _ = Describe("Startup", func() {
 			session = startAgentWithConfig(config)
 			Eventually(listening("localhost:9876")).Should(BeTrue())
 
-			Eventually(fileExistsChecker(confPath)).Should(BeTrue())
+			Eventually(fileExists(confPath)).Should(BeTrue())
 
 			conf, err = redisconf.Load(confPath)
 			Expect(err).ToNot(HaveOccurred())

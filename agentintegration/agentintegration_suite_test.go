@@ -152,19 +152,15 @@ func startRedis(confPath string) (*gexec.Session, redis.Conn) {
 	return redisSession, redisConn
 }
 
-func fileExistsChecker(path string) func() bool {
+func fileExists(path string) func() bool {
 	return func() bool {
-		return fileExists(path)
-	}
-}
-
-func fileExists(path string) bool {
-	if _, err := os.Stat(path); err != nil {
-		if os.IsNotExist(err) {
-			return false
+		if _, err := os.Stat(path); err != nil {
+			if os.IsNotExist(err) {
+				return false
+			}
 		}
+		return true
 	}
-	return true
 }
 
 func listening(uri string) func() bool {
