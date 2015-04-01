@@ -165,7 +165,7 @@ var _ = Describe("Debug", func() {
 		It("does not return the debug information", func() {
 			_, bodyBytes := executeHTTPRequest("GET", "http://localhost:3000/debug")
 			body := string(bodyBytes)
-			Ω(body).Should(Equal("Unauthorized"))
+			Ω(body).Should(Equal("Not Authorized\n"))
 		})
 	})
 })

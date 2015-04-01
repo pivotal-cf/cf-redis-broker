@@ -1,9 +1,7 @@
 package debug
 
 import (
-	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/pivotal-cf/cf-redis-broker/redis"
@@ -108,23 +106,4 @@ func getAllocatedInfo(repo *redis.RemoteRepository) (Allocated, error) {
 	allocated.Count = len(allocatedInstances)
 
 	return allocated, nil
-}
-
-func BuildAuthenticatedHandler(username string, password string, handler func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
-	return func(res http.ResponseWriter, req *http.Request) {
-		authHeader := req.Header.Get("Authorization")
-		if authHeader != correctAuthHeader(username, password) {
-			res.WriteHeader(http.StatusUnauthorized)
-			res.Write([]byte(http.StatusText(http.StatusUnauthorized)))
-			return
-		}
-
-		handler(res, req)
-	}
-}
-
-func correctAuthHeader(username, password string) string {
-	stringToEncode := fmt.Sprintf("%s:%s", username, password)
-	encoded := base64.StdEncoding.EncodeToString([]byte(stringToEncode))
-	return fmt.Sprintf("Basic %s", encoded)
 }

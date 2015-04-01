@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/pivotal-cf/brokerapi"
+	"github.com/pivotal-cf/brokerapi/auth"
 	"github.com/pivotal-golang/lager"
 
 	"github.com/pivotal-cf/cf-redis-broker/availability"
@@ -72,12 +73,10 @@ func main() {
 		Config: config,
 	}
 
-	debugHandler := debug.NewHandler(remoteRepo)
-	debugHandler = debug.BuildAuthenticatedHandler(
+	debugHandler := auth.NewWrapper(
 		config.AuthConfiguration.Username,
 		config.AuthConfiguration.Password,
-		debugHandler,
-	)
+	).WrapFunc(debug.NewHandler(remoteRepo))
 
 	brokerCredentials := brokerapi.BrokerCredentials{
 		Username: config.AuthConfiguration.Username,
