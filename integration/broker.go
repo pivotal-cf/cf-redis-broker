@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"log"
 	"os"
 	"os/exec"
 
@@ -23,12 +22,7 @@ func LoadBrokerConfig(brokerFilename string) brokerconfig.Config {
 }
 
 func BuildBroker() string {
-	executable, err := gexec.Build("github.com/pivotal-cf/cf-redis-broker/cmd/broker")
-	if err != nil {
-		log.Fatalf("broker could not be built: %s", err)
-		os.Exit(1)
-	}
-	return executable
+	return helpers.BuildExecutable("github.com/pivotal-cf/cf-redis-broker/cmd/broker")
 }
 
 func LaunchProcessWithBrokerConfig(executablePath string, brokerConfigName string) *gexec.Session {

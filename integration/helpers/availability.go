@@ -14,9 +14,5 @@ func ServiceAvailable(port uint) bool {
 		return false
 	}
 
-	if err = availability.Check(address, 10*time.Second); err != nil {
-		return false
-	}
-
-	return true
+	return availability.Check(address, 10*time.Second) == nil
 }
