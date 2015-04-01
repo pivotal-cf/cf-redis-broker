@@ -44,6 +44,28 @@ func main() {
 		})
 	}
 
+	templateRedisConf(config, logger)
+
+	redisResetter := resetter.New(
+		config.DefaultConfPath,
+		config.ConfPath,
+		portChecker{},
+		commandRunner{},
+		config.MonitExecutablePath,
+	)
+
+	handler := auth.NewWrapper(
+		config.AuthConfiguration.Username,
+		config.AuthConfiguration.Password,
+	).Wrap(
+		api.New(redisResetter, config.ConfPath),
+	)
+
+	http.Handle("/", handler)
+	logger.Fatal("http-listen", http.ListenAndServe("localhost:"+config.Port, nil))
+}
+
+func templateRedisConf(config *agentconfig.Config, logger lager.Logger) {
 	newConfig, err := redisconf.Load(config.DefaultConfPath)
 	if err != nil {
 		logger.Fatal("Error loading default redis.conf", err, lager.Data{
@@ -75,16 +97,6 @@ func main() {
 		"path": config.ConfPath,
 		"conf": newConfig,
 	})
-
-	redisResetter := resetter.New(config.DefaultConfPath, config.ConfPath, new(portChecker), new(commandRunner), config.MonitExecutablePath)
-
-	handler := auth.NewWrapper(
-		config.AuthConfiguration.Username,
-		config.AuthConfiguration.Password,
-	).Wrap(api.New(redisResetter, config.ConfPath))
-
-	http.Handle("/", handler)
-	logger.Fatal("http-listen", http.ListenAndServe("localhost:"+config.Port, nil))
 }
 
 func fileExists(path string) bool {
