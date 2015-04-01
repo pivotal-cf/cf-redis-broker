@@ -15,6 +15,7 @@ import (
 	"github.com/onsi/gomega/gexec"
 
 	"github.com/pivotal-cf/cf-redis-broker/agentconfig"
+	"github.com/pivotal-cf/cf-redis-broker/integration/helpers"
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 
 	. "github.com/onsi/ginkgo"
@@ -97,7 +98,7 @@ func startAgentWithDefaultConfig() *gexec.Session {
 	}
 
 	session := startAgentWithConfig(config)
-	Eventually(listening("localhost:9876")).Should(BeTrue())
+	Expect(helpers.ServiceAvailable(9876)).To(BeTrue())
 	return session
 }
 
@@ -160,15 +161,5 @@ func fileExists(path string) func() bool {
 			}
 		}
 		return true
-	}
-}
-
-func listening(uri string) func() bool {
-	return func() bool {
-		address, err := net.ResolveTCPAddr("tcp", uri)
-		Expect(err).ToNot(HaveOccurred())
-
-		_, err = net.DialTCP("tcp", nil, address)
-		return err == nil
 	}
 }

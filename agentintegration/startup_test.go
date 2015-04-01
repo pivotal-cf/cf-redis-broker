@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 	"github.com/pivotal-cf/cf-redis-broker/agentconfig"
+	"github.com/pivotal-cf/cf-redis-broker/integration/helpers"
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 )
 
@@ -35,7 +36,7 @@ var _ = Describe("Startup", func() {
 	Context("When redis.conf does not exist", func() {
 		BeforeEach(func() {
 			session = startAgentWithConfig(config)
-			Eventually(listening("localhost:9876")).Should(BeTrue())
+			Expect(helpers.ServiceAvailable(9876)).To(BeTrue())
 		})
 
 		AfterEach(func() {
@@ -68,7 +69,7 @@ var _ = Describe("Startup", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			session = startAgentWithConfig(config)
-			Eventually(listening("localhost:9876")).Should(BeTrue())
+			Expect(helpers.ServiceAvailable(9876)).To(BeTrue())
 
 			Eventually(fileExists(confPath)).Should(BeTrue())
 
@@ -93,7 +94,7 @@ var _ = Describe("Startup", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			session = startAgentWithConfig(config)
-			Eventually(listening("localhost:9876")).Should(BeTrue())
+			Expect(helpers.ServiceAvailable(9876)).To(BeTrue())
 		})
 
 		AfterEach(func() {
