@@ -1,4 +1,4 @@
-package api_test
+package agentapi_test
 
 import (
 	"encoding/json"
@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"path/filepath"
 
-	"github.com/pivotal-cf/cf-redis-broker/api"
+	"github.com/pivotal-cf/cf-redis-broker/agentapi"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -38,7 +38,7 @@ var _ = Describe("redis agent HTTP API", func() {
 	})
 
 	JustBeforeEach(func() {
-		handler := api.New(redisClient, configPath)
+		handler := agentapi.New(redisClient, configPath)
 		server = httptest.NewServer(handler)
 	})
 

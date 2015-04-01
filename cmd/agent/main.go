@@ -11,8 +11,8 @@ import (
 	"code.google.com/p/go-uuid/uuid"
 
 	"github.com/pivotal-cf/brokerapi/auth"
+	"github.com/pivotal-cf/cf-redis-broker/agentapi"
 	"github.com/pivotal-cf/cf-redis-broker/agentconfig"
-	"github.com/pivotal-cf/cf-redis-broker/api"
 	"github.com/pivotal-cf/cf-redis-broker/availability"
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 	"github.com/pivotal-cf/cf-redis-broker/resetter"
@@ -58,7 +58,7 @@ func main() {
 		config.AuthConfiguration.Username,
 		config.AuthConfiguration.Password,
 	).Wrap(
-		api.New(redisResetter, config.ConfPath),
+		agentapi.New(redisResetter, config.ConfPath),
 	)
 
 	http.Handle("/", handler)

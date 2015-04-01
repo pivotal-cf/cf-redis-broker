@@ -1,4 +1,4 @@
-package api_test
+package agentapi_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -11,5 +11,5 @@ import (
 func TestApi(t *testing.T) {
 	RegisterFailHandler(Fail)
 	junitReporter := reporters.NewJUnitReporter("junit_api.xml")
-	RunSpecsWithDefaultAndCustomReporters(t, "Api Suite", []Reporter{junitReporter})
+	RunSpecsWithDefaultAndCustomReporters(t, "Agent API Suite", []Reporter{junitReporter})
 }
