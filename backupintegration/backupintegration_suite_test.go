@@ -29,11 +29,11 @@ func TestBackupintegration(t *testing.T) {
 }
 
 var _ = BeforeEach(func() {
-	helpers.SafelyResetAllDirectories()
+	helpers.ResetTestDirs()
 })
 
 var _ = BeforeSuite(func() {
-	helpers.SafelyResetAllDirectories()
+	helpers.ResetTestDirs()
 	brokerConfig = integration.LoadBrokerConfig("broker.yml")
 	brokerSession = integration.LaunchProcessWithBrokerConfig(integration.BuildBroker(), "broker.yml")
 

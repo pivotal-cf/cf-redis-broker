@@ -14,5 +14,5 @@ func TestConfigmigratorintegration(t *testing.T) {
 }
 
 var _ = BeforeEach(func() {
-	helpers.SafelyResetAllDirectories()
+	helpers.ResetTestDirs()
 })

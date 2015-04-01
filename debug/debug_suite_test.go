@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
 	"github.com/pivotal-cf/cf-redis-broker/debug"
+	"github.com/pivotal-cf/cf-redis-broker/integration/helpers"
 	"github.com/pivotal-cf/cf-redis-broker/redis"
 
 	"testing"
@@ -25,7 +26,7 @@ func TestDebug(t *testing.T) {
 var dirs []string
 
 var _ = BeforeSuite(func() {
-	RemoveAndRecreateDir("/tmp/redis-config-dir")
+	helpers.ResetTestDirs()
 
 	dirs = []string{"/tmp/to/redis", "/tmp/redis/data/directory", "/tmp/redis/log/directory"}
 	for _, dir := range dirs {
@@ -58,10 +59,3 @@ var _ = AfterSuite(func() {
 		Ω(err).ShouldNot(HaveOccurred())
 	}
 })
-
-func RemoveAndRecreateDir(path string) {
-	err := os.RemoveAll(path)
-	Ω(err).ShouldNot(HaveOccurred())
-	err = os.MkdirAll(path, 0755)
-	Ω(err).ShouldNot(HaveOccurred())
-}

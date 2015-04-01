@@ -8,13 +8,13 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func SafelyResetAllDirectories() {
-	RemoveAndRecreateDir("/tmp/redis-data-dir")
-	RemoveAndRecreateDir("/tmp/redis-log-dir")
-	RemoveAndRecreateDir("/tmp/redis-config-dir")
+func ResetTestDirs() {
+	removeAndRecreateDir("/tmp/redis-data-dir")
+	removeAndRecreateDir("/tmp/redis-log-dir")
+	removeAndRecreateDir("/tmp/redis-config-dir")
 }
 
-func RemoveAndRecreateDir(path string) {
+func removeAndRecreateDir(path string) {
 	err := os.RemoveAll(path)
 	Ω(err).ShouldNot(HaveOccurred())
 	err = os.MkdirAll(path, 0755)
