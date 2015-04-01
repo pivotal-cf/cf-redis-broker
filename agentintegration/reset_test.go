@@ -25,12 +25,19 @@ var agentSession *gexec.Session
 
 var _ = Describe("DELETE /", func() {
 
-	var redisConn redis.Conn
-	var aofPath string
+	var (
+		redisConn         redis.Conn
+		aofPath           string
+		originalRedisConf redisconf.Conf
+	)
 
 	BeforeEach(func() {
-		agentSession = startAgentWithDefaultConfig()
+		agentSession = startAgent()
 		redisSession, aofPath = startRedisAndBlockUntilUp()
+
+		var err error
+		originalRedisConf, err = redisconf.Load(redisConfPath)
+		Ω(err).ShouldNot(HaveOccurred())
 
 		redisRestarted := make(chan bool)
 		httpRequestReturned := make(chan bool)
@@ -59,8 +66,8 @@ var _ = Describe("DELETE /", func() {
 	})
 
 	It("no longer uses the original password", func() {
-		password := originalConf.Get("requirepass")
-		port := originalConf.Get("port")
+		password := originalRedisConf.Get("requirepass")
+		port := originalRedisConf.Get("port")
 		uri := fmt.Sprintf("127.0.0.1:%s", port)
 		redisConn, err := redis.Dial("tcp", uri)
 		Ω(err).ShouldNot(HaveOccurred())
@@ -121,7 +128,7 @@ func doResetRequest(c chan<- bool) {
 	defer GinkgoRecover()
 
 	request, _ := http.NewRequest("DELETE", "http://127.0.0.1:9876", nil)
-	request.SetBasicAuth("admin", "secret")
+	request.SetBasicAuth("admin", "supersecretpassword")
 	response, err := http.DefaultClient.Do(request)
 	Ω(err).ShouldNot(HaveOccurred())
 	Ω(response.StatusCode).To(Equal(http.StatusOK))

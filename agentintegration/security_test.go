@@ -14,7 +14,7 @@ var _ = Describe("Agent Security", func() {
 	var session *gexec.Session
 
 	BeforeEach(func() {
-		session = startAgentWithDefaultConfig()
+		session = startAgent()
 	})
 
 	AfterEach(func() {
@@ -24,7 +24,7 @@ var _ = Describe("Agent Security", func() {
 	Describe("Basic HTTP Authentication", func() {
 		Context("With expected username and password", func() {
 			It("returns HTTP code 200", func() {
-				code, _ := integration.ExecuteAuthenticatedHTTPRequest("GET", "http://localhost:9876", "admin", "secret")
+				code, _ := integration.ExecuteAuthenticatedHTTPRequest("GET", "http://localhost:9876", "admin", "supersecretpassword")
 				Ω(code).To(Equal(200))
 			})
 		})

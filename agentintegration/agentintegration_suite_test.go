@@ -11,7 +11,6 @@ import (
 
 	"github.com/pivotal-cf/cf-redis-broker/agentconfig"
 	"github.com/pivotal-cf/cf-redis-broker/integration/helpers"
-	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/reporters"
@@ -21,7 +20,6 @@ import (
 )
 
 var redisConfPath string
-var originalConf redisconf.Conf
 
 func TestAgentintegration(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -29,7 +27,24 @@ func TestAgentintegration(t *testing.T) {
 	RunSpecsWithDefaultAndCustomReporters(t, "Agent Integration Suite", []Reporter{junitReporter})
 }
 
-func startAgentWithConfig(config *agentconfig.Config) *gexec.Session {
+var _ = BeforeSuite(func() {
+	dir, err := ioutil.TempDir("", "redisconf-test")
+	Expect(err).ToNot(HaveOccurred())
+	redisConfPath = filepath.Join(dir, "redis.conf")
+})
+
+func startAgent() *gexec.Session {
+	config := &agentconfig.Config{
+		DefaultConfPath:     helpers.AssetPath("redis.conf.default"),
+		ConfPath:            redisConfPath,
+		MonitExecutablePath: helpers.AssetPath("fake_monit"),
+		Port:                "9876",
+		AuthConfiguration: agentconfig.AuthConfiguration{
+			Username: "admin",
+			Password: "supersecretpassword",
+		},
+	}
+
 	configFile, err := ioutil.TempFile("", "config.yml")
 	Expect(err).ToNot(HaveOccurred())
 
@@ -48,33 +63,6 @@ func startAgentWithConfig(config *agentconfig.Config) *gexec.Session {
 	)
 	Ω(err).ShouldNot(HaveOccurred())
 
-	return session
-}
-
-func startAgentWithDefaultConfig() *gexec.Session {
-	dir, err := ioutil.TempDir("", "redisconf-test")
-	redisConfPath = filepath.Join(dir, "redis.conf")
-
-	originalConf = redisconf.New(
-		redisconf.Param{Key: "requirepass", Value: "thepassword"},
-		redisconf.Param{Key: "port", Value: "6379"},
-	)
-
-	err = originalConf.Save(redisConfPath)
-	Expect(err).ToNot(HaveOccurred())
-
-	config := &agentconfig.Config{
-		DefaultConfPath:     helpers.AssetPath("redis.conf.default"),
-		ConfPath:            redisConfPath,
-		MonitExecutablePath: "assets/fake_monit",
-		Port:                "9876",
-		AuthConfiguration: agentconfig.AuthConfiguration{
-			Username: "admin",
-			Password: "secret",
-		},
-	}
-
-	session := startAgentWithConfig(config)
 	Expect(helpers.ServiceAvailable(9876)).To(BeTrue())
 	return session
 }
