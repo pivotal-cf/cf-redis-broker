@@ -9,5 +9,5 @@ import (
 
 func TestRestoreconfig(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Restoreconfig Suite")
+	RunSpecs(t, "Restore Config Suite")
 }

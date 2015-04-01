@@ -11,5 +11,5 @@ import (
 func TestBrokerconfig(t *testing.T) {
 	RegisterFailHandler(Fail)
 	junitReporter := reporters.NewJUnitReporter("junit_brokerconfig.xml")
-	RunSpecsWithDefaultAndCustomReporters(t, "Brokerconfig Suite", []Reporter{junitReporter})
+	RunSpecsWithDefaultAndCustomReporters(t, "Broker Config Suite", []Reporter{junitReporter})
 }

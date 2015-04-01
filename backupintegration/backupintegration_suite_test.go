@@ -25,7 +25,7 @@ var agentResponseStatus = http.StatusOK
 
 func TestBackupintegration(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Backupintegration Suite")
+	RunSpecs(t, "Backup Integration Suite")
 }
 
 var _ = BeforeEach(func() {

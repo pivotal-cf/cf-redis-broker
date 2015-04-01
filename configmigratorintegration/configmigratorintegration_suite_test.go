@@ -10,7 +10,7 @@ import (
 
 func TestConfigmigratorintegration(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Configmigratorintegration Suite")
+	RunSpecs(t, "Configmigrator Integration Suite")
 }
 
 var _ = BeforeEach(func() {
