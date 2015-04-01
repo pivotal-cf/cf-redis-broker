@@ -21,14 +21,17 @@ type Backup struct {
 }
 
 // http://golang.org/pkg/time/#pkg-constants if you need to understand this crazy layout
-const timeFormat = "200601021504"
+const (
+	filenameTimestampLayout = "200601021504"
+	datePathLayout          = "2006/01/02"
+)
 
 func (backup Backup) Create(instancePath, dataSubDir, instanceID, planName string) error {
 	if err := backup.createSnapshot(instancePath); err != nil {
 		return err
 	}
 
-	timestamp := time.Now().Format(timeFormat)
+	timestamp := time.Now().Format(filenameTimestampLayout)
 
 	rdbFilePath := filepath.Join(instancePath, dataSubDir, "dump.rdb")
 	if !fileExists(rdbFilePath) {
@@ -75,7 +78,13 @@ func (backup Backup) uploadToS3(instanceID, planName, rdbFilePath string, timest
 		return err
 	}
 
-	remotePath := fmt.Sprintf("%s/%s_%s_%s_redis_backup.tgz", backup.Config.S3Configuration.Path, timestamp, instanceID, planName)
+	remotePath := fmt.Sprintf("%s/%s/%s_%s_%s_redis_backup.tgz",
+		backup.Config.S3Configuration.Path,
+		time.Now().Format(datePathLayout),
+		timestamp,
+		instanceID,
+		planName,
+	)
 
 	backup.Logger.Info("Backing up instance", lager.Data{
 		"Local file":  rdbFilePath,
