@@ -1,11 +1,13 @@
 package agentintegration_test
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/garyburd/redigo/redis"
@@ -47,8 +49,7 @@ var _ = Describe("DELETE /", func() {
 		conf, err := redisconf.Load(redisConfPath)
 		Ω(err).ShouldNot(HaveOccurred())
 
-		redisConn, err = buildRedisConn(conf)
-		Ω(err).ShouldNot(HaveOccurred())
+		redisConn = helpers.BuildRedisClientFromConf(conf)
 	})
 
 	AfterEach(func() {
@@ -57,7 +58,13 @@ var _ = Describe("DELETE /", func() {
 	})
 
 	It("no longer uses the original password", func() {
-		_, err := buildRedisConn(originalConf)
+		password := originalConf.Get("requirepass")
+		port := originalConf.Get("port")
+		uri := fmt.Sprintf("127.0.0.1:%s", port)
+		redisConn, err := redis.Dial("tcp", uri)
+		Ω(err).ShouldNot(HaveOccurred())
+
+		_, err = redisConn.Do("AUTH", password)
 		Ω(err).Should(MatchError("ERR invalid password"))
 	})
 
@@ -127,10 +134,10 @@ func checkRedisStopAndStart(c chan<- bool) {
 	conf, err := redisconf.Load(redisConfPath)
 	Ω(err).ShouldNot(HaveOccurred())
 
-	Eventually(func() error {
-		_, err := buildRedisConn(conf)
-		return err
-	}).ShouldNot(HaveOccurred())
+	port, err := strconv.Atoi(conf.Get("port"))
+	Ω(err).ShouldNot(HaveOccurred())
+
+	Expect(helpers.ServiceAvailable(uint(port))).To(BeTrue())
 
 	c <- true
 }

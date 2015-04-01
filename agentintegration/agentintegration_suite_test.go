@@ -3,10 +3,10 @@ package agentintegration_test
 import (
 	"fmt"
 	"io/ioutil"
-	"net"
 	"os/exec"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/cloudfoundry-incubator/candiedyaml"
@@ -106,24 +106,6 @@ func stopAgent(session *gexec.Session) {
 	helpers.ResetTestDirs()
 }
 
-func buildRedisConn(conf redisconf.Conf) (redis.Conn, error) {
-	password := conf.Get("requirepass")
-	port := conf.Get("port")
-	uri := fmt.Sprintf("127.0.0.1:%s", port)
-
-	redisConn, err := redis.Dial("tcp", uri)
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = redisConn.Do("AUTH", password)
-	if err != nil {
-		return nil, err
-	}
-
-	return redisConn, nil
-}
-
 func startRedis(confPath string) (*gexec.Session, redis.Conn) {
 	redisSession, err := gexec.Start(exec.Command("redis-server", confPath), GinkgoWriter, GinkgoWriter)
 	Ω(err).ShouldNot(HaveOccurred())
@@ -131,20 +113,12 @@ func startRedis(confPath string) (*gexec.Session, redis.Conn) {
 	conf, err := redisconf.Load(confPath)
 	Ω(err).ShouldNot(HaveOccurred())
 
-	port := conf.Get("port")
-	uri := fmt.Sprintf("127.0.0.1:%s", port)
-
-	Eventually(func() bool {
-		conn, err := net.Dial("tcp", uri)
-		if err == nil {
-			conn.Close()
-			return true
-		}
-		return false
-	}).Should(BeTrue())
-
-	redisConn, err := buildRedisConn(conf)
+	port, err := strconv.Atoi(conf.Get("port"))
 	Ω(err).ShouldNot(HaveOccurred())
+
+	Expect(helpers.ServiceAvailable(uint(port))).To(BeTrue())
+
+	redisConn := helpers.BuildRedisClient(uint(port), "localhost", conf.Get("requirepass"))
 
 	return redisSession, redisConn
 }
