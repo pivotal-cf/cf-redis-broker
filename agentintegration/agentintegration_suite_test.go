@@ -28,6 +28,9 @@ func TestAgentintegration(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
+	if helpers.ServiceAvailable(6379) {
+		panic("something is already using the dedicated redis port!")
+	}
 	dir, err := ioutil.TempDir("", "redisconf-test")
 	Expect(err).ToNot(HaveOccurred())
 	redisConfPath = filepath.Join(dir, "redis.conf")

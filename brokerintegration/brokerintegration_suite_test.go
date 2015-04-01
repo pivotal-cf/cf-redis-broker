@@ -48,6 +48,11 @@ var _ = BeforeSuite(func() {
 	brokerSession = integration.LaunchProcessWithBrokerConfig(brokerExecutablePath, "broker.yml")
 
 	brokerConfig = integration.LoadBrokerConfig("broker.yml")
+
+	if helpers.ServiceAvailable(uint(brokerConfig.RedisConfiguration.Dedicated.Port)) {
+		panic("something is already using the dedicated redis port!")
+	}
+
 	brokerClient = &integration.BrokerClient{Config: &brokerConfig}
 
 	Ω(helpers.ServiceAvailable(brokerPort)).Should(BeTrue())

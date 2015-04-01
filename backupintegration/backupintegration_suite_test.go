@@ -37,6 +37,10 @@ var _ = BeforeSuite(func() {
 	brokerConfig = integration.LoadBrokerConfig("broker.yml")
 	brokerSession = integration.LaunchProcessWithBrokerConfig(integration.BuildBroker(), "broker.yml")
 
+	if helpers.ServiceAvailable(uint(brokerConfig.RedisConfiguration.Dedicated.Port)) {
+		panic("something is already using the dedicated redis port!")
+	}
+
 	brokerClient = &integration.BrokerClient{Config: &brokerConfig}
 
 	backupExecutablePath = helpers.BuildExecutable("github.com/pivotal-cf/cf-redis-broker/cmd/backup")
