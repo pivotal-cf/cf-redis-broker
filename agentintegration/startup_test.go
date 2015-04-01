@@ -33,50 +33,46 @@ var _ = Describe("Startup", func() {
 		}
 	})
 
+	AfterEach(func() {
+		stopAgent(agentSession)
+	})
+
 	Context("When redis.conf does not exist", func() {
 		BeforeEach(func() {
 			agentSession = startAgentWithConfig(config)
 			Expect(helpers.ServiceAvailable(9876)).To(BeTrue())
 		})
 
-		AfterEach(func() {
-			helpers.KillProcess(agentSession)
-		})
-
-		It("Copies redis.conf from the default path and adds a password", func() {
-			Eventually(fileExists(confPath)).Should(BeTrue())
-
+		loadRedisConfFileWhenItExists := func() redisconf.Conf {
+			Eventually(func() bool {
+				return helpers.FileExists(confPath)
+			}).Should(BeTrue())
 			conf, err := redisconf.Load(confPath)
 			Expect(err).ToNot(HaveOccurred())
+			return conf
+		}
+
+		It("Copies redis.conf from the default path and adds a password", func() {
+			conf := loadRedisConfFileWhenItExists()
 
 			Expect(conf.Get("daemonize")).To(Equal("no"))
 			Expect(conf.HasKey("requirepass")).To(BeTrue())
 		})
 
 		It("Creates a new password each time", func() {
-			Eventually(fileExists(confPath)).Should(BeTrue())
-
-			conf, err := redisconf.Load(confPath)
-			Expect(err).ToNot(HaveOccurred())
-
-			firstPassword := conf.Get("requirepass")
+			initialConf := loadRedisConfFileWhenItExists()
 
 			helpers.KillProcess(agentSession)
 
-			err = os.Remove(confPath)
+			err := os.Remove(confPath)
 			Expect(err).ToNot(HaveOccurred())
 
 			agentSession = startAgentWithConfig(config)
 			Expect(helpers.ServiceAvailable(9876)).To(BeTrue())
 
-			Eventually(fileExists(confPath)).Should(BeTrue())
+			newConf := loadRedisConfFileWhenItExists()
 
-			conf, err = redisconf.Load(confPath)
-			Expect(err).ToNot(HaveOccurred())
-
-			secondPassword := conf.Get("requirepass")
-
-			Expect(firstPassword).NotTo(Equal(secondPassword))
+			Expect(initialConf.Get("requirepass")).NotTo(Equal(newConf.Get("requirepass")))
 		})
 	})
 
@@ -95,12 +91,9 @@ var _ = Describe("Startup", func() {
 			Expect(helpers.ServiceAvailable(9876)).To(BeTrue())
 		})
 
-		AfterEach(func() {
-			helpers.KillProcess(agentSession)
-		})
-
 		Describe("The copied redis.conf file", func() {
 			var conf redisconf.Conf
+
 			BeforeEach(func() {
 				var err error
 				conf, err = redisconf.Load(confPath)

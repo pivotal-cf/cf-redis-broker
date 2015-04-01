@@ -24,3 +24,12 @@ func removeAndRecreateDir(path string) {
 func AssetPath(filename string) (string, error) {
 	return filepath.Abs(path.Join("assets", filename))
 }
+
+func FileExists(path string) bool {
+	if _, err := os.Stat(path); err != nil {
+		if os.IsNotExist(err) {
+			return false
+		}
+	}
+	return true
+}

@@ -10,6 +10,7 @@ import (
 
 	"github.com/garyburd/redigo/redis"
 	"github.com/onsi/gomega/gexec"
+	"github.com/pivotal-cf/cf-redis-broker/integration/helpers"
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 
 	. "github.com/onsi/ginkgo"
@@ -94,7 +95,7 @@ func startRedisAndBlockUntilUp() (*gexec.Session, string) {
 	aofPath := filepath.Join(cwd, "appendonly.aof")
 
 	Eventually(redisNotWritingAof(connection)).Should(BeTrue())
-	Eventually(fileExists(aofPath)).Should(BeTrue())
+	Expect(helpers.FileExists(aofPath)).To(BeTrue())
 
 	return session, aofPath
 }

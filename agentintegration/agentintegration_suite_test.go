@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
-	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
@@ -104,9 +103,7 @@ func startAgentWithDefaultConfig() *gexec.Session {
 
 func stopAgent(session *gexec.Session) {
 	helpers.KillProcess(session)
-
-	err := os.Remove(redisConfPath)
-	Expect(err).ToNot(HaveOccurred())
+	helpers.ResetTestDirs()
 }
 
 func buildRedisConn(conf redisconf.Conf) (redis.Conn, error) {
@@ -150,15 +147,4 @@ func startRedis(confPath string) (*gexec.Session, redis.Conn) {
 	Ω(err).ShouldNot(HaveOccurred())
 
 	return redisSession, redisConn
-}
-
-func fileExists(path string) func() bool {
-	return func() bool {
-		if _, err := os.Stat(path); err != nil {
-			if os.IsNotExist(err) {
-				return false
-			}
-		}
-		return true
-	}
 }
