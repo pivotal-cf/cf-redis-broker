@@ -15,7 +15,7 @@ import (
 )
 
 var _ = Describe("Startup", func() {
-	var session *gexec.Session
+	var agentSession *gexec.Session
 	var confPath string
 	var config *agentconfig.Config
 
@@ -35,13 +35,12 @@ var _ = Describe("Startup", func() {
 
 	Context("When redis.conf does not exist", func() {
 		BeforeEach(func() {
-			session = startAgentWithConfig(config)
+			agentSession = startAgentWithConfig(config)
 			Expect(helpers.ServiceAvailable(9876)).To(BeTrue())
 		})
 
 		AfterEach(func() {
-			session.Terminate().Wait()
-			Eventually(session).Should(gexec.Exit())
+			helpers.KillProcess(agentSession)
 		})
 
 		It("Copies redis.conf from the default path and adds a password", func() {
@@ -62,13 +61,12 @@ var _ = Describe("Startup", func() {
 
 			firstPassword := conf.Get("requirepass")
 
-			session.Terminate().Wait()
-			Eventually(session).Should(gexec.Exit())
+			helpers.KillProcess(agentSession)
 
 			err = os.Remove(confPath)
 			Expect(err).ToNot(HaveOccurred())
 
-			session = startAgentWithConfig(config)
+			agentSession = startAgentWithConfig(config)
 			Expect(helpers.ServiceAvailable(9876)).To(BeTrue())
 
 			Eventually(fileExists(confPath)).Should(BeTrue())
@@ -93,13 +91,12 @@ var _ = Describe("Startup", func() {
 			err := existingConf.Save(confPath)
 			Expect(err).ToNot(HaveOccurred())
 
-			session = startAgentWithConfig(config)
+			agentSession = startAgentWithConfig(config)
 			Expect(helpers.ServiceAvailable(9876)).To(BeTrue())
 		})
 
 		AfterEach(func() {
-			session.Terminate().Wait()
-			Eventually(session).Should(gexec.Exit())
+			helpers.KillProcess(agentSession)
 		})
 
 		Describe("The copied redis.conf file", func() {

@@ -103,8 +103,7 @@ func startAgentWithDefaultConfig() *gexec.Session {
 }
 
 func stopAgent(session *gexec.Session) {
-	session.Terminate().Wait()
-	Eventually(session).Should(gexec.Exit())
+	helpers.KillProcess(session)
 
 	err := os.Remove(redisConfPath)
 	Expect(err).ToNot(HaveOccurred())

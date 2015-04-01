@@ -19,12 +19,9 @@ func ExecuteAuthenticatedHTTPRequestWithBody(method, uri, username, password str
 	req.SetBasicAuth(username, password)
 	resp, err := (&http.Client{}).Do(req)
 	Ω(err).ToNot(HaveOccurred())
-
 	defer resp.Body.Close()
 
 	responseBody, err := ioutil.ReadAll(resp.Body)
-	Ω(err).ToNot(HaveOccurred())
-
 	Ω(err).ToNot(HaveOccurred())
 	return resp.StatusCode, responseBody
 }
