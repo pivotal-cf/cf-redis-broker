@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"time"
@@ -16,8 +17,6 @@ import (
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 	"github.com/pivotal-cf/cf-redis-broker/resetter"
 	"github.com/pivotal-golang/lager"
-
-	"github.com/codegangsta/negroni"
 )
 
 type portChecker struct{}
@@ -79,12 +78,13 @@ func main() {
 
 	redisResetter := resetter.New(config.DefaultConfPath, config.ConfPath, new(portChecker), new(commandRunner), config.MonitExecutablePath)
 
-	authWrapper := auth.NewWrapper(config.AuthConfiguration.Username, config.AuthConfiguration.Password)
-	handler := authWrapper.Wrap(api.New(redisResetter, config.ConfPath))
+	handler := auth.NewWrapper(
+		config.AuthConfiguration.Username,
+		config.AuthConfiguration.Password,
+	).Wrap(api.New(redisResetter, config.ConfPath))
 
-	serverMiddleware := negroni.Classic()
-	serverMiddleware.UseHandler(handler)
-	serverMiddleware.Run("localhost:" + config.Port)
+	http.Handle("/", handler)
+	logger.Fatal("http-listen", http.ListenAndServe("localhost:"+config.Port, nil))
 }
 
 func fileExists(path string) bool {

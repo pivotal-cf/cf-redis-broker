@@ -22,7 +22,6 @@ var _ = Describe("Agent Security", func() {
 	})
 
 	Describe("Basic HTTP Authentication", func() {
-
 		Context("With expected username and password", func() {
 			It("returns HTTP code 200", func() {
 				code, _ := integration.ExecuteAuthenticatedHTTPRequest("GET", "http://localhost:9876", "admin", "secret")
