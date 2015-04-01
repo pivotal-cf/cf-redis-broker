@@ -21,8 +21,10 @@ func removeAndRecreateDir(path string) {
 	Ω(err).ShouldNot(HaveOccurred())
 }
 
-func AssetPath(filename string) (string, error) {
-	return filepath.Abs(path.Join("assets", filename))
+func AssetPath(filename string) string {
+	path, err := filepath.Abs(path.Join("assets", filename))
+	Ω(err).ShouldNot(HaveOccurred())
+	return path
 }
 
 func FileExists(path string) bool {

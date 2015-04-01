@@ -59,8 +59,7 @@ var _ = AfterSuite(func() {
 })
 
 func getRedisProcessCount() int {
-	scriptPath, filepathErr := helpers.AssetPath("redis_process_count.sh")
-	Ω(filepathErr).NotTo(HaveOccurred())
+	scriptPath := helpers.AssetPath("redis_process_count.sh")
 
 	output, cmdErr := exec.Command(scriptPath).Output()
 	Ω(cmdErr).NotTo(HaveOccurred())

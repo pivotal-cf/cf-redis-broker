@@ -12,8 +12,7 @@ import (
 )
 
 func LoadBrokerConfig(brokerFilename string) brokerconfig.Config {
-	brokerConfigPath, err := helpers.AssetPath(brokerFilename)
-	Ω(err).ToNot(HaveOccurred())
+	brokerConfigPath := helpers.AssetPath(brokerFilename)
 
 	brokerConfig, err := brokerconfig.ParseConfig(brokerConfigPath)
 	Ω(err).NotTo(HaveOccurred())
@@ -26,8 +25,7 @@ func BuildBroker() string {
 }
 
 func LaunchProcessWithBrokerConfig(executablePath string, brokerConfigName string) *gexec.Session {
-	brokerConfigFile, filePathErr := helpers.AssetPath(brokerConfigName)
-	Ω(filePathErr).ToNot(HaveOccurred())
+	brokerConfigFile := helpers.AssetPath(brokerConfigName)
 
 	os.Setenv("BROKER_CONFIG_PATH", brokerConfigFile)
 	processCmd := exec.Command(executablePath)

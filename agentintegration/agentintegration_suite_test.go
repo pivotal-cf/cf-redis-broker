@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -42,34 +41,29 @@ func redisNotWritingAof(redisConn redis.Conn) func() bool {
 	}
 }
 
-func startAgentWithFile(configPath string) *gexec.Session {
+func startAgentWithConfig(config *agentconfig.Config) *gexec.Session {
+	configFile, err := ioutil.TempFile("", "config.yml")
+	Expect(err).ToNot(HaveOccurred())
+
+	encoder := candiedyaml.NewEncoder(configFile)
+	err = encoder.Encode(config)
+	Ω(err).ShouldNot(HaveOccurred())
+	configFile.Close()
+
 	agentPath, err := gexec.Build("github.com/pivotal-cf/cf-redis-broker/cmd/agent")
 	Ω(err).ShouldNot(HaveOccurred())
 
-	session, err := gexec.Start(exec.Command(agentPath, fmt.Sprintf("-agentConfig=%s", configPath)), GinkgoWriter, GinkgoWriter)
+	session, err := gexec.Start(
+		exec.Command(agentPath, fmt.Sprintf("-agentConfig=%s", configFile.Name())),
+		GinkgoWriter,
+		GinkgoWriter,
+	)
 	Ω(err).ShouldNot(HaveOccurred())
 
 	return session
 }
 
-func startAgentWithConfig(config *agentconfig.Config) *gexec.Session {
-	file, err := ioutil.TempFile("", "config.yml")
-	Expect(err).ToNot(HaveOccurred())
-
-	encoder := candiedyaml.NewEncoder(file)
-	err = encoder.Encode(config)
-	file.Close()
-
-	return startAgentWithFile(file.Name())
-}
-
-func defaultRedisConfigPath() string {
-	defaultConfPath, err := filepath.Abs(path.Join("assets", "redis.conf.default"))
-	Ω(err).ShouldNot(HaveOccurred())
-	return defaultConfPath
-}
-
-func createDefaultRedisConfig() {
+func startAgentWithDefaultConfig() *gexec.Session {
 	dir, err := ioutil.TempDir("", "redisconf-test")
 	redisConfPath = filepath.Join(dir, "redis.conf")
 
@@ -80,13 +74,9 @@ func createDefaultRedisConfig() {
 
 	err = originalConf.Save(redisConfPath)
 	Expect(err).ToNot(HaveOccurred())
-}
-
-func startAgentWithDefaultConfig() *gexec.Session {
-	createDefaultRedisConfig()
 
 	config := &agentconfig.Config{
-		DefaultConfPath:     defaultRedisConfigPath(),
+		DefaultConfPath:     helpers.AssetPath("redis.conf.default"),
 		ConfPath:            redisConfPath,
 		MonitExecutablePath: "assets/fake_monit",
 		Port:                "9876",

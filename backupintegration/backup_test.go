@@ -75,8 +75,9 @@ var _ = Describe("backups", func() {
 
 				instanceID = uuid.NewRandom().String()
 				confPath = filepath.Join(brokerConfig.RedisConfiguration.InstanceDataDirectory, "redis.conf")
-				assetPath, _ := helpers.AssetPath("redis-dedicated.conf")
-				redisConfContents, _ := ioutil.ReadFile(assetPath)
+				redisConfContents, err := ioutil.ReadFile(helpers.AssetPath("redis-dedicated.conf"))
+				Ω(err).ShouldNot(HaveOccurred())
+
 				ioutil.WriteFile(confPath, redisConfContents, 0777)
 				redisRunner = &integration.RedisRunner{}
 				redisRunner.Start([]string{confPath, "--port", "6480"})

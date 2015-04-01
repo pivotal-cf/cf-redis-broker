@@ -46,8 +46,7 @@ var _ = Describe("ConfigMigrator Intgration", func() {
 })
 
 func copyOverFromAssets(fileName, dir string) {
-	assetPath, err := helpers.AssetPath(fileName)
-	Ω(err).NotTo(HaveOccurred())
+	assetPath := helpers.AssetPath(fileName)
 	data, _ := ioutil.ReadFile(assetPath)
 	ioutil.WriteFile(path.Join(dir, fileName), data, 0644)
 }
@@ -62,8 +61,7 @@ func buildExecutable(sourcePath string) string {
 }
 
 func launchProcessWithBrokerConfig(executablePath string, brokerConfigName string) *gexec.Session {
-	brokerConfigFile, err := helpers.AssetPath(brokerConfigName)
-	Ω(err).NotTo(HaveOccurred())
+	brokerConfigFile := helpers.AssetPath(brokerConfigName)
 
 	os.Setenv("BROKER_CONFIG_PATH", brokerConfigFile)
 	processCmd := exec.Command(executablePath)
