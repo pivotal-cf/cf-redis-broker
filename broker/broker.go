@@ -45,7 +45,7 @@ func (redisServiceBroker *RedisServiceBroker) Services() []brokerapi.Service {
 			Bindable:    true,
 			Plans:       planList,
 			Metadata: brokerapi.ServiceMetadata{
-				DisplayName:      "Redis",
+				DisplayName:      "Redis for PCF",
 				LongDescription:  "",
 				DocumentationUrl: "http://docs.pivotal.io/p1-services/Redis.html",
 				SupportUrl:       "http://support.pivotal.io",
