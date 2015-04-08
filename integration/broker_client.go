@@ -66,3 +66,11 @@ func (brokerClient *BrokerClient) InstanceURI(instanceID string) string {
 func (brokerClient *BrokerClient) BindingURI(instanceID, bindingID string) string {
 	return brokerClient.InstanceURI(instanceID) + "/service_bindings/" + bindingID
 }
+
+func (brokerClient *BrokerClient) InstanceIDFromHost(host string) (int, []byte) {
+	return brokerClient.executeAuthenticatedRequest("GET", brokerClient.instanceIDFromHostURI(host))
+}
+
+func (brokerClient *BrokerClient) instanceIDFromHostURI(host string) string {
+	return fmt.Sprintf("http://localhost:3000/instance?host=%s", host)
+}

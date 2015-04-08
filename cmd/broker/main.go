@@ -14,6 +14,7 @@ import (
 	"github.com/pivotal-cf/cf-redis-broker/debug"
 	"github.com/pivotal-cf/cf-redis-broker/process"
 	"github.com/pivotal-cf/cf-redis-broker/redis"
+	"github.com/pivotal-cf/cf-redis-broker/redisinstance"
 	"github.com/pivotal-cf/cf-redis-broker/system"
 )
 
@@ -73,16 +74,18 @@ func main() {
 		Config: config,
 	}
 
-	debugHandler := auth.NewWrapper(
-		config.AuthConfiguration.Username,
-		config.AuthConfiguration.Password,
-	).WrapFunc(debug.NewHandler(remoteRepo))
-
 	brokerCredentials := brokerapi.BrokerCredentials{
 		Username: config.AuthConfiguration.Username,
 		Password: config.AuthConfiguration.Password,
 	}
+
 	brokerAPI := brokerapi.New(serviceBroker, brokerLogger, brokerCredentials)
+
+	authWrapper := auth.NewWrapper(brokerCredentials.Username, brokerCredentials.Password)
+	debugHandler := authWrapper.WrapFunc(debug.NewHandler(remoteRepo))
+	instanceHandler := authWrapper.WrapFunc(redisinstance.NewHandler(remoteRepo))
+
+	http.HandleFunc("/instance", instanceHandler)
 	http.HandleFunc("/debug", debugHandler)
 	http.Handle("/", brokerAPI)
 

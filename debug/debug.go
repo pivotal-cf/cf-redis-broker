@@ -7,7 +7,7 @@ import (
 	"github.com/pivotal-cf/cf-redis-broker/redis"
 )
 
-func NewHandler(repo *redis.RemoteRepository) func(http.ResponseWriter, *http.Request) {
+func NewHandler(repo *redis.RemoteRepository) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		res.Header().Add("Content-Type", "application/json")
 

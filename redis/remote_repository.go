@@ -253,6 +253,15 @@ func (repo *RemoteRepository) PersistStatefile() error {
 	return ioutil.WriteFile(repo.statefilePath, stateBytes, 0644)
 }
 
+func (repo *RemoteRepository) IDForHost(host string) string {
+	for _, instance := range repo.allocatedInstances {
+		if instance.Host == host {
+			return instance.ID
+		}
+	}
+	return ""
+}
+
 func (repo *RemoteRepository) loadStateFromFile() error {
 	statefileContents := statefile{}
 

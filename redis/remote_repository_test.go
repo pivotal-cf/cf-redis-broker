@@ -16,11 +16,13 @@ import (
 )
 
 var _ = Describe("RemoteRepository", func() {
-	var repo *redis.RemoteRepository
-	var statefilePath string
-	var tmpDir string
-	var config brokerconfig.Config
-	var fakeAgentClient *fakes.FakeAgentClient
+	var (
+		repo            *redis.RemoteRepository
+		statefilePath   string
+		tmpDir          string
+		config          brokerconfig.Config
+		fakeAgentClient *fakes.FakeAgentClient
+	)
 
 	BeforeEach(func() {
 		config = brokerconfig.Config{}
@@ -582,6 +584,23 @@ var _ = Describe("RemoteRepository", func() {
 
 			Expect(len(statefileContents.InstanceBindings["foo"])).To(Equal(1))
 			Expect(statefileContents.InstanceBindings["foo"][0]).To(Equal("foo-binding"))
+		})
+	})
+
+	Describe("#IDForHost", func() {
+		It("returns the corresponding instance ID", func() {
+			err := repo.Create("foo")
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(repo.IDForHost(config.RedisConfiguration.Dedicated.Nodes[0])).To(Equal("foo"))
+		})
+
+		It("returns an empty string when the host is not allocated", func() {
+			Expect(repo.IDForHost(config.RedisConfiguration.Dedicated.Nodes[0])).To(Equal(""))
+		})
+
+		It("returns an empty string when the host is unknown", func() {
+			Expect(repo.IDForHost("nonsense")).To(Equal(""))
 		})
 	})
 })
