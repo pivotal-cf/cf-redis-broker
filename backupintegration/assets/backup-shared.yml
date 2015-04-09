@@ -12,3 +12,4 @@ broker_credentials:
   username: ""
   password: ""
 broker_address: ""
+log_file_path: /tmp/backup.log

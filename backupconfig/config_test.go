@@ -73,6 +73,10 @@ var _ = Describe("Config", func() {
 			It("has the correct broker address", func() {
 				Expect(config.BrokerAddress).To(Equal("localhost:3000"))
 			})
+
+			It("has the correct log file path", func() {
+				Expect(config.LogFilePath).To(Equal("/log/file/path"))
+			})
 		})
 	})
 })

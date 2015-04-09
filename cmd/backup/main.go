@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"path"
@@ -15,17 +16,8 @@ import (
 )
 
 func main() {
-	logger := lager.NewLogger("backup")
-
-	configPath := os.Getenv("BACKUP_CONFIG_PATH")
-	if configPath == "" {
-		logger.Fatal("BACKUP_CONFIG_PATH not set", nil)
-	}
-
-	config, err := backupconfig.Load(configPath)
-	if err != nil {
-		logger.Fatal("backup-config-load-failed", err)
-	}
+	config := loadConfig()
+	logger := initializeLogger(config)
 
 	if config.S3Configuration.BucketName == "" || config.S3Configuration.EndpointUrl == "" {
 		logger.Info("s3 credentials not configured")
@@ -112,4 +104,27 @@ func logBackupErrors(errors map[string]error, logger lager.Logger) {
 			"instance_id": instanceID,
 		})
 	}
+}
+
+func loadConfig() *backupconfig.Config {
+	configPath := os.Getenv("BACKUP_CONFIG_PATH")
+	if configPath == "" {
+		log.Fatal("BACKUP_CONFIG_PATH not set", nil)
+	}
+
+	config, err := backupconfig.Load(configPath)
+	if err != nil {
+		log.Fatal("backup-config-load-failed", err)
+	}
+	return config
+}
+
+func initializeLogger(config *backupconfig.Config) lager.Logger {
+	logger := lager.NewLogger("backup")
+	logFile, err := os.OpenFile(config.LogFilePath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0660)
+	if err != nil {
+		log.Fatal("unable to open log file")
+	}
+	logger.RegisterSink(lager.NewWriterSink(logFile, lager.INFO))
+	return logger
 }

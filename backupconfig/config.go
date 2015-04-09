@@ -14,6 +14,7 @@ type Config struct {
 	DedicatedInstance    bool              `yaml:"dedicated_instance"`
 	BrokerCredentials    BrokerCredentials `yaml:"broker_credentials"`
 	BrokerAddress        string            `yaml:"broker_address"`
+	LogFilePath          string            `yaml:"log_file_path"`
 }
 
 type S3Configuration struct {

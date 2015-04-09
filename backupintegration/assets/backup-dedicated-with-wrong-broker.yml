@@ -12,3 +12,4 @@ broker_credentials:
   username: admin
   password: secret
 broker_address: non-existant:3000
+log_file_path: /tmp/backup.log
