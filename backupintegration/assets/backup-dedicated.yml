@@ -6,5 +6,9 @@ s3:
   path: ""
 bg_save_timeout: 600
 redis_data_directory: /tmp/redis-data-dir
-node_id: dedicated-node-0
+node_ip: server1.127.0.0.1.xip.io
 dedicated_instance: true
+broker_credentials:
+  username: admin
+  password: secret
+broker_address: localhost:3000

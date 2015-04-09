@@ -106,7 +106,7 @@ var _ = Describe("backups", func() {
 				timestamp := getCurrentTimestamp()
 				runBackupWithConfig(backupExecutablePath, backupConfigPath).Wait(time.Second * 10)
 
-				retrievedBackupBytes, err := bucket.Get(backupFilename(backupConfig.S3Configuration.Path, timestamp, backupConfig.NodeID, "dedicated-vm"))
+				retrievedBackupBytes, err := bucket.Get(backupFilename(backupConfig.S3Configuration.Path, timestamp, instanceID, "dedicated-vm"))
 				Ω(err).NotTo(HaveOccurred())
 				originalData, _ := ioutil.ReadFile(path.Join(backupConfig.RedisDataDirectory, "dump.rdb"))
 				Ω(retrievedBackupBytes).To(Equal(originalData))
@@ -119,9 +119,17 @@ var _ = Describe("backups", func() {
 				timestamp := getCurrentTimestamp()
 				runBackupWithConfig(backupExecutablePath, backupConfigPath).Wait(time.Second * 10)
 
-				retrievedBackupBytes, err := bucket.Get(backupFilename(backupConfig.S3Configuration.Path, timestamp, backupConfig.NodeID, "dedicated-vm"))
+				retrievedBackupBytes, err := bucket.Get(backupFilename(backupConfig.S3Configuration.Path, timestamp, instanceID, "dedicated-vm"))
 				Ω(err).NotTo(HaveOccurred())
 				Ω(retrievedBackupBytes).ShouldNot(BeEmpty())
+			})
+
+			Context("When broker is not responding", func() {
+				It("returns non-zero exit code", func() {
+					backupExitStatusCode := runBackupWithConfig(backupExecutablePath, helpers.AssetPath("backup-dedicated-with-wrong-broker.yml")).Wait(time.Second * 10).ExitCode()
+
+					Ω(backupExitStatusCode).ShouldNot(Equal(0))
+				})
 			})
 
 			Context("when an instance backup fails", func() {

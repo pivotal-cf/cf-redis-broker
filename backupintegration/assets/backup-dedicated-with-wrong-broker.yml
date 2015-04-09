@@ -1,14 +1,14 @@
 s3:
-  endpoint_url: http://127.0.0.1:53228
+  endpoint_url: http://127.0.0.1:63529
   bucket_name: redis-backups
   access_key_id: ABCDEABCDEABCDEABCDE
   secret_access_key: ABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDE
   path: ""
 bg_save_timeout: 600
 redis_data_directory: /tmp/redis-data-dir
-node_ip: ""
-dedicated_instance: false
+node_ip: server1.127.0.0.1.xip.io
+dedicated_instance: true
 broker_credentials:
-  username: ""
-  password: ""
-broker_address: ""
+  username: admin
+  password: secret
+broker_address: non-existant:3000

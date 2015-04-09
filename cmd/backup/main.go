@@ -1,7 +1,10 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path"
 	"strings"
@@ -36,8 +39,11 @@ func main() {
 	backupErrors := map[string]error{}
 
 	if config.DedicatedInstance {
-		if err := backupCreator.Create(config.RedisDataDirectory, "", config.NodeID, "dedicated-vm"); err != nil {
-			backupErrors[config.NodeID] = err
+		instanceID, err := getInstanceID(config)
+		if err != nil || instanceID == "" {
+			backupErrors[config.NodeIP] = err
+		} else if err = backupCreator.Create(config.RedisDataDirectory, "", instanceID, "dedicated-vm"); err != nil {
+			backupErrors[instanceID] = err
 		}
 	} else {
 		backupErrors = backupSharedVMInstances(backupCreator, config.RedisDataDirectory)
@@ -47,6 +53,37 @@ func main() {
 		logBackupErrors(backupErrors, logger)
 		os.Exit(1)
 	}
+}
+
+func getInstanceID(config *backupconfig.Config) (string, error) {
+	url := fmt.Sprintf("http://%s/instance?host=%s", config.BrokerAddress, config.NodeIP)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return "", err
+	}
+	req.SetBasicAuth(config.BrokerCredentials.Username, config.BrokerCredentials.Password)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("Instance not found for %s", config.NodeIP)
+	}
+
+	bytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	result := struct {
+		InstanceID string `json:"instance_id"`
+	}{}
+	err = json.Unmarshal(bytes, &result)
+	if err != nil {
+		return "", err
+	}
+
+	return result.InstanceID, nil
 }
 
 func backupSharedVMInstances(backupCreator *backup.Backup, instancesDir string) map[string]error {

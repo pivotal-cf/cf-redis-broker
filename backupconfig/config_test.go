@@ -57,12 +57,21 @@ var _ = Describe("Config", func() {
 				Expect(config.RedisDataDirectory).To(Equal("/the/path/to/redis/data"))
 			})
 
-			It("Has the correct node id", func() {
-				Expect(config.NodeID).To(Equal("dedicated-node-0"))
+			It("Has the correct node ip", func() {
+				Expect(config.NodeIP).To(Equal("127.0.0.1"))
 			})
 
 			It("has the correct dedicated_instance", func() {
 				Expect(config.DedicatedInstance).To(BeTrue())
+			})
+
+			It("has the correct broker credentials", func() {
+				Expect(config.BrokerCredentials.Username).To(Equal("admin"))
+				Expect(config.BrokerCredentials.Password).To(Equal("secret"))
+			})
+
+			It("has the correct broker address", func() {
+				Expect(config.BrokerAddress).To(Equal("localhost:3000"))
 			})
 		})
 	})

@@ -7,11 +7,13 @@ import (
 )
 
 type Config struct {
-	S3Configuration      S3Configuration `yaml:"s3"`
-	BGSaveTimeoutSeconds int             `yaml:"bg_save_timeout"`
-	RedisDataDirectory   string          `yaml:"redis_data_directory"`
-	NodeID               string          `yaml:"node_id"`
-	DedicatedInstance    bool            `yaml:"dedicated_instance"`
+	S3Configuration      S3Configuration   `yaml:"s3"`
+	BGSaveTimeoutSeconds int               `yaml:"bg_save_timeout"`
+	RedisDataDirectory   string            `yaml:"redis_data_directory"`
+	NodeIP               string            `yaml:"node_ip"`
+	DedicatedInstance    bool              `yaml:"dedicated_instance"`
+	BrokerCredentials    BrokerCredentials `yaml:"broker_credentials"`
+	BrokerAddress        string            `yaml:"broker_address"`
 }
 
 type S3Configuration struct {
@@ -20,6 +22,11 @@ type S3Configuration struct {
 	AccessKeyId     string `yaml:"access_key_id"`
 	SecretAccessKey string `yaml:"secret_access_key"`
 	Path            string `yaml:"path"`
+}
+
+type BrokerCredentials struct {
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
 }
 
 func Load(path string) (*Config, error) {
