@@ -261,7 +261,7 @@ func getCurrentTimestamp() string {
 func backupFilename(path, timestamp, instanceID, planName string) string {
 	const datePathLayout = "2006/01/02"
 	return fmt.Sprintf(
-		"%s/%s/%s_%s_%s_redis_backup.tgz",
+		"%s/%s/%s_%s_%s_redis_backup",
 		path,
 		time.Now().Format(datePathLayout),
 		timestamp,

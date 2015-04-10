@@ -78,7 +78,7 @@ func (backup Backup) uploadToS3(instanceID, planName, rdbFilePath string, timest
 		return err
 	}
 
-	remotePath := fmt.Sprintf("%s/%s/%s_%s_%s_redis_backup.tgz",
+	remotePath := fmt.Sprintf("%s/%s/%s_%s_%s_redis_backup",
 		backup.Config.S3Configuration.Path,
 		time.Now().Format(datePathLayout),
 		timestamp,
