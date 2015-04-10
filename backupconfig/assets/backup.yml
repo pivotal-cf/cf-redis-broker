@@ -11,5 +11,5 @@ broker_credentials:
   password: secret
 node_ip: 127.0.0.1
 dedicated_instance: true
-broker_address: localhost:3000
+broker_host: localhost
 log_file_path: /log/file/path

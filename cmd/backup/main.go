@@ -48,7 +48,7 @@ func main() {
 }
 
 func getInstanceID(config *backupconfig.Config) (string, error) {
-	url := fmt.Sprintf("http://%s/instance?host=%s", config.BrokerAddress, config.NodeIP)
+	url := fmt.Sprintf("http://%s/instance?host=%s", config.BrokerHost, config.NodeIP)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return "", err

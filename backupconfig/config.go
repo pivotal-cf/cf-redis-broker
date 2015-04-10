@@ -13,7 +13,7 @@ type Config struct {
 	NodeIP               string            `yaml:"node_ip"`
 	DedicatedInstance    bool              `yaml:"dedicated_instance"`
 	BrokerCredentials    BrokerCredentials `yaml:"broker_credentials"`
-	BrokerAddress        string            `yaml:"broker_address"`
+	BrokerHost           string            `yaml:"broker_host"`
 	LogFilePath          string            `yaml:"log_file_path"`
 }
 

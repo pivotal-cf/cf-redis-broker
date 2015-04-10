@@ -11,5 +11,5 @@ dedicated_instance: true
 broker_credentials:
   username: admin
   password: secret
-broker_address: non-existant:3000
+broker_host: non-existant
 log_file_path: /tmp/backup.log
