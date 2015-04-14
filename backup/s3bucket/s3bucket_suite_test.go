@@ -1,7 +1,7 @@
 package s3bucket_test
 
 import (
-	"github.com/mitchellh/goamz/s3/s3test"
+	"github.com/jamiemonserrate/goamz/s3/s3test"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 

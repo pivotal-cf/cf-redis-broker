@@ -27,6 +27,10 @@
 			"Rev": "e444e69cbd2e2e3e0749a2f3c717cec491552bbf"
 		},
 		{
+			"ImportPath": "github.com/jamiemonserrate/goamz/s3/s3test",
+			"Rev": "6bf7eb8513686c3ea7ca4566a8d00b6d93a46f98"
+		},
+		{
 			"ImportPath": "github.com/mitchellh/goamz/aws",
 			"Rev": "84d8b2b74375eda9f189283e5f0710e6bcc3fb47"
 		},

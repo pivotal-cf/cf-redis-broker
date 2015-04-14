@@ -15,9 +15,9 @@ import (
 	"code.google.com/p/go-uuid/uuid"
 
 	"github.com/cloudfoundry-incubator/candiedyaml"
+	"github.com/jamiemonserrate/goamz/s3/s3test"
 	"github.com/mitchellh/goamz/aws"
 	"github.com/mitchellh/goamz/s3"
-	"github.com/mitchellh/goamz/s3/s3test"
 	"github.com/onsi/gomega/gexec"
 	"github.com/pivotal-cf/cf-redis-broker/backupconfig"
 	"github.com/pivotal-cf/cf-redis-broker/integration"

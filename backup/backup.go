@@ -2,7 +2,6 @@ package backup
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -73,11 +72,6 @@ func (backup Backup) createSnapshot(instancePath string) error {
 }
 
 func (backup Backup) uploadToS3(instanceID, planName, rdbFilePath string, timestamp string, bucket s3bucket.Bucket) error {
-	rdbBytes, err := ioutil.ReadFile(rdbFilePath)
-	if err != nil {
-		return err
-	}
-
 	remotePath := fmt.Sprintf("%s/%s/%s_%s_%s_redis_backup",
 		backup.Config.S3Configuration.Path,
 		time.Now().Format(datePathLayout),
@@ -91,7 +85,12 @@ func (backup Backup) uploadToS3(instanceID, planName, rdbFilePath string, timest
 		"Remote file": remotePath,
 	})
 
-	return bucket.Upload(rdbBytes, remotePath)
+	rdbFile, err := os.Open(rdbFilePath)
+	if err != nil {
+		return err
+	}
+
+	return bucket.Upload(rdbFile, remotePath)
 }
 
 func fileExists(path string) bool {

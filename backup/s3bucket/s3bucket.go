@@ -2,6 +2,7 @@ package s3bucket
 
 import (
 	"errors"
+	"os"
 
 	"github.com/mitchellh/goamz/aws"
 	"github.com/mitchellh/goamz/s3"
@@ -48,8 +49,17 @@ func (client Client) GetOrCreate(bucketName string) (Bucket, error) {
 	}, nil
 }
 
-func (bucket Bucket) Upload(data []byte, path string) error {
-	return bucket.s3Bucket.Put(path, data, "", "")
+func (bucket Bucket) Upload(fileToUpload *os.File, path string) (err error) {
+	const partSize = 5242880
+	var multi *s3.Multi
+	var parts []s3.Part
+	if multi, err = bucket.s3Bucket.Multi(path, "", ""); err != nil {
+		return err
+	}
+	if parts, err = multi.PutAll(fileToUpload, partSize); err != nil {
+		return err
+	}
+	return multi.Complete(parts)
 }
 
 func getRegion(endpointUrl string) aws.Region {

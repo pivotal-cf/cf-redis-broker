@@ -1,6 +1,9 @@
 package s3bucket_test
 
 import (
+	"io/ioutil"
+	"os"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -82,14 +85,24 @@ var _ = Describe("s3bucket", func() {
 	})
 
 	Describe("Upload", func() {
-		var bucket s3bucket.Bucket
-		var path = "some/test/path"
-		var data = []byte("some test data")
+		var (
+			bucket   s3bucket.Bucket
+			path     = "some/test/path"
+			data     = []byte("some test data")
+			dataFile *os.File
+		)
 
 		BeforeEach(func() {
 			var err error
 			bucket, err = s3bucket.NewClient(fakeS3EndpointURL, "accessKey", "secretKey").GetOrCreate(bucketName)
 			Expect(err).NotTo(HaveOccurred())
+
+			dataFile, _ = ioutil.TempFile(".", "backup_test")
+			dataFile.Write(data)
+		})
+
+		AfterEach(func() {
+			os.Remove(dataFile.Name())
 		})
 
 		Context("when everything works", func() {
@@ -101,7 +114,7 @@ var _ = Describe("s3bucket", func() {
 			})
 
 			It("uploads data to the correct path", func() {
-				err := bucket.Upload(data, path)
+				err := bucket.Upload(dataFile, path)
 				Expect(err).NotTo(HaveOccurred())
 
 				content, err := goamzBucketClient.Get(path)
@@ -116,7 +129,7 @@ var _ = Describe("s3bucket", func() {
 			})
 
 			It("returns the same error", func() {
-				err := bucket.Upload(data, path)
+				err := bucket.Upload(dataFile, path)
 				Expect(err).To(MatchError("The specified bucket does not exist"))
 			})
 		})
