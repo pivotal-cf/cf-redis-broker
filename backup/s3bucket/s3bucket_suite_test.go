@@ -1,9 +1,9 @@
 package s3bucket_test
 
 import (
-	"github.com/jamiemonserrate/goamz/s3/s3test"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/pivotal-cf-experimental/goamz/s3/s3test"
 
 	"testing"
 )
