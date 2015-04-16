@@ -45,7 +45,7 @@
 			"Rev": "85936b29809b7df066a8d839dd105e158e510264"
 		},
 		{
-			"ImportPath": "github.com/pivotal-cf-experimental/goamz/s3/s3test",
+			"ImportPath": "github.com/pivotal-cf-experimental/goamz/s3",
 			"Rev": "a001f1bdaf569758f0029caeda00cbaf1315fa8f"
 		},
 		{

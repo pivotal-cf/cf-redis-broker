@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/mitchellh/goamz/aws"
-	"github.com/mitchellh/goamz/s3"
+	"github.com/pivotal-cf-experimental/goamz/s3"
 )
 
 type Client struct {
