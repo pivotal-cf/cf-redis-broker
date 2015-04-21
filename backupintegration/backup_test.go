@@ -10,6 +10,7 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"code.google.com/p/go-uuid/uuid"
@@ -32,7 +33,7 @@ import (
 var _ = Describe("backups", func() {
 	Context("when the backup configuration is empty", func() {
 		It("exits with status code 0", func() {
-			backupSession := runBackupWithConfig(backupExecutablePath, filepath.Join("assets", "empty-backup.yml"))
+			backupSession, _ := runBackupWithConfig(backupExecutablePath, filepath.Join("assets", "empty-backup.yml"))
 			backupExitStatusCode := backupSession.Wait(time.Second * 10).ExitCode()
 			Ω(backupExitStatusCode).Should(Equal(0))
 		})
@@ -46,6 +47,7 @@ var _ = Describe("backups", func() {
 			client         *s3.S3
 			bucket         *s3.Bucket
 			oldS3ServerURL string
+			oldCliPath     string
 			s3TestServer   *s3test.Server
 		)
 
@@ -59,7 +61,7 @@ var _ = Describe("backups", func() {
 		})
 
 		AfterEach(func() {
-			swapS3UrlInBackupConfig(backupConfig, backupConfigPath, oldS3ServerURL)
+			swapS3ValuesInBackupConfig(backupConfig, backupConfigPath, oldS3ServerURL, oldCliPath)
 		})
 
 		Context("when its a dedicated instance to back up", func() {
@@ -70,7 +72,13 @@ var _ = Describe("backups", func() {
 			BeforeEach(func() {
 				backupConfigPath = filepath.Join("assets", "backup-dedicated.yml")
 				backupConfig = loadBackupConfig(backupConfigPath)
-				oldS3ServerURL = swapS3UrlInBackupConfig(backupConfig, backupConfigPath, s3TestServer.URL())
+
+				oldS3ServerURL = backupConfig.S3Configuration.EndpointUrl
+				oldCliPath = backupConfig.AwsCLIPath
+				backupConfig.S3Configuration.EndpointUrl = s3TestServer.URL()
+				backupConfig.AwsCLIPath = awsCliPath
+				writeConfig(backupConfig, backupConfigPath)
+
 				client, bucket = configureS3ClientAndBucket(backupConfig)
 
 				instanceID = uuid.NewRandom().String()
@@ -95,8 +103,8 @@ var _ = Describe("backups", func() {
 			It("causes redis to SAVE/BGSAVE before backing up", func() {
 				lastSaveTime := getLastSaveTime(instanceID, confPath)
 
-				backupSession := runBackupWithConfig(backupExecutablePath, backupConfigPath)
-				backupExitStatusCode := backupSession.Wait(time.Second * 10).ExitCode()
+				backupSession, _ := runBackupWithConfig(backupExecutablePath, backupConfigPath)
+				backupExitStatusCode := backupSession.ExitCode()
 				Expect(backupExitStatusCode).To(Equal(0))
 
 				Expect(getLastSaveTime(instanceID, confPath)).To(BeNumerically(">", lastSaveTime))
@@ -104,29 +112,30 @@ var _ = Describe("backups", func() {
 
 			It("uploads redis instance RDB file to the correct S3 bucket", func() {
 				timestamp := getCurrentTimestamp()
-				runBackupWithConfig(backupExecutablePath, backupConfigPath).Wait(time.Second * 10)
-
-				retrievedBackupBytes, err := bucket.Get(backupFilename(backupConfig.S3Configuration.Path, timestamp, instanceID, "dedicated-vm"))
-				Ω(err).NotTo(HaveOccurred())
-				originalData, _ := ioutil.ReadFile(path.Join(backupConfig.RedisDataDirectory, "dump.rdb"))
-				Ω(retrievedBackupBytes).To(Equal(originalData))
+				_, cliCommand := runBackupWithConfig(backupExecutablePath, backupConfigPath)
+				Expect(cliCommand).To(Equal(cliParams(*backupConfig, bucket.Name, timestamp, instanceID, "dedicated-vm", s3TestServer.URL())))
 			})
 
-			It("creates the bucket if it does not exist and uploads a file for each instance", func() {
+			It("creates the bucket if it does not exist", func() {
 				err := bucket.DelBucket()
 				Ω(err).NotTo(HaveOccurred())
 
-				timestamp := getCurrentTimestamp()
-				runBackupWithConfig(backupExecutablePath, backupConfigPath).Wait(time.Second * 10)
+				buckets, err := client.ListBuckets()
+				Expect(err).ToNot(HaveOccurred())
+				Expect(buckets.Buckets).To(HaveLen(0))
 
-				retrievedBackupBytes, err := bucket.Get(backupFilename(backupConfig.S3Configuration.Path, timestamp, instanceID, "dedicated-vm"))
-				Ω(err).NotTo(HaveOccurred())
-				Ω(retrievedBackupBytes).ShouldNot(BeEmpty())
+				runBackupWithConfig(backupExecutablePath, backupConfigPath)
+
+				buckets, err = client.ListBuckets()
+				Expect(err).ToNot(HaveOccurred())
+				Expect(buckets.Buckets).To(HaveLen(1))
+				Expect(buckets.Buckets[0].Name).To(Equal(backupConfig.S3Configuration.BucketName))
 			})
 
 			Context("When broker is not responding", func() {
 				It("returns non-zero exit code", func() {
-					backupExitStatusCode := runBackupWithConfig(backupExecutablePath, helpers.AssetPath("backup-dedicated-with-wrong-broker.yml")).Wait(time.Second * 10).ExitCode()
+					backupSession, _ := runBackupWithConfig(backupExecutablePath, helpers.AssetPath("backup-dedicated-with-wrong-broker.yml"))
+					backupExitStatusCode := backupSession.ExitCode()
 
 					Ω(backupExitStatusCode).ShouldNot(Equal(0))
 				})
@@ -135,8 +144,9 @@ var _ = Describe("backups", func() {
 			Context("when an instance backup fails", func() {
 				It("returns non-zero exit code", func() {
 					redisRunner.Stop()
+					backupSession, _ := runBackupWithConfig(backupExecutablePath, backupConfigPath)
+					backupExitStatusCode := backupSession.ExitCode()
 
-					backupExitStatusCode := runBackupWithConfig(backupExecutablePath, backupConfigPath).Wait(time.Second * 10).ExitCode()
 					Ω(backupExitStatusCode).ShouldNot(Equal(0))
 				})
 			})
@@ -148,7 +158,13 @@ var _ = Describe("backups", func() {
 			BeforeEach(func() {
 				backupConfigPath = filepath.Join("assets", "backup-shared.yml")
 				backupConfig = loadBackupConfig(backupConfigPath)
-				oldS3ServerURL = swapS3UrlInBackupConfig(backupConfig, backupConfigPath, s3TestServer.URL())
+
+				oldS3ServerURL = backupConfig.S3Configuration.EndpointUrl
+				oldCliPath = backupConfig.AwsCLIPath
+				backupConfig.S3Configuration.EndpointUrl = s3TestServer.URL()
+				backupConfig.AwsCLIPath = awsCliPath
+				writeConfig(backupConfig, backupConfigPath)
+
 				client, bucket = configureS3ClientAndBucket(backupConfig)
 
 				for _, instanceID := range instanceIDs {
@@ -165,22 +181,21 @@ var _ = Describe("backups", func() {
 				}
 
 				bucket.DelBucket()
+				swapS3ValuesInBackupConfig(backupConfig, backupConfigPath, oldS3ServerURL, oldCliPath)
 			})
 
 			Context("when the backup command completes successfully", func() {
 				It("exits with status code 0", func() {
-					backupSession := runBackupWithConfig(backupExecutablePath, backupConfigPath)
+					backupSession, _ := runBackupWithConfig(backupExecutablePath, backupConfigPath)
 					backupExitStatusCode := backupSession.Wait(time.Second * 10).ExitCode()
 					Expect(backupExitStatusCode).To(Equal(0))
 				})
 
 				It("uploads redis instance RDB files to the correct S3 bucket", func() {
 					timestamp := getCurrentTimestamp()
-					runBackupWithConfig(backupExecutablePath, backupConfigPath).Wait(time.Second * 10)
+					_, cliCommand := runBackupWithConfig(backupExecutablePath, backupConfigPath)
 					for _, instanceID := range instanceIDs {
-						retrievedBackupBytes, err := bucket.Get(backupFilename(backupConfig.S3Configuration.Path, timestamp, instanceID, "shared-vm"))
-						Expect(err).NotTo(HaveOccurred())
-						Expect(retrievedBackupBytes).To(Equal(readRdbFile(instanceID)))
+						Expect(cliCommand).To(ContainSubstring(cliParams(*backupConfig, bucket.Name, timestamp, instanceID, "shared-vm", s3TestServer.URL())))
 					}
 				})
 
@@ -188,41 +203,25 @@ var _ = Describe("backups", func() {
 					instanceID := instanceIDs[0]
 					confPath := filepath.Join(brokerConfig.RedisConfiguration.InstanceDataDirectory, instanceID, "redis.conf")
 					lastSaveTime := getLastSaveTime(instanceID, confPath)
-
-					runBackupWithConfig(backupExecutablePath, backupConfigPath).Wait(time.Second * 10)
-
+					runBackupWithConfig(backupExecutablePath, backupConfigPath)
 					Expect(getLastSaveTime(instanceID, confPath)).To(BeNumerically(">", lastSaveTime))
 				})
 
-				It("creates the bucket if it does not exist and uploads a file for each instance", func() {
+				It("creates the bucket if it does not exist", func() {
 					err := bucket.DelBucket()
 					Ω(err).NotTo(HaveOccurred())
 
-					timestamp := getCurrentTimestamp()
-					runBackupWithConfig(backupExecutablePath, backupConfigPath).Wait(time.Second * 10)
+					buckets, err := client.ListBuckets()
+					Expect(err).ToNot(HaveOccurred())
+					Expect(buckets.Buckets).To(HaveLen(0))
 
-					for _, instanceID := range instanceIDs {
-						retrievedBackupBytes, err := bucket.Get(backupFilename(backupConfig.S3Configuration.Path, timestamp, instanceID, "shared-vm"))
-						Ω(err).NotTo(HaveOccurred())
-						Ω(retrievedBackupBytes).ShouldNot(BeEmpty())
-					}
-				})
-			})
+					backupSession, _ := runBackupWithConfig(backupExecutablePath, backupConfigPath)
+					backupSession.Wait(time.Second * 10)
 
-			Context("when the backup process is aborted", func() {
-				It("exits with non-zero code", func() {
-					backupSession := runBackupWithConfig(backupExecutablePath, backupConfigPath)
-					backupExitStatusCode := backupSession.Kill().Wait().ExitCode()
-					Ω(backupExitStatusCode).ShouldNot(Equal(0))
-				})
-
-				It("does not leave any files on s3", func() {
-					timestamp := getCurrentTimestamp()
-					runBackupWithConfig(backupExecutablePath, backupConfigPath).Kill().Wait()
-					for _, instanceID := range instanceIDs {
-						_, err := bucket.Get(backupFilename(backupConfig.S3Configuration.Path, timestamp, instanceID, "shared-vm"))
-						Ω(err).Should(MatchError("The specified key does not exist."))
-					}
+					buckets, err = client.ListBuckets()
+					Expect(err).ToNot(HaveOccurred())
+					Expect(buckets.Buckets).To(HaveLen(1))
+					Expect(buckets.Buckets[0].Name).To(Equal(backupConfig.S3Configuration.BucketName))
 				})
 			})
 
@@ -231,17 +230,34 @@ var _ = Describe("backups", func() {
 					helpers.KillRedisProcess(instanceIDs[0], brokerConfig)
 
 					timestamp := getCurrentTimestamp()
-					backupExitStatusCode := runBackupWithConfig(backupExecutablePath, backupConfigPath).Wait(time.Second * 10).ExitCode()
+					backupSession, cliCommand := runBackupWithConfig(backupExecutablePath, backupConfigPath)
+					backupExitStatusCode := backupSession.ExitCode()
 					Ω(backupExitStatusCode).Should(Equal(1))
 
-					retrievedBackupBytes, err := bucket.Get(backupFilename(backupConfig.S3Configuration.Path, timestamp, instanceIDs[1], "shared-vm"))
-					Ω(err).NotTo(HaveOccurred())
-					Ω(retrievedBackupBytes).ShouldNot(BeEmpty())
+					Expect(cliCommand).To(ContainSubstring(cliParams(*backupConfig, bucket.Name, timestamp, instanceIDs[1], "shared-vm", s3TestServer.URL())))
 				})
 			})
 		})
 	})
 })
+
+func cliParams(backupConfig backupconfig.Config, bucketName, timestamp, instanceID, planName, endpointUrl string) string {
+	filePath := path.Join(backupConfig.RedisDataDirectory, "dump.rdb")
+	if planName == "shared-vm" {
+		filePath = path.Join(backupConfig.RedisDataDirectory, instanceID, "db", "dump.rdb")
+	}
+
+	args := []string{
+		"s3",
+		"cp",
+		filePath,
+		fmt.Sprintf("s3://%s%s", bucketName, backupFilename(backupConfig.S3Configuration.Path, timestamp, instanceID, planName)),
+		"--endpoint-url",
+		endpointUrl,
+	}
+
+	return strings.Join(args, " ")
+}
 
 func getCurrentTimestamp() string {
 	// http://golang.org/pkg/time/#pkg-constants if you need to understand these crazy layouts
@@ -307,35 +323,39 @@ func bindAndWriteTestData(instanceID string) {
 	Ω(err).ToNot(HaveOccurred())
 }
 
-func readRdbFile(instanceID string) []byte {
-	instanceDataDir := brokerConfig.RedisConfiguration.InstanceDataDirectory
-	pathToRdbFile := filepath.Join(instanceDataDir, instanceID, "db", "dump.rdb")
-	originalRdbBytes, err := ioutil.ReadFile(pathToRdbFile)
-	Ω(err).ToNot(HaveOccurred())
-	return originalRdbBytes
-}
-
-func swapS3UrlInBackupConfig(config *backupconfig.Config, path, newEndpointURL string) string {
-	oldEndpointURL := config.S3Configuration.EndpointUrl
-	config.S3Configuration.EndpointUrl = newEndpointURL
-
+func writeConfig(config *backupconfig.Config, path string) {
 	configFile, err := os.Create(path)
 	Ω(err).ToNot(HaveOccurred())
 	encoder := candiedyaml.NewEncoder(configFile)
 	err = encoder.Encode(config)
 	Ω(err).ToNot(HaveOccurred())
+}
 
+func swapS3ValuesInBackupConfig(config *backupconfig.Config, path, newEndpointURL, newCliPath string) string {
+	oldEndpointURL := config.S3Configuration.EndpointUrl
+	config.S3Configuration.EndpointUrl = newEndpointURL
+	config.AwsCLIPath = newCliPath
+	writeConfig(config, path)
 	return oldEndpointURL
 }
 
-func runBackupWithConfig(executablePath, configPath string) *gexec.Session {
+func runBackupWithConfig(executablePath, configPath string) (*gexec.Session, string) {
 	cmd := exec.Command(executablePath)
 	cmd.Stdout = GinkgoWriter
 	cmd.Stderr = GinkgoWriter
-	cmd.Env = append(cmd.Env, "BACKUP_CONFIG_PATH="+configPath)
+	cliOutputFile, err := ioutil.TempFile(".", "s3_upload_command_args")
+	Expect(err).ToNot(HaveOccurred())
+
+	cmd.Env = append(cmd.Env, "BACKUP_CONFIG_PATH="+configPath, "FAKE_CLI_OUTPUT_PATH="+cliOutputFile.Name())
 	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-	Expect(err).NotTo(HaveOccurred())
-	return session
+	Expect(err).ToNot(HaveOccurred())
+	session.Wait(time.Second * 10)
+
+	cliOutputFileContents, err := ioutil.ReadFile(cliOutputFile.Name())
+	Expect(err).ToNot(HaveOccurred())
+	os.Remove(cliOutputFile.Name())
+
+	return session, string(cliOutputFileContents)
 }
 
 func configureS3ClientAndBucket(backupConfig *backupconfig.Config) (*s3.S3, *s3.Bucket) {

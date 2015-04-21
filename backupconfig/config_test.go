@@ -77,6 +77,10 @@ var _ = Describe("Config", func() {
 			It("has the correct log file path", func() {
 				Expect(config.LogFilePath).To(Equal("/log/file/path"))
 			})
+
+			It("has the correct aws cli path", func() {
+				Expect(config.AwsCLIPath).To(Equal("/path/to/aws-cli"))
+			})
 		})
 	})
 })

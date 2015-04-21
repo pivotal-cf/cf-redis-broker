@@ -15,13 +15,16 @@ import (
 	"testing"
 )
 
-var backupExecutablePath string
-var brokerConfig brokerconfig.Config
-var brokerClient *integration.BrokerClient
-var brokerSession *gexec.Session
-var brokerPort uint = 3000
-var agentRequests []*http.Request
-var agentResponseStatus = http.StatusOK
+var (
+	backupExecutablePath string
+	brokerConfig         brokerconfig.Config
+	brokerClient         *integration.BrokerClient
+	brokerSession        *gexec.Session
+	brokerPort           uint = 3000
+	agentRequests        []*http.Request
+	agentResponseStatus  = http.StatusOK
+	awsCliPath           string
+)
 
 func TestBackupintegration(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -44,6 +47,8 @@ var _ = BeforeSuite(func() {
 	brokerClient = &integration.BrokerClient{Config: &brokerConfig}
 
 	backupExecutablePath = helpers.BuildExecutable("github.com/pivotal-cf/cf-redis-broker/cmd/backup")
+
+	awsCliPath = helpers.BuildExecutable("github.com/pivotal-cf/cf-redis-broker/backupintegration/fakecli")
 
 	Ω(helpers.ServiceAvailable(brokerPort)).Should(BeTrue())
 	startFakeAgent(&agentRequests, &agentResponseStatus)

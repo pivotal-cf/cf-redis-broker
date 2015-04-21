@@ -7,3 +7,4 @@ s3:
 bg_save_timeout: 600
 redis_data_directory: "/tmp/redis-data-dir"
 log_file_path: /tmp/backup.log
+aws_cli_path: 

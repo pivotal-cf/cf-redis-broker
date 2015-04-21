@@ -13,3 +13,4 @@ broker_credentials:
   password: secret
 broker_host: localhost:3000
 log_file_path: /tmp/backup.log
+aws_cli_path: /usr/local/bin/aws

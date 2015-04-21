@@ -13,3 +13,4 @@ broker_credentials:
   password: secret
 broker_host: non-existant
 log_file_path: /tmp/backup.log
+aws_cli_path: /something

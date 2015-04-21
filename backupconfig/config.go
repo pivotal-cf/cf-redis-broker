@@ -15,6 +15,7 @@ type Config struct {
 	BrokerCredentials    BrokerCredentials `yaml:"broker_credentials"`
 	BrokerHost           string            `yaml:"broker_host"`
 	LogFilePath          string            `yaml:"log_file_path"`
+	AwsCLIPath           string            `yaml:"aws_cli_path"`
 }
 
 type S3Configuration struct {

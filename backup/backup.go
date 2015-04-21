@@ -3,6 +3,7 @@ package backup
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"time"
@@ -85,12 +86,23 @@ func (backup Backup) uploadToS3(instanceID, planName, rdbFilePath string, timest
 		"Remote file": remotePath,
 	})
 
-	rdbFile, err := os.Open(rdbFilePath)
-	if err != nil {
-		return err
-	}
+	cmd := exec.Command(
+		backup.Config.AwsCLIPath,
+		"s3",
+		"cp",
+		rdbFilePath,
+		fmt.Sprintf("s3://%s%s", bucket.Name, remotePath),
+		"--endpoint-url",
+		backup.Config.S3Configuration.EndpointUrl,
+	)
 
-	return bucket.Upload(rdbFile, remotePath)
+	cmd.Env = append(
+		os.Environ(),
+		fmt.Sprintf("AWS_ACCESS_KEY_ID=%s", backup.Config.S3Configuration.AccessKeyId),
+		fmt.Sprintf("AWS_SECRET_ACCESS_KEY=%s", backup.Config.S3Configuration.SecretAccessKey),
+	)
+
+	return cmd.Run()
 }
 
 func fileExists(path string) bool {
