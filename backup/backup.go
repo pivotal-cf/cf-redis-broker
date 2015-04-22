@@ -86,12 +86,14 @@ func (backup Backup) uploadToS3(instanceID, planName, rdbFilePath string, timest
 		"Remote file": remotePath,
 	})
 
+	bucketPath := fmt.Sprintf("s3://%s%s", bucket.Name, remotePath)
+
 	cmd := exec.Command(
 		backup.Config.AwsCLIPath,
 		"s3",
 		"cp",
 		rdbFilePath,
-		fmt.Sprintf("s3://%s%s", bucket.Name, remotePath),
+		bucketPath,
 		"--endpoint-url",
 		backup.Config.S3Configuration.EndpointUrl,
 	)
@@ -102,7 +104,11 @@ func (backup Backup) uploadToS3(instanceID, planName, rdbFilePath string, timest
 		fmt.Sprintf("AWS_SECRET_ACCESS_KEY=%s", backup.Config.S3Configuration.SecretAccessKey),
 	)
 
-	return cmd.Run()
+	backup.Logger.Info(fmt.Sprintf("shelling out to aws cli to upload file %s to bucket %s", rdbFilePath, bucketPath))
+	output, err := cmd.CombinedOutput()
+	backup.Logger.Info(string(output))
+
+	return err
 }
 
 func fileExists(path string) bool {
