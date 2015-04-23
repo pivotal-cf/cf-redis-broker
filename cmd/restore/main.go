@@ -78,6 +78,8 @@ func main() {
 	rdbPath := os.Args[2]
 
 	logger := lager.NewLogger("redis-restore")
+	logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
+	logger.RegisterSink(lager.NewWriterSink(os.Stderr, lager.ERROR))
 
 	startStep("Loading config")
 	config, err := restoreconfig.Load(restoreConfigPath())

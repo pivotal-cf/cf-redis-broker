@@ -36,6 +36,8 @@ func main() {
 	flag.Parse()
 
 	logger := lager.NewLogger("redis-agent")
+	logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
+	logger.RegisterSink(lager.NewWriterSink(os.Stderr, lager.ERROR))
 
 	config, err := agentconfig.Load(*configPath)
 	if err != nil {

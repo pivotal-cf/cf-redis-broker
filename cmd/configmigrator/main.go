@@ -10,7 +10,11 @@ import (
 
 func main() {
 	brokerConfigPath := configPath()
+
 	log := lager.NewLogger("redis-configmigrator")
+	log.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
+	log.RegisterSink(lager.NewWriterSink(os.Stderr, lager.ERROR))
+
 	log.Info("Config File: " + brokerConfigPath)
 
 	config, err := brokerconfig.ParseConfig(brokerConfigPath)

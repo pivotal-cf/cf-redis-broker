@@ -93,7 +93,7 @@ func (client *Client) LastRDBSaveTime() (int64, error) {
 func (client *Client) InfoField(fieldName string) (string, error) {
 	info, err := client.info()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("Error during redis info: %s" + err.Error())
 	}
 
 	value, ok := info[fieldName]
