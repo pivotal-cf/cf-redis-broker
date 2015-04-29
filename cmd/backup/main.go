@@ -15,9 +15,15 @@ import (
 	"github.com/pivotal-golang/lager"
 )
 
+var logger lager.Logger
+
 func main() {
 	config := loadConfig()
-	logger := initializeLogger(config)
+	logger = initializeLogger(config)
+
+	logger.Info("backup-main", lager.Data{
+		"event": "starting",
+	})
 
 	if config.S3Configuration.BucketName == "" || config.S3Configuration.EndpointUrl == "" {
 		logger.Info("s3 credentials not configured")
@@ -34,7 +40,18 @@ func main() {
 		instanceID, err := getInstanceID(config)
 		if err != nil || instanceID == "" {
 			backupErrors[config.NodeIP] = err
+
+			logger.Info("backup-main", lager.Data{
+				"event": "backup_dedicated_node",
+				"error": err.Error(),
+			})
+
 		} else if err = backupCreator.Create(config.RedisDataDirectory, "", instanceID, "dedicated-vm"); err != nil {
+			logger.Info("backup-main", lager.Data{
+				"event": "backup_creator",
+				"error": err.Error(),
+			})
+
 			backupErrors[instanceID] = err
 		}
 	} else {
@@ -43,8 +60,18 @@ func main() {
 
 	if len(backupErrors) > 0 {
 		logBackupErrors(backupErrors, logger)
+
+		logger.Info("backup-main", lager.Data{
+			"event":     "Exiting",
+			"exit_code": 1,
+		})
 		os.Exit(1)
 	}
+
+	logger.Info("backup-main", lager.Data{
+		"event":     "Exiting",
+		"exit_code": 0,
+	})
 }
 
 func getInstanceID(config *backupconfig.Config) (string, error) {
@@ -79,6 +106,10 @@ func getInstanceID(config *backupconfig.Config) (string, error) {
 }
 
 func backupSharedVMInstances(backupCreator *backup.Backup, instancesDir string) map[string]error {
+	logger.Info("backup-main", lager.Data{
+		"event": "backup_shared_vm_instances",
+	})
+
 	instanceDirs, err := ioutil.ReadDir(instancesDir)
 	if err != nil {
 		return map[string]error{"all-shared-vm-instances": err}
