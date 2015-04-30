@@ -98,7 +98,7 @@ func (backup Backup) createSnapshot(instancePath string) error {
 	err = client.CreateSnapshot(backup.Config.BGSaveTimeoutSeconds)
 	if err != nil {
 		backup.Logger.Error("backup", err, lager.Data{
-			"event": "backup_create_snapshot_connect",
+			"event": "backup_create_snapshot_create_snapshot",
 		})
 		return err
 	}
