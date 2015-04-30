@@ -7,7 +7,9 @@ import (
 	"time"
 
 	redisclient "github.com/garyburd/redigo/redis"
+	"github.com/pivotal-cf/cf-redis-broker/log"
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
+	"github.com/pivotal-golang/lager"
 )
 
 func Connect(host string, conf redisconf.Conf) (*Client, error) {
@@ -51,8 +53,16 @@ func (client *Client) WaitUntilRedisNotLoading(timeoutMilliseconds int) error {
 }
 
 func (client *Client) CreateSnapshot(timeoutInSeconds int) error {
+	log.Logger().Info("redis_client", lager.Data{
+		"event":   "create_snapshot",
+		"timeout": timeoutInSeconds,
+	})
+
 	lastSaveTime, err := client.LastRDBSaveTime()
 	if err != nil {
+		log.Logger().Error("redis_client", err, lager.Data{
+			"event": "last_rdb_save_time",
+		})
 		return err
 	}
 
@@ -60,11 +70,19 @@ func (client *Client) CreateSnapshot(timeoutInSeconds int) error {
 
 	err = client.runBGSave()
 	if err != nil {
+		log.Logger().Error("redis_client", err, lager.Data{
+			"event": "run_bg_save",
+		})
 		return err
 	}
 
 	err = client.waitForNewSaveSince(lastSaveTime, timeoutInSeconds)
 	if err != nil {
+		log.Logger().Error("redis_client", err, lager.Data{
+			"event":            "wait_for_new_save_since",
+			"last_time_save":   lastSaveTime,
+			"time_out_seconds": timeoutInSeconds,
+		})
 		return err
 	}
 

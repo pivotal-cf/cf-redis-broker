@@ -10,6 +10,7 @@ import (
 
 	"github.com/pivotal-cf/cf-redis-broker/backup/s3bucket"
 	"github.com/pivotal-cf/cf-redis-broker/backupconfig"
+	"github.com/pivotal-cf/cf-redis-broker/log"
 	"github.com/pivotal-cf/cf-redis-broker/redis/client"
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 	"github.com/pivotal-golang/lager"
@@ -17,7 +18,6 @@ import (
 
 type Backup struct {
 	Config *backupconfig.Config
-	Logger lager.Logger
 }
 
 // http://golang.org/pkg/time/#pkg-constants if you need to understand this crazy layout
@@ -28,7 +28,7 @@ const (
 
 func (backup Backup) Create(instancePath, dataSubDir, instanceID, planName string) error {
 
-	backup.Logger.Info("backup", lager.Data{
+	log.Logger().Info("backup", lager.Data{
 		"event":         "backup_create_starting",
 		"instance_path": instancePath,
 		"data_dir":      dataSubDir,
@@ -37,7 +37,7 @@ func (backup Backup) Create(instancePath, dataSubDir, instanceID, planName strin
 	})
 
 	if err := backup.createSnapshot(instancePath); err != nil {
-		backup.Logger.Error("backup", err, lager.Data{
+		log.Logger().Error("backup", err, lager.Data{
 			"event":         "backup_create",
 			"instance_path": instancePath,
 		})
@@ -48,7 +48,7 @@ func (backup Backup) Create(instancePath, dataSubDir, instanceID, planName strin
 
 	rdbFilePath := filepath.Join(instancePath, dataSubDir, "dump.rdb")
 	if !fileExists(rdbFilePath) {
-		backup.Logger.Info("dump.rdb not found, skipping instance backup", lager.Data{
+		log.Logger().Info("dump.rdb not found, skipping instance backup", lager.Data{
 			"Local file": rdbFilePath,
 		})
 		return nil
@@ -56,13 +56,13 @@ func (backup Backup) Create(instancePath, dataSubDir, instanceID, planName strin
 
 	bucket, err := backup.getOrCreateBucket()
 	if err != nil {
-		backup.Logger.Error("backup", err, lager.Data{
+		log.Logger().Error("backup", err, lager.Data{
 			"event": "get_or_Create_backup",
 		})
 		return err
 	}
 
-	defer backup.Logger.Info("backup", lager.Data{
+	defer log.Logger().Info("backup", lager.Data{
 		"event": "backup_create_done",
 	})
 	return backup.uploadToS3(instanceID, planName, rdbFilePath, timestamp, bucket)
@@ -81,7 +81,7 @@ func (backup Backup) getOrCreateBucket() (s3bucket.Bucket, error) {
 func (backup Backup) createSnapshot(instancePath string) error {
 	instanceConf, err := redisconf.Load(path.Join(instancePath, "redis.conf"))
 	if err != nil {
-		backup.Logger.Error("backup", err, lager.Data{
+		log.Logger().Error("backup", err, lager.Data{
 			"event": "backup_create_snapshot_load",
 		})
 		return err
@@ -89,7 +89,7 @@ func (backup Backup) createSnapshot(instancePath string) error {
 
 	client, err := client.Connect("localhost", instanceConf)
 	if err != nil {
-		backup.Logger.Error("backup", err, lager.Data{
+		log.Logger().Error("backup", err, lager.Data{
 			"event": "backup_create_snapshot_connect",
 		})
 		return err
@@ -97,7 +97,7 @@ func (backup Backup) createSnapshot(instancePath string) error {
 
 	err = client.CreateSnapshot(backup.Config.BGSaveTimeoutSeconds)
 	if err != nil {
-		backup.Logger.Error("backup", err, lager.Data{
+		log.Logger().Error("backup", err, lager.Data{
 			"event": "backup_create_snapshot_create_snapshot",
 		})
 		return err
@@ -114,7 +114,7 @@ func (backup Backup) uploadToS3(instanceID, planName, rdbFilePath string, timest
 		planName,
 	)
 
-	backup.Logger.Info("Backing up instance", lager.Data{
+	log.Logger().Info("Backing up instance", lager.Data{
 		"Local file":  rdbFilePath,
 		"Remote file": remotePath,
 	})
@@ -137,9 +137,9 @@ func (backup Backup) uploadToS3(instanceID, planName, rdbFilePath string, timest
 		fmt.Sprintf("AWS_SECRET_ACCESS_KEY=%s", backup.Config.S3Configuration.SecretAccessKey),
 	)
 
-	backup.Logger.Info(fmt.Sprintf("shelling out to aws cli to upload file %s to bucket %s", rdbFilePath, bucketPath))
+	log.Logger().Info(fmt.Sprintf("shelling out to aws cli to upload file %s to bucket %s", rdbFilePath, bucketPath))
 	output, err := cmd.CombinedOutput()
-	backup.Logger.Info(string(output))
+	log.Logger().Info(string(output))
 
 	return err
 }

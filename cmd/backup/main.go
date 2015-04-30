@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"path"
@@ -11,7 +12,7 @@ import (
 
 	"github.com/pivotal-cf/cf-redis-broker/backup"
 	"github.com/pivotal-cf/cf-redis-broker/backupconfig"
-	"github.com/pivotal-cf/cf-redis-broker/log"
+	logPackage "github.com/pivotal-cf/cf-redis-broker/log"
 	"github.com/pivotal-golang/lager"
 )
 
@@ -19,7 +20,8 @@ var logger lager.Logger
 
 func main() {
 	config := loadConfig()
-	log.SetupLogger(config)
+	logPackage.SetupLogger(config)
+	logger = logPackage.Logger()
 
 	logger.Info("backup-main", lager.Data{
 		"event": "starting",
@@ -32,7 +34,6 @@ func main() {
 
 	backupCreator := &backup.Backup{
 		Config: config,
-		Logger: logger,
 	}
 	backupErrors := map[string]error{}
 
