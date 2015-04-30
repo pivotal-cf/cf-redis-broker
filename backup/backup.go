@@ -27,7 +27,20 @@ const (
 )
 
 func (backup Backup) Create(instancePath, dataSubDir, instanceID, planName string) error {
+
+	backup.Logger.Info("backup", lager.Data{
+		"event":         "backup_create_starting",
+		"instance_path": instancePath,
+		"data_dir":      dataSubDir,
+		"instance_id":   instanceID,
+		"plan_name":     planName,
+	})
+
 	if err := backup.createSnapshot(instancePath); err != nil {
+		backup.Logger.Error("backup", err, lager.Data{
+			"event":        "backup_create_snapshot",
+			"instancePath": instancePath,
+		})
 		return err
 	}
 
@@ -43,8 +56,15 @@ func (backup Backup) Create(instancePath, dataSubDir, instanceID, planName strin
 
 	bucket, err := backup.getOrCreateBucket()
 	if err != nil {
+		backup.Logger.Error("backup", err, lager.Data{
+			"event": "get_or_Create_backup",
+		})
 		return err
 	}
+
+	defer backup.Logger.Info("backup", lager.Data{
+		"event": "backup_create_done",
+	})
 	return backup.uploadToS3(instanceID, planName, rdbFilePath, timestamp, bucket)
 }
 
