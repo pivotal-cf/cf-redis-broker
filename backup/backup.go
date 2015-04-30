@@ -102,7 +102,7 @@ func (backup Backup) createSnapshot(instancePath string) error {
 		})
 		return err
 	}
-	return err
+	return nil
 }
 
 func (backup Backup) uploadToS3(instanceID, planName, rdbFilePath string, timestamp string, bucket s3bucket.Bucket) error {

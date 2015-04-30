@@ -13,7 +13,8 @@ var logger lager.Logger
 
 func Logger() lager.Logger {
 	if logger == nil {
-		fmt.Println("Please Initialize Logger")
+		fmt.Println("Logger not initialized, initializing a new one")
+		logger = lager.NewLogger("redis-broker")
 	}
 
 	return logger
