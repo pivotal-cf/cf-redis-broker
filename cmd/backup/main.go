@@ -23,7 +23,7 @@ func main() {
 	logPackage.SetupLogger(config)
 	logger = logPackage.Logger()
 
-	logger.Info("backup-main", lager.Data{
+	logger.Info("backup_main", lager.Data{
 		"event": "starting",
 	})
 
@@ -42,13 +42,13 @@ func main() {
 		if err != nil || instanceID == "" {
 			backupErrors[config.NodeIP] = err
 
-			logger.Info("backup-main", lager.Data{
+			logger.Info("backup_main", lager.Data{
 				"event": "backup_dedicated_node",
 				"error": err.Error(),
 			})
 
 		} else if err = backupCreator.Create(config.RedisDataDirectory, "", instanceID, "dedicated-vm"); err != nil {
-			logger.Error("backup-main", err, lager.Data{
+			logger.Error("backup_main", err, lager.Data{
 				"event": "backup_creator",
 			})
 
@@ -61,14 +61,14 @@ func main() {
 	if len(backupErrors) > 0 {
 		logBackupErrors(backupErrors, logger)
 
-		logger.Info("backup-main", lager.Data{
+		logger.Info("backup_main", lager.Data{
 			"event":     "Exiting",
 			"exit_code": 1,
 		})
 		os.Exit(1)
 	}
 
-	logger.Info("backup-main", lager.Data{
+	logger.Info("backup_main", lager.Data{
 		"event":     "Exiting",
 		"exit_code": 0,
 	})
@@ -106,7 +106,7 @@ func getInstanceID(config *backupconfig.Config) (string, error) {
 }
 
 func backupSharedVMInstances(backupCreator *backup.Backup, instancesDir string) map[string]error {
-	logger.Info("backup-main", lager.Data{
+	logger.Info("backup_main", lager.Data{
 		"event": "backup_shared_vm_instances",
 	})
 
@@ -131,7 +131,7 @@ func backupSharedVMInstances(backupCreator *backup.Backup, instancesDir string) 
 
 func logBackupErrors(errors map[string]error, logger lager.Logger) {
 	for instanceID, err := range errors {
-		logger.Error("backup-failed", err, lager.Data{
+		logger.Error("backup_failed", err, lager.Data{
 			"instance_id": instanceID,
 		})
 	}
@@ -145,7 +145,7 @@ func loadConfig() *backupconfig.Config {
 
 	config, err := backupconfig.Load(configPath)
 	if err != nil {
-		log.Fatal("backup-config-load-failed", err)
+		log.Fatal("backup_config_load_failed", err)
 	}
 	return config
 }

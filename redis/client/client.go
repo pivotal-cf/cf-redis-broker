@@ -54,7 +54,7 @@ func (client *Client) WaitUntilRedisNotLoading(timeoutMilliseconds int) error {
 
 func (client *Client) CreateSnapshot(timeoutInSeconds int) error {
 	log.Logger().Info("redis_client", lager.Data{
-		"event":   "create_snapshot",
+		"event":   "creating_snapshot",
 		"timeout": timeoutInSeconds,
 	})
 
@@ -85,6 +85,10 @@ func (client *Client) CreateSnapshot(timeoutInSeconds int) error {
 		})
 		return err
 	}
+
+	log.Logger().Info("redis_client", lager.Data{
+		"event": "creating_snapshot_done",
+	})
 
 	return nil
 }

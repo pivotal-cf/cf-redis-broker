@@ -9,24 +9,46 @@ import (
 	"github.com/pivotal-golang/lager"
 )
 
-var logger lager.Logger
+type LoggerWithOutput struct {
+	lager.Logger
+}
 
-func Logger() lager.Logger {
+var logger *LoggerWithOutput
+
+func Logger() LoggerWithOutput {
 	if logger == nil {
 		fmt.Println("Logger not initialized, initializing a new one")
-		logger = lager.NewLogger("redis-broker")
+		newLager := lager.NewLogger("redis-broker")
+		logger = &LoggerWithOutput{newLager}
 	}
 
-	return logger
+	return *logger
+}
+
+func (l LoggerWithOutput) Info(action string, data ...lager.Data) {
+	var outputData lager.Data
+	if len(data) > 0 {
+		outputData = data[0]
+	}
+
+	l.printToOutput(action, outputData)
+	l.Logger.Info(action, data...)
+}
+
+func (l LoggerWithOutput) printToOutput(action string, data lager.Data) {
+	if data != nil && data["event"] != nil {
+		fmt.Printf("%15s -> %s\n", action, data["event"])
+	}
 }
 
 func SetupLogger(config *backupconfig.Config) {
 	if logger == nil {
-		logger = initializeLogger(config)
+		lagerLogger := initializeLagerLogger(config)
+		logger = &LoggerWithOutput{lagerLogger}
 	}
 }
 
-func initializeLogger(config *backupconfig.Config) lager.Logger {
+func initializeLagerLogger(config *backupconfig.Config) lager.Logger {
 	logger := lager.NewLogger("backup")
 	logFile, err := os.OpenFile(config.LogFilePath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0660)
 	if err != nil {

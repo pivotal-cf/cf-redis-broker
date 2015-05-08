@@ -57,7 +57,7 @@ func (backup Backup) Create(instancePath, dataSubDir, instanceID, planName strin
 	bucket, err := backup.getOrCreateBucket()
 	if err != nil {
 		log.Logger().Error("backup", err, lager.Data{
-			"event": "get_or_Create_backup",
+			"event": "get_or_create_backup",
 		})
 		return err
 	}
@@ -106,6 +106,10 @@ func (backup Backup) createSnapshot(instancePath string) error {
 }
 
 func (backup Backup) uploadToS3(instanceID, planName, rdbFilePath string, timestamp string, bucket s3bucket.Bucket) error {
+	log.Logger().Info("s3", lager.Data{
+		"event": "uploading",
+	})
+
 	remotePath := fmt.Sprintf("%s/%s/%s_%s_%s_redis_backup",
 		backup.Config.S3Configuration.Path,
 		time.Now().Format(datePathLayout),
@@ -141,6 +145,9 @@ func (backup Backup) uploadToS3(instanceID, planName, rdbFilePath string, timest
 	output, err := cmd.CombinedOutput()
 	log.Logger().Info(string(output))
 
+	log.Logger().Info("s3", lager.Data{
+		"event": "uploading_done",
+	})
 	return err
 }
 
