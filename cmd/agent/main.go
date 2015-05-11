@@ -8,8 +8,6 @@ import (
 	"os/exec"
 	"time"
 
-	"code.google.com/p/go-uuid/uuid"
-
 	"github.com/pivotal-cf/brokerapi/auth"
 	"github.com/pivotal-cf/cf-redis-broker/agentapi"
 	"github.com/pivotal-cf/cf-redis-broker/agentconfig"
@@ -82,10 +80,13 @@ func templateRedisConf(config *agentconfig.Config, logger lager.Logger) {
 				"path": config.ConfPath,
 			})
 		}
-
-		newConfig.Set("requirepass", existingConf.Get("requirepass"))
+		err = newConfig.InitForDedicatedNode(existingConf.Password())
 	} else {
-		newConfig.Set("requirepass", uuid.NewRandom().String())
+		err = newConfig.InitForDedicatedNode()
+	}
+
+	if err != nil {
+		logger.Fatal("Error initializing redis conf for dedicated node", err)
 	}
 
 	err = newConfig.Save(config.ConfPath)

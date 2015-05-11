@@ -10,8 +10,6 @@ import (
 	"time"
 
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
-
-	"code.google.com/p/go-uuid/uuid"
 )
 
 type checker interface {
@@ -158,7 +156,10 @@ func (resetter *Resetter) resetConfigWithNewPassword() error {
 		return err
 	}
 
-	conf.Set("requirepass", uuid.NewRandom().String())
+	err = conf.InitForDedicatedNode()
+	if err != nil {
+		return err
+	}
 
 	if err := conf.Save(resetter.liveConfPath); err != nil {
 		return err

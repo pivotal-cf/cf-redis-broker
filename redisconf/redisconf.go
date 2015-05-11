@@ -6,7 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"strconv"
 	"strings"
+
+	"code.google.com/p/go-uuid/uuid"
+
+	"github.com/cloudfoundry/gosigar"
 )
 
 type Param struct {
@@ -177,4 +182,52 @@ func CopyWithInstanceAdditions(fromPath, toPath, syslogIdentSuffix, port, passwo
 	}
 
 	return nil
+}
+
+func (c *Conf) InitForDedicatedNode(password ...string) error {
+	switch len(password) {
+	case 0:
+		c.setRandomPassword()
+	case 1:
+		c.setPassword(password[0])
+	default:
+		return errors.New("Passed more than one password")
+	}
+
+	err := c.setMaxMemory()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func calculateMaxMemory() (int, error) {
+	mem := sigar.Mem{}
+	if err := mem.Get(); err != nil {
+		return 0, err
+	}
+
+	return int(float64(mem.Total) * 0.45), nil
+}
+
+func (c *Conf) setMaxMemory() error {
+	maxMem, err := calculateMaxMemory()
+	if err != nil {
+		return err
+	}
+	c.Set("maxmemory", strconv.Itoa(maxMem))
+	return nil
+}
+
+func (c *Conf) setRandomPassword() {
+	c.setPassword(uuid.NewRandom().String())
+}
+
+func (c *Conf) setPassword(password string) {
+	c.Set("requirepass", password)
+}
+
+func (c *Conf) Password() string {
+	return c.Get("requirepass")
 }
