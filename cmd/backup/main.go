@@ -42,9 +42,8 @@ func main() {
 		if err != nil || instanceID == "" {
 			backupErrors[config.NodeIP] = err
 
-			logger.Info("backup_main", lager.Data{
+			logger.Error("backup_main", err, lager.Data{
 				"event": "backup_dedicated_node",
-				"error": err.Error(),
 			})
 
 		} else if err = backupCreator.Create(config.RedisDataDirectory, "", instanceID, "dedicated-vm"); err != nil {
