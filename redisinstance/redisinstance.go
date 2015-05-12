@@ -9,10 +9,6 @@ type InstanceIDFinder interface {
 	IDForHost(string) string
 }
 
-type IsAllocatedChecker interface {
-	IsAllocated(string) bool
-}
-
 func NewHandler(instanceIDFinder InstanceIDFinder) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		res.Header().Add("Content-Type", "application/json")
@@ -27,10 +23,10 @@ func NewHandler(instanceIDFinder InstanceIDFinder) http.HandlerFunc {
 	}
 }
 
-func NewIsAllocatedHandler(isAllocatedChecker IsAllocatedChecker) http.HandlerFunc {
+func NewIsAllocatedHandler(instanceIDFinder InstanceIDFinder) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
-		isAllocated := isAllocatedChecker.IsAllocated(req.URL.Query()["host"][0])
+		instanceID := instanceIDFinder.IDForHost(req.URL.Query()["host"][0])
 
-		res.Write([]byte(fmt.Sprintf(`{"is_allocated": %t}`, isAllocated)))
+		res.Write([]byte(fmt.Sprintf(`{"is_allocated": %t}`, instanceID != "")))
 	}
 }

@@ -22,15 +22,6 @@ func (finder fakeInstanceFinder) IDForHost(host string) string {
 	}[host]
 }
 
-type fakeIsAllocatedChecker struct{}
-
-func (fakeIsAllocatedChecker) IsAllocated(host string) bool {
-	if host == "1.2.3.4" {
-		return true
-	}
-	return false
-}
-
 var _ = Describe("Redisinstance", func() {
 	var recorder *httptest.ResponseRecorder
 
@@ -76,7 +67,7 @@ var _ = Describe("Redisinstance", func() {
 
 	Context("Is Allocated Finder", func() {
 		It("it responds with a 200", func() {
-			handler := redisinstance.NewIsAllocatedHandler(fakeIsAllocatedChecker{})
+			handler := redisinstance.NewIsAllocatedHandler(fakeInstanceFinder{})
 
 			request, err := http.NewRequest("GET", "http://localhost/is_allocated?host=1.2.3.4", nil)
 			Expect(err).NotTo(HaveOccurred())
@@ -86,7 +77,7 @@ var _ = Describe("Redisinstance", func() {
 		})
 
 		It("it responds with true if instance is allocated", func() {
-			handler := redisinstance.NewIsAllocatedHandler(fakeIsAllocatedChecker{})
+			handler := redisinstance.NewIsAllocatedHandler(fakeInstanceFinder{})
 
 			request, err := http.NewRequest("GET", "http://localhost/is_allocated?host=1.2.3.4", nil)
 			Expect(err).NotTo(HaveOccurred())
@@ -96,7 +87,7 @@ var _ = Describe("Redisinstance", func() {
 		})
 
 		It("it responds with false if instance is not allocated", func() {
-			handler := redisinstance.NewIsAllocatedHandler(fakeIsAllocatedChecker{})
+			handler := redisinstance.NewIsAllocatedHandler(fakeInstanceFinder{})
 
 			request, err := http.NewRequest("GET", "http://localhost/is_allocated?host=unknown_host", nil)
 			Expect(err).NotTo(HaveOccurred())
