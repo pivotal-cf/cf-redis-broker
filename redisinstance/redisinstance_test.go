@@ -22,6 +22,15 @@ func (finder fakeInstanceFinder) IDForHost(host string) string {
 	}[host]
 }
 
+type fakeIsAllocatedChecker struct{}
+
+func (fakeIsAllocatedChecker) IsAllocated(host string) bool {
+	if host == "1.2.3.4" {
+		return true
+	}
+	return false
+}
+
 var _ = Describe("Redisinstance", func() {
 	var recorder *httptest.ResponseRecorder
 
@@ -29,40 +38,87 @@ var _ = Describe("Redisinstance", func() {
 		recorder = httptest.NewRecorder()
 	})
 
-	It("it responds with a 200", func() {
-		handler := redisinstance.NewHandler(fakeInstanceFinder{})
+	Context("Instance Finder", func() {
+		It("it responds with a 200", func() {
+			handler := redisinstance.NewHandler(fakeInstanceFinder{})
 
-		request, err := http.NewRequest("GET", "http://localhost/instances?host=1.2.3.4", nil)
-		Expect(err).NotTo(HaveOccurred())
-		handler.ServeHTTP(recorder, request)
+			request, err := http.NewRequest("GET", "http://localhost/instances?host=1.2.3.4", nil)
+			Expect(err).NotTo(HaveOccurred())
+			handler.ServeHTTP(recorder, request)
 
-		Expect(recorder.Code).To(Equal(http.StatusOK))
+			Expect(recorder.Code).To(Equal(http.StatusOK))
+		})
+
+		It("returns the correct instance id for the host provided", func() {
+			handler := redisinstance.NewHandler(fakeInstanceFinder{})
+
+			request, err := http.NewRequest("GET", "http://localhost/instances?host=1.2.3.4", nil)
+			Expect(err).NotTo(HaveOccurred())
+			handler.ServeHTTP(recorder, request)
+
+			Expect(readInstanceIDFrom(recorder.Body)).To(Equal("1_2_3_4"))
+		})
+
+		It("returns a not found in case the host is not allocated", func() {
+			handler := redisinstance.NewHandler(fakeInstanceFinder{})
+
+			request, err := http.NewRequest("GET", "http://localhost/instances?host=unknown.host", nil)
+			Expect(err).NotTo(HaveOccurred())
+			handler.ServeHTTP(recorder, request)
+
+			Expect(recorder.Code).To(Equal(http.StatusNotFound))
+
+			bytes, err := ioutil.ReadAll(recorder.Body)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(string(bytes)).To(Equal("\n"))
+		})
 	})
 
-	It("returns the correct instance id for the host provided", func() {
-		handler := redisinstance.NewHandler(fakeInstanceFinder{})
+	Context("Is Allocated Finder", func() {
+		It("it responds with a 200", func() {
+			handler := redisinstance.NewIsAllocatedHandler(fakeIsAllocatedChecker{})
 
-		request, err := http.NewRequest("GET", "http://localhost/instances?host=1.2.3.4", nil)
-		Expect(err).NotTo(HaveOccurred())
-		handler.ServeHTTP(recorder, request)
+			request, err := http.NewRequest("GET", "http://localhost/is_allocated?host=1.2.3.4", nil)
+			Expect(err).NotTo(HaveOccurred())
+			handler.ServeHTTP(recorder, request)
 
-		Expect(readInstanceIDFrom(recorder.Body)).To(Equal("1_2_3_4"))
-	})
+			Expect(recorder.Code).To(Equal(http.StatusOK))
+		})
 
-	It("returns a not found in case the host is not allocated", func() {
-		handler := redisinstance.NewHandler(fakeInstanceFinder{})
+		It("it responds with true if instance is allocated", func() {
+			handler := redisinstance.NewIsAllocatedHandler(fakeIsAllocatedChecker{})
 
-		request, err := http.NewRequest("GET", "http://localhost/instances?host=unknown.host", nil)
-		Expect(err).NotTo(HaveOccurred())
-		handler.ServeHTTP(recorder, request)
+			request, err := http.NewRequest("GET", "http://localhost/is_allocated?host=1.2.3.4", nil)
+			Expect(err).NotTo(HaveOccurred())
+			handler.ServeHTTP(recorder, request)
 
-		Expect(recorder.Code).To(Equal(http.StatusNotFound))
+			Expect(readIsAllocated(recorder.Body)).To(BeTrue())
+		})
 
-		bytes, err := ioutil.ReadAll(recorder.Body)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(string(bytes)).To(Equal("\n"))
+		It("it responds with false if instance is not allocated", func() {
+			handler := redisinstance.NewIsAllocatedHandler(fakeIsAllocatedChecker{})
+
+			request, err := http.NewRequest("GET", "http://localhost/is_allocated?host=unknown_host", nil)
+			Expect(err).NotTo(HaveOccurred())
+			handler.ServeHTTP(recorder, request)
+
+			Expect(readIsAllocated(recorder.Body)).To(BeFalse())
+		})
 	})
 })
+
+func readIsAllocated(body *bytes.Buffer) bool {
+	parsedBody := struct {
+		IsAllocated bool `json:"is_allocated"`
+	}{}
+
+	bytes, err := ioutil.ReadAll(body)
+	Expect(err).NotTo(HaveOccurred())
+	err = json.Unmarshal(bytes, &parsedBody)
+	Expect(err).ToNot(HaveOccurred())
+
+	return parsedBody.IsAllocated
+}
 
 func readInstanceIDFrom(body *bytes.Buffer) string {
 	parsedBody := struct {

@@ -1,9 +1,16 @@
 package redisinstance
 
-import "net/http"
+import (
+	"fmt"
+	"net/http"
+)
 
 type InstanceIDFinder interface {
 	IDForHost(string) string
+}
+
+type IsAllocatedChecker interface {
+	IsAllocated(string) bool
 }
 
 func NewHandler(instanceIDFinder InstanceIDFinder) http.HandlerFunc {
@@ -17,5 +24,13 @@ func NewHandler(instanceIDFinder InstanceIDFinder) http.HandlerFunc {
 		}
 
 		res.Write([]byte(`{"instance_id":"` + instanceID + `"}`))
+	}
+}
+
+func NewIsAllocatedHandler(isAllocatedChecker IsAllocatedChecker) http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		isAllocated := isAllocatedChecker.IsAllocated(req.URL.Query()["host"][0])
+
+		res.Write([]byte(fmt.Sprintf(`{"is_allocated": %t}`, isAllocated)))
 	}
 }
