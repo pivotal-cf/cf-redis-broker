@@ -88,8 +88,10 @@ func main() {
 	authWrapper := auth.NewWrapper(brokerCredentials.Username, brokerCredentials.Password)
 	debugHandler := authWrapper.WrapFunc(debug.NewHandler(remoteRepo))
 	instanceHandler := authWrapper.WrapFunc(redisinstance.NewHandler(remoteRepo))
+	isAllocatedHandler := authWrapper.WrapFunc(redisinstance.NewIsAllocatedHandler(remoteRepo))
 
 	http.HandleFunc("/instance", instanceHandler)
+	http.HandleFunc("/is_allocated", isAllocatedHandler)
 	http.HandleFunc("/debug", debugHandler)
 	http.Handle("/", brokerAPI)
 

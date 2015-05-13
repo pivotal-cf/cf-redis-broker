@@ -27,6 +27,6 @@ func NewIsAllocatedHandler(instanceIDFinder InstanceIDFinder) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		instanceID := instanceIDFinder.IDForHost(req.URL.Query()["host"][0])
 
-		res.Write([]byte(fmt.Sprintf(`{"is_allocated": %t}`, instanceID != "")))
+		res.Write([]byte(fmt.Sprintf(`{"is_allocated":%t}`, instanceID != "")))
 	}
 }

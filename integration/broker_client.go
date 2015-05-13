@@ -71,6 +71,14 @@ func (brokerClient *BrokerClient) InstanceIDFromHost(host string) (int, []byte) 
 	return brokerClient.executeAuthenticatedRequest("GET", brokerClient.instanceIDFromHostURI(host))
 }
 
+func (brokerClient *BrokerClient) IsAllocated(host string) (int, []byte) {
+	return brokerClient.executeAuthenticatedRequest("GET", brokerClient.isAllocatedURI(host))
+}
+
 func (brokerClient *BrokerClient) instanceIDFromHostURI(host string) string {
 	return fmt.Sprintf("http://localhost:3000/instance?host=%s", host)
+}
+
+func (brokerClient *BrokerClient) isAllocatedURI(host string) string {
+	return fmt.Sprintf("http://localhost:3000/is_allocated?host=%s", host)
 }

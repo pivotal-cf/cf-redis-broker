@@ -9,35 +9,62 @@ import (
 )
 
 var _ = Describe("Finding Instance IDs for Hosts", func() {
-	Context("when an instance is provisioned", func() {
-		AfterEach(func() {
-			status, _ := brokerClient.DeprovisionInstance("SOME-GUID")
-			Ω(status).Should(Equal(200))
+	Context("Find Instance for Host", func() {
+		Context("when an instance is provisioned", func() {
+			AfterEach(func() {
+				status, _ := brokerClient.DeprovisionInstance("SOME-GUID")
+				Ω(status).Should(Equal(200))
+			})
+
+			It("returns the instance ID from the host", func() {
+				instanceID := "SOME-GUID"
+				brokerClient.ProvisionInstance(instanceID, "dedicated")
+				_, bindingResponse := brokerClient.BindInstance(instanceID, "someBindingID")
+				host := getHostFrom(bindingResponse)
+
+				code, body := brokerClient.InstanceIDFromHost(host)
+
+				Ω(code).Should(Equal(200))
+				Ω(string(body)).Should(Equal(`{"instance_id":"SOME-GUID"}`))
+			})
 		})
 
-		It("returns the instance ID from the host", func() {
-			instanceID := "SOME-GUID"
-			brokerClient.ProvisionInstance(instanceID, "dedicated")
-			_, bindingResponse := brokerClient.BindInstance(instanceID, "someBindingID")
-			host := getHostFrom(bindingResponse)
+		Context("when basic auth credentials are incorrect", func() {
+			It("returns 401 Unauthorized", func() {
+				code, _ := executeHTTPRequest("GET", "http://localhost:3000/instance?host=foo")
+				Ω(code).Should(Equal(http.StatusUnauthorized))
+			})
 
-			code, body := brokerClient.InstanceIDFromHost(host)
-
-			Ω(code).Should(Equal(200))
-			Ω(string(body)).Should(Equal(`{"instance_id":"SOME-GUID"}`))
+			It("does not return the debug information", func() {
+				_, bodyBytes := executeHTTPRequest("GET", "http://localhost:3000/instance?host=foo")
+				body := string(bodyBytes)
+				Ω(body).Should(Equal("Not Authorized\n"))
+			})
 		})
 	})
 
-	Context("when basic auth credentials are incorrect", func() {
-		It("returns 401 Unauthorized", func() {
-			code, _ := executeHTTPRequest("GET", "http://localhost:3000/instance?host=foo")
-			Ω(code).Should(Equal(http.StatusUnauthorized))
+	Context("Find if host is allocated", func() {
+		Context("when an instance is provisioned", func() {
+			FIt("returns true", func() {
+				instanceID := "SOME-GUID"
+				brokerClient.ProvisionInstance(instanceID, "dedicated")
+				_, bindingResponse := brokerClient.BindInstance(instanceID, "someBindingID")
+				host := getHostFrom(bindingResponse)
+
+				code, body := brokerClient.IsAllocated(host)
+
+				Ω(code).Should(Equal(200))
+				Ω(string(body)).Should(Equal(`{"is_allocated":true}`))
+			})
 		})
 
-		It("does not return the debug information", func() {
-			_, bodyBytes := executeHTTPRequest("GET", "http://localhost:3000/instance?host=foo")
-			body := string(bodyBytes)
-			Ω(body).Should(Equal("Not Authorized\n"))
+		Context("when an instance is not provisioned", func() {
+			FIt("returns false", func() {
+				code, body := brokerClient.IsAllocated("Unkown_host")
+
+				Ω(code).Should(Equal(200))
+				Ω(string(body)).Should(Equal(`{"is_allocated":false}`))
+			})
 		})
 	})
 })
