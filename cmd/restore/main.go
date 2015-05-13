@@ -209,6 +209,19 @@ func main() {
 
 		time.Sleep(time.Millisecond * aofRewriteInProgressCheckIntervalMilliseconds)
 	}
+
+	aofRewriteStatus, err := client.InfoField("aof_last_bgrewrite_status")
+	if err != nil {
+		logger.Fatal("getting-aof-write-status", err)
+	}
+
+	if aofRewriteStatus != "ok" {
+		logger.Fatal(
+			"verifying-aof-write-status",
+			fmt.Errorf("Invalid AOF write status: %s", aofRewriteStatus),
+		)
+	}
+
 	finishStep("OK")
 
 	startStep("Stopping Redis")
