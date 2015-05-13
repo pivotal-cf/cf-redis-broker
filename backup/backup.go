@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"code.google.com/p/go-uuid/uuid"
+
 	"github.com/pivotal-cf/cf-redis-broker/backup/s3bucket"
 	"github.com/pivotal-cf/cf-redis-broker/backupconfig"
 	"github.com/pivotal-cf/cf-redis-broker/log"
@@ -54,18 +56,67 @@ func (backup Backup) Create(instancePath, dataSubDir, instanceID, planName strin
 		return nil
 	}
 
-	bucket, err := backup.getOrCreateBucket()
-	if err != nil {
+	// rename dump.rdb
+	tempRdbPath := filepath.Join(instancePath, dataSubDir, uuid.New())
+	if err := os.Rename(rdbFilePath, tempRdbPath); err != nil {
 		log.Logger().Error("backup", err, lager.Data{
-			"event": "get_or_create_backup",
+			"event":    "dump_rename",
+			"old_path": rdbFilePath,
+			"new_path": tempRdbPath,
 		})
 		return err
 	}
 
-	defer log.Logger().Info("backup", lager.Data{
+	bucket, err := backup.getOrCreateBucket()
+	if err != nil {
+		log.Logger().Error("backup", err, lager.Data{
+			"event": "get_or_create_bucket",
+		})
+		return err
+	}
+
+	err = backup.uploadToS3(instanceID, planName, tempRdbPath, timestamp, bucket)
+	if err != nil {
+		log.Logger().Error("backup", err, lager.Data{
+			"event":      "upload_to_s3",
+			"bucket":     bucket,
+			"local_path": tempRdbPath,
+			"timestamp":  timestamp,
+			"plan_name":  planName,
+			"instanceID": instanceID,
+		})
+		return err
+	}
+
+	// move rdb back or delete
+	cleanup(tempRdbPath, rdbFilePath)
+
+	log.Logger().Info("backup", lager.Data{
 		"event": "backup_create_done",
 	})
-	return backup.uploadToS3(instanceID, planName, rdbFilePath, timestamp, bucket)
+
+	return nil
+}
+
+func cleanup(tempRdbPath, rdbPath string) {
+	if !fileExists(rdbPath) {
+		if err := os.Rename(tempRdbPath, rdbPath); err != nil {
+			log.Logger().Error("backup", err, lager.Data{
+				"event":    "rdb_rename",
+				"old_path": tempRdbPath,
+				"new_path": rdbPath,
+			})
+		}
+	}
+
+	if fileExists(tempRdbPath) {
+		if err := os.Remove(tempRdbPath); err != nil {
+			log.Logger().Error("backup", err, lager.Data{
+				"event": "remove_temp_rdb",
+				"path":  tempRdbPath,
+			})
+		}
+	}
 }
 
 func (backup Backup) getOrCreateBucket() (s3bucket.Bucket, error) {

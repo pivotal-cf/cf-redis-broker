@@ -113,7 +113,7 @@ var _ = Describe("backups", func() {
 			It("uploads redis instance RDB file to the correct S3 bucket", func() {
 				timestamp := getCurrentTimestamp()
 				_, cliCommand := runBackupWithConfig(backupExecutablePath, backupConfigPath)
-				Expect(cliCommand).To(Equal(cliParams(*backupConfig, bucket.Name, timestamp, instanceID, "dedicated-vm", s3TestServer.URL())))
+				Expect(cliCommand).To(MatchRegexp(cliParams(*backupConfig, bucket.Name, timestamp, instanceID, "dedicated-vm", s3TestServer.URL())))
 			})
 
 			It("creates the bucket if it does not exist", func() {
@@ -195,7 +195,7 @@ var _ = Describe("backups", func() {
 					timestamp := getCurrentTimestamp()
 					_, cliCommand := runBackupWithConfig(backupExecutablePath, backupConfigPath)
 					for _, instanceID := range instanceIDs {
-						Expect(cliCommand).To(ContainSubstring(cliParams(*backupConfig, bucket.Name, timestamp, instanceID, "shared-vm", s3TestServer.URL())))
+						Expect(cliCommand).To(MatchRegexp(cliParams(*backupConfig, bucket.Name, timestamp, instanceID, "shared-vm", s3TestServer.URL())))
 					}
 				})
 
@@ -234,7 +234,7 @@ var _ = Describe("backups", func() {
 					backupExitStatusCode := backupSession.ExitCode()
 					Ω(backupExitStatusCode).Should(Equal(1))
 
-					Expect(cliCommand).To(ContainSubstring(cliParams(*backupConfig, bucket.Name, timestamp, instanceIDs[1], "shared-vm", s3TestServer.URL())))
+					Expect(cliCommand).To(MatchRegexp(cliParams(*backupConfig, bucket.Name, timestamp, instanceIDs[1], "shared-vm", s3TestServer.URL())))
 				})
 			})
 		})
@@ -242,9 +242,9 @@ var _ = Describe("backups", func() {
 })
 
 func cliParams(backupConfig backupconfig.Config, bucketName, timestamp, instanceID, planName, endpointUrl string) string {
-	filePath := path.Join(backupConfig.RedisDataDirectory, "dump.rdb")
+	filePath := path.Join(backupConfig.RedisDataDirectory, "[a-z0-9\\-]+")
 	if planName == "shared-vm" {
-		filePath = path.Join(backupConfig.RedisDataDirectory, instanceID, "db", "dump.rdb")
+		filePath = path.Join(backupConfig.RedisDataDirectory, instanceID, "db", "[a-z0-9\\-]+")
 	}
 
 	args := []string{

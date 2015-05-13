@@ -66,7 +66,8 @@ func (client *Client) CreateSnapshot(timeoutInSeconds int) error {
 		return err
 	}
 
-	client.waitForUniqueSnapshotTime()
+	// sleep for a second to ensure unique timestamp for bgsave
+	time.Sleep(time.Second)
 
 	err = client.runBGSave()
 	if err != nil {
@@ -124,10 +125,6 @@ func (client *Client) InfoField(fieldName string) (string, error) {
 	}
 
 	return value, nil
-}
-
-func (client *Client) waitForUniqueSnapshotTime() {
-	time.Sleep(time.Second)
 }
 
 func (client *Client) waitForNewSaveSince(lastSaveTime int64, timeoutInSeconds int) error {
