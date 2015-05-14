@@ -67,6 +67,9 @@ func (backup Backup) Create(instancePath, dataSubDir, instanceID, planName strin
 		return err
 	}
 
+	// move rdb back or delete
+	defer cleanup(tempRdbPath, rdbFilePath)
+
 	bucket, err := backup.getOrCreateBucket()
 	if err != nil {
 		log.Logger().Error("backup", err, lager.Data{
@@ -87,9 +90,6 @@ func (backup Backup) Create(instancePath, dataSubDir, instanceID, planName strin
 		})
 		return err
 	}
-
-	// move rdb back or delete
-	cleanup(tempRdbPath, rdbFilePath)
 
 	log.Logger().Info("backup", lager.Data{
 		"event": "backup_create_done",
