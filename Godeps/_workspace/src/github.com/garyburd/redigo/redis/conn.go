@@ -53,27 +53,54 @@ type conn struct {
 
 // Dial connects to the Redis server at the given network and address.
 func Dial(network, address string) (Conn, error) {
-	c, err := net.Dial(network, address)
-	if err != nil {
-		return nil, err
-	}
-	return NewConn(c, 0, 0), nil
+	dialer := xDialer{}
+	return dialer.Dial(network, address)
 }
 
 // DialTimeout acts like Dial but takes timeouts for establishing the
 // connection to the server, writing a command and reading a reply.
 func DialTimeout(network, address string, connectTimeout, readTimeout, writeTimeout time.Duration) (Conn, error) {
-	var c net.Conn
-	var err error
-	if connectTimeout > 0 {
-		c, err = net.DialTimeout(network, address, connectTimeout)
-	} else {
-		c, err = net.Dial(network, address)
+	netDialer := net.Dialer{Timeout: connectTimeout}
+	dialer := xDialer{
+		NetDial:      netDialer.Dial,
+		ReadTimeout:  readTimeout,
+		WriteTimeout: writeTimeout,
 	}
+	return dialer.Dial(network, address)
+}
+
+// A Dialer specifies options for connecting to a Redis server.
+type xDialer struct {
+	// NetDial specifies the dial function for creating TCP connections. If
+	// NetDial is nil, then net.Dial is used.
+	NetDial func(network, addr string) (net.Conn, error)
+
+	// ReadTimeout specifies the timeout for reading a single command
+	// reply. If ReadTimeout is zero, then no timeout is used.
+	ReadTimeout time.Duration
+
+	// WriteTimeout specifies the timeout for writing a single command.  If
+	// WriteTimeout is zero, then no timeout is used.
+	WriteTimeout time.Duration
+}
+
+// Dial connects to the Redis server at address on the named network.
+func (d *xDialer) Dial(network, address string) (Conn, error) {
+	dial := d.NetDial
+	if dial == nil {
+		dial = net.Dial
+	}
+	netConn, err := dial(network, address)
 	if err != nil {
 		return nil, err
 	}
-	return NewConn(c, readTimeout, writeTimeout), nil
+	return &conn{
+		conn:         netConn,
+		bw:           bufio.NewWriter(netConn),
+		br:           bufio.NewReader(netConn),
+		readTimeout:  d.ReadTimeout,
+		writeTimeout: d.WriteTimeout,
+	}, nil
 }
 
 // NewConn returns a new Redigo connection for the given net connection.
@@ -191,17 +218,23 @@ func (c *conn) writeCommand(cmd string, args []interface{}) (err error) {
 	return err
 }
 
+type protocolError string
+
+func (pe protocolError) Error() string {
+	return fmt.Sprintf("redigo: %s (possible server error or unsupported concurrent read by application)", string(pe))
+}
+
 func (c *conn) readLine() ([]byte, error) {
 	p, err := c.br.ReadSlice('\n')
 	if err == bufio.ErrBufferFull {
-		return nil, errors.New("redigo: long response line")
+		return nil, protocolError("long response line")
 	}
 	if err != nil {
 		return nil, err
 	}
 	i := len(p) - 2
 	if i < 0 || p[i] != '\r' {
-		return nil, errors.New("redigo: bad response line terminator")
+		return nil, protocolError("bad response line terminator")
 	}
 	return p[:i], nil
 }
@@ -209,7 +242,7 @@ func (c *conn) readLine() ([]byte, error) {
 // parseLen parses bulk string and array lengths.
 func parseLen(p []byte) (int, error) {
 	if len(p) == 0 {
-		return -1, errors.New("redigo: malformed length")
+		return -1, protocolError("malformed length")
 	}
 
 	if p[0] == '-' && len(p) == 2 && p[1] == '1' {
@@ -221,7 +254,7 @@ func parseLen(p []byte) (int, error) {
 	for _, b := range p {
 		n *= 10
 		if b < '0' || b > '9' {
-			return -1, errors.New("redigo: illegal bytes in length")
+			return -1, protocolError("illegal bytes in length")
 		}
 		n += int(b - '0')
 	}
@@ -232,7 +265,7 @@ func parseLen(p []byte) (int, error) {
 // parseInt parses an integer reply.
 func parseInt(p []byte) (interface{}, error) {
 	if len(p) == 0 {
-		return 0, errors.New("redigo: malformed integer")
+		return 0, protocolError("malformed integer")
 	}
 
 	var negate bool
@@ -240,7 +273,7 @@ func parseInt(p []byte) (interface{}, error) {
 		negate = true
 		p = p[1:]
 		if len(p) == 0 {
-			return 0, errors.New("redigo: malformed integer")
+			return 0, protocolError("malformed integer")
 		}
 	}
 
@@ -248,7 +281,7 @@ func parseInt(p []byte) (interface{}, error) {
 	for _, b := range p {
 		n *= 10
 		if b < '0' || b > '9' {
-			return 0, errors.New("redigo: illegal bytes in length")
+			return 0, protocolError("illegal bytes in length")
 		}
 		n += int64(b - '0')
 	}
@@ -270,7 +303,7 @@ func (c *conn) readReply() (interface{}, error) {
 		return nil, err
 	}
 	if len(line) == 0 {
-		return nil, errors.New("redigo: short response line")
+		return nil, protocolError("short response line")
 	}
 	switch line[0] {
 	case '+':
@@ -301,7 +334,7 @@ func (c *conn) readReply() (interface{}, error) {
 		if line, err := c.readLine(); err != nil {
 			return nil, err
 		} else if len(line) != 0 {
-			return nil, errors.New("redigo: bad bulk string format")
+			return nil, protocolError("bad bulk string format")
 		}
 		return p, nil
 	case '*':
@@ -318,7 +351,7 @@ func (c *conn) readReply() (interface{}, error) {
 		}
 		return r, nil
 	}
-	return nil, errors.New("redigo: unexpected response line")
+	return nil, protocolError("unexpected response line")
 }
 
 func (c *conn) Send(cmd string, args ...interface{}) error {

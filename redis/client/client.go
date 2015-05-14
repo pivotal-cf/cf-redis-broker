@@ -144,6 +144,22 @@ func (client *Client) waitForNewSaveSince(lastSaveTime int64, timeoutInSeconds i
 	return errors.New("Timed out waiting for background save to complete")
 }
 
+func (client *Client) GetConfig(key string) (string, error) {
+	configCommand := client.conf.CommandAlias("CONFIG")
+
+	output, err := redisclient.StringMap(client.connection.Do(configCommand, "GET", key))
+	if err != nil {
+		return "", err
+	}
+
+	value, found := output[key]
+	if !found {
+		return "", fmt.Errorf("Key '%s' not found", key)
+	}
+
+	return value, nil
+}
+
 func (client *Client) setConfig(key string, value string) error {
 	configCommand := client.conf.CommandAlias("CONFIG")
 

@@ -1,6 +1,8 @@
 package client_test
 
 import (
+	"io/ioutil"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pivotal-cf/cf-redis-broker/integration"
@@ -13,6 +15,7 @@ import (
 var host = "localhost"
 var port = "6480"
 var password = ""
+var pidFilePath string
 
 var _ = Describe("Client", func() {
 	var redisArgs []string
@@ -20,11 +23,15 @@ var _ = Describe("Client", func() {
 	var conf redisconf.Conf
 
 	BeforeEach(func() {
+		pidFile, err := ioutil.TempFile("", "pid")
+		Ω(err).ShouldNot(HaveOccurred())
+		pidFilePath = pidFile.Name()
+
 		conf = redisconf.New(
 			redisconf.Param{Key: "port", Value: port},
 			redisconf.Param{Key: "requirepass", Value: password},
 		)
-		redisArgs = []string{"--port", port}
+		redisArgs = []string{"--port", port, "--pidfile", pidFilePath}
 	})
 
 	Describe("connecting to a redis server", func() {
@@ -145,6 +152,42 @@ var _ = Describe("Client", func() {
 					_, err = client.InfoField("made_up_field")
 					Ω(err).Should(MatchError("Unknown field: made_up_field"))
 				})
+			})
+		})
+	})
+
+	Describe(".GetConfig", func() {
+		var redisClient *client.Client
+
+		BeforeEach(func() {
+			redisRunner = &integration.RedisRunner{}
+			redisRunner.Start(redisArgs)
+
+			var err error
+			redisClient, err = client.Connect(host, conf)
+			Ω(err).ShouldNot(HaveOccurred())
+		})
+
+		AfterEach(func() {
+			redisRunner.Stop()
+		})
+
+		Context("for a valid key", func() {
+			It("returns the correct value", func() {
+				actual, err := redisClient.GetConfig("port")
+				Ω(err).ShouldNot(HaveOccurred())
+				Ω(actual).Should(Equal(port))
+
+				actual, err = redisClient.GetConfig("pidfile")
+				Ω(err).ShouldNot(HaveOccurred())
+				Ω(actual).Should(Equal(pidFilePath))
+			})
+		})
+
+		Context("for an invalid key", func() {
+			It("returns the an error", func() {
+				_, err := redisClient.GetConfig("foobar")
+				Ω(err).Should(MatchError("Key 'foobar' not found"))
 			})
 		})
 	})

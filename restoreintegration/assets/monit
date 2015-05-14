@@ -18,7 +18,7 @@ unless ARGV.length == 1 or ARGV.length == 2
 end
 
 action = ARGV.fetch(0)
-unless %w{stop start summary}.include? action
+unless %w{stop start summary unmonitor}.include? action
   fail("Unknown action: #{action}. Must be `start`, `stop` or `summary`.")
 end
 
@@ -53,6 +53,8 @@ elsif action == "stop"
   if ARGV.fetch(1) == "redis"
     system 'pkill redis-server'
   end
+elsif action == "unmonitor"
+  log "unmonitoring #{ARGV.fetch(1)}"
 elsif action == "summary"
 
   # search log file for last instance of stopping or starting process

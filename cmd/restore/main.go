@@ -22,7 +22,6 @@ import (
 	"github.com/pivotal-golang/lager"
 )
 
-const pidFileName = "redis-server.pid"
 const aofRewriteInProgressCheckIntervalMilliseconds = 100
 const monitStatusCheckIntervalMilliseconds = 100
 const monitProcessRunningTimeoutMilliseconds = 20000
@@ -117,12 +116,14 @@ func main() {
 		finishStep("OK")
 	}
 
+	processKiller := &process.ProcessKiller{}
+
 	processController := &redis.OSProcessController{
 		CommandRunner:             commandRunner,
 		InstanceInformer:          &config,
 		Logger:                    logger,
 		ProcessChecker:            &process.ProcessChecker{},
-		ProcessKiller:             &process.ProcessKiller{},
+		ProcessKiller:             processKiller,
 		WaitUntilConnectableFunc:  availability.Check,
 		RedisServerExecutablePath: config.RedisServerExecutablePath,
 	}
@@ -133,7 +134,9 @@ func main() {
 
 	startStep("Stopping Redis")
 	if config.DedicatedInstance {
-		err = stopViaMonit(monitExecutablePath, "redis")
+		if err = unmonit(monitExecutablePath, "redis"); err == nil {
+			err = processKiller.KillProvidedPID(redisPIDProvider(instanceDirPath))
+		}
 	} else {
 		err = processController.Kill(instance)
 	}
@@ -257,6 +260,26 @@ func main() {
 	fmt.Println("Restore completed successfully")
 }
 
+func redisPIDProvider(instancePath string) process.PIDProvider {
+	return func() (int, error) {
+		instanceConf, err := redisconf.Load(path.Join(instancePath, "redis.conf"))
+		if err != nil {
+			return 0, err
+		}
+
+		client, err := client.Connect("localhost", instanceConf)
+		if err != nil {
+			return 0, err
+		}
+
+		pidfile, err := client.GetConfig("pidfile")
+		if err != nil {
+			return 0, err
+		}
+		return process.ReadPID(pidfile)
+	}
+}
+
 func chownAof(user, aofPath string) error {
 	// eg /usr/bin/chown vcap:vcap /tmp/aof.aof
 	cmd := exec.Command("chown", fmt.Sprintf("%s:%s", user, user), aofPath)
@@ -279,6 +302,11 @@ func startViaMonit(monitExecutablePath, processName string) error {
 	}
 
 	return nil
+}
+
+func unmonit(monitExecutablePath, processName string) error {
+	_, err := monit(monitExecutablePath, []string{"unmonitor", processName})
+	return err
 }
 
 func stopViaMonit(monitExecutablePath, processName string) error {

@@ -20,8 +20,12 @@
 			"Rev": "3ed7c74352dae6dc00bdc8c74045375352e3ec05"
 		},
 		{
+			"ImportPath": "github.com/garyburd/redigo/internal",
+			"Rev": "535138d7bcd717d6531c701ef5933d98b1866257"
+		},
+		{
 			"ImportPath": "github.com/garyburd/redigo/redis",
-			"Rev": "917dc959b1d73370434f1f2339ca86a67e551ebb"
+			"Rev": "535138d7bcd717d6531c701ef5933d98b1866257"
 		},
 		{
 			"ImportPath": "github.com/gorilla/context",

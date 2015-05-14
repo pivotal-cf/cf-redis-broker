@@ -201,7 +201,7 @@ var _ = Describe("restore", func() {
 			Expect(string(monitLogBytes)).ToNot(ContainSubstring("starting process-watcher"))
 		})
 
-		It("stops and then start the redis-server via monit", func() {
+		It("it tells monit to unmonitor redis", func() {
 			session, err := gexec.Start(restoreCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -210,7 +210,18 @@ var _ = Describe("restore", func() {
 			monitLogBytes, err := ioutil.ReadFile(monitLogFile)
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(string(monitLogBytes)).To(ContainSubstring("stopping redis"))
+			Expect(string(monitLogBytes)).To(ContainSubstring("unmonitoring redis"))
+		})
+
+		It("it tells monit to start redis", func() {
+			session, err := gexec.Start(restoreCommand, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+
+			Eventually(session, "20s").Should(gexec.Exit(0))
+
+			monitLogBytes, err := ioutil.ReadFile(monitLogFile)
+			Expect(err).ToNot(HaveOccurred())
+
 			Expect(string(monitLogBytes)).To(ContainSubstring("starting redis"))
 		})
 
@@ -263,6 +274,13 @@ func startRedisSession(config restoreconfig.Config, instanceID, planName string)
 	}
 	os.MkdirAll(testDataDir, 0777)
 
+	err := ioutil.WriteFile(
+		filepath.Join(testInstanceDir, "redis.conf"),
+		[]byte("port 6379"),
+		os.ModePerm,
+	)
+	Expect(err).ToNot(HaveOccurred())
+
 	pidfilePath := filepath.Join(testInstanceDir, "redis-server.pid")
 	redisCmd := exec.Command("redis-server",
 		"--dir", testInstanceDir,
@@ -270,7 +288,7 @@ func startRedisSession(config restoreconfig.Config, instanceID, planName string)
 		"--pidfile", pidfilePath,
 		"--daemonize", "yes",
 	)
-	var err error
+
 	redisSession, err = gexec.Start(redisCmd, GinkgoWriter, GinkgoWriter)
 	Expect(err).ToNot(HaveOccurred())
 
