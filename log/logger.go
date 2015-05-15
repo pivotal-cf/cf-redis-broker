@@ -1,7 +1,6 @@
 package log
 
 import (
-	"fmt"
 	"log"
 	"os"
 
@@ -9,42 +8,18 @@ import (
 	"github.com/pivotal-golang/lager"
 )
 
-type LoggerWithOutput struct {
-	lager.Logger
-}
+var logger lager.Logger
 
-var logger *LoggerWithOutput
-
-func Logger() LoggerWithOutput {
+func Logger() lager.Logger {
 	if logger == nil {
-		fmt.Println("Logger not initialized, initializing a new one")
-		newLager := lager.NewLogger("redis-broker")
-		logger = &LoggerWithOutput{newLager}
+		logger = lager.NewLogger("redis-broker")
 	}
-
-	return *logger
-}
-
-func (l LoggerWithOutput) Info(action string, data ...lager.Data) {
-	var outputData lager.Data
-	if len(data) > 0 {
-		outputData = data[0]
-	}
-
-	l.printToOutput(action, outputData)
-	l.Logger.Info(action, data...)
-}
-
-func (l LoggerWithOutput) printToOutput(action string, data lager.Data) {
-	if data != nil && data["event"] != nil {
-		fmt.Printf("%15s -> %s\n", action, data["event"])
-	}
+	return logger
 }
 
 func SetupLogger(config *backupconfig.Config) {
 	if logger == nil {
-		lagerLogger := initializeLagerLogger(config)
-		logger = &LoggerWithOutput{lagerLogger}
+		logger = initializeLagerLogger(config)
 	}
 }
 
@@ -55,5 +30,6 @@ func initializeLagerLogger(config *backupconfig.Config) lager.Logger {
 		log.Fatal("unable to open log file")
 	}
 	logger.RegisterSink(lager.NewWriterSink(logFile, lager.INFO))
+	logger.RegisterSink(NewCliSink(lager.INFO))
 	return logger
 }
