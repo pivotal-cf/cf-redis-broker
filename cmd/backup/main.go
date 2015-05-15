@@ -28,7 +28,12 @@ func main() {
 	})
 
 	if config.S3Configuration.BucketName == "" || config.S3Configuration.EndpointUrl == "" {
-		logger.Info("s3 credentials not configured")
+		logger.Info("backup_main", lager.Data{
+			"event": "no_s3_credentials",
+		})
+		logger.Info("backup_main", lager.Data{
+			"event": "skipping",
+		})
 		os.Exit(0)
 	}
 
@@ -61,14 +66,14 @@ func main() {
 		logBackupErrors(backupErrors, logger)
 
 		logger.Info("backup_main", lager.Data{
-			"event":     "Exiting",
+			"event":     "exiting",
 			"exit_code": 1,
 		})
 		os.Exit(1)
 	}
 
 	logger.Info("backup_main", lager.Data{
-		"event":     "Exiting",
+		"event":     "exiting",
 		"exit_code": 0,
 	})
 }
@@ -130,7 +135,8 @@ func backupSharedVMInstances(backupCreator *backup.Backup, instancesDir string) 
 
 func logBackupErrors(errors map[string]error, logger lager.Logger) {
 	for instanceID, err := range errors {
-		logger.Error("backup_failed", err, lager.Data{
+		logger.Error("backup_main", err, lager.Data{
+			"event":       fmt.Sprintf("failed [%s]", instanceID),
 			"instance_id": instanceID,
 		})
 	}

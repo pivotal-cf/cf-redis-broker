@@ -50,8 +50,12 @@ func (backup Backup) Create(instancePath, dataSubDir, instanceID, planName strin
 
 	rdbFilePath := filepath.Join(instancePath, dataSubDir, "dump.rdb")
 	if !fileExists(rdbFilePath) {
-		log.Logger().Info("dump.rdb not found, skipping instance backup", lager.Data{
-			"Local file": rdbFilePath,
+		log.Logger().Info("backup", lager.Data{
+			"event":      "no_rdb_dump_found",
+			"local_file": rdbFilePath,
+		})
+		log.Logger().Info("backup", lager.Data{
+			"event": "skipping",
 		})
 		return nil
 	}
@@ -169,9 +173,10 @@ func (backup Backup) uploadToS3(instanceID, planName, rdbFilePath string, timest
 		planName,
 	)
 
-	log.Logger().Info("Backing up instance", lager.Data{
-		"Local file":  rdbFilePath,
-		"Remote file": remotePath,
+	log.Logger().Info("s3", lager.Data{
+		"event":       "backup_instance",
+		"local_file":  rdbFilePath,
+		"remote_file": remotePath,
 	})
 
 	bucketPath := fmt.Sprintf("s3://%s%s", bucket.Name, remotePath)
@@ -192,9 +197,17 @@ func (backup Backup) uploadToS3(instanceID, planName, rdbFilePath string, timest
 		fmt.Sprintf("AWS_SECRET_ACCESS_KEY=%s", backup.Config.S3Configuration.SecretAccessKey),
 	)
 
-	log.Logger().Info(fmt.Sprintf("shelling out to aws cli to upload file %s to bucket %s", rdbFilePath, bucketPath))
+	log.Logger().Debug("s3", lager.Data{
+		"event":       "shell_out_to_aws_cli",
+		"rdb_file":    rdbFilePath,
+		"bucket_path": bucketPath,
+	})
+
 	output, err := cmd.CombinedOutput()
-	log.Logger().Info(string(output))
+	log.Logger().Debug("s3", lager.Data{
+		"event":      "cli_finished",
+		"cli_output": string(output),
+	})
 
 	log.Logger().Info("s3", lager.Data{
 		"event": "uploading_done",
