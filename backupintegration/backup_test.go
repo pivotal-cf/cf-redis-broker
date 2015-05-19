@@ -24,7 +24,6 @@ import (
 	"github.com/pivotal-cf/cf-redis-broker/integration"
 	"github.com/pivotal-cf/cf-redis-broker/integration/helpers"
 	"github.com/pivotal-cf/cf-redis-broker/redis/client"
-	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -292,11 +291,10 @@ func getLastSaveTime(instanceID string, configPath string) int64 {
 	json.Unmarshal(bindingBytes, &bindingResponse)
 	credentials := bindingResponse["credentials"].(map[string]interface{})
 
-	conf, err := redisconf.Load(configPath)
-	Ω(err).ShouldNot(HaveOccurred())
 	redisClient, err := client.Connect(
-		credentials["host"].(string),
-		conf,
+		client.Host(credentials["host"].(string)),
+		client.Port(int(credentials["port"].(float64))),
+		client.Password(credentials["password"].(string)),
 	)
 	Ω(err).ShouldNot(HaveOccurred())
 

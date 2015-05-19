@@ -92,25 +92,19 @@ var _ = Describe("redisconf", func() {
 
 		Context("when the command is aliased", func() {
 			It("returns the alias", func() {
-				Expect(conf.CommandAlias("CONFIG")).To(Equal("abc-def"))
+				Expect(conf.CommandAliases()["CONFIG"]).To(Equal("abc-def"))
 			})
 		})
 
 		Context("when the command is aliased with quotes", func() {
 			It("strips the quotes", func() {
-				Expect(conf.CommandAlias("SAVE")).To(Equal("123-345"))
-			})
-		})
-
-		Context("when the command is not alias", func() {
-			It("returns the original command", func() {
-				Expect(conf.CommandAlias("BGREWRITEAOF")).To(Equal("BGREWRITEAOF"))
+				Expect(conf.CommandAliases()["SAVE"]).To(Equal("123-345"))
 			})
 		})
 
 		Context("when the command is disabled", func() {
 			It("returns an empty string", func() {
-				Expect(conf.CommandAlias("BGSAVE")).To(Equal(""))
+				Expect(conf.CommandAliases()["BGSAVE"]).To(Equal(""))
 			})
 		})
 	})

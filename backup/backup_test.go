@@ -2,7 +2,6 @@ package backup
 
 import (
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -12,7 +11,6 @@ import (
 	"github.com/pivotal-cf/cf-redis-broker/backupconfig"
 	"github.com/pivotal-cf/cf-redis-broker/redis/client"
 	"github.com/pivotal-cf/cf-redis-broker/redis/client/fakes"
-	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 )
 
 var _ = Describe("backup", func() {
@@ -22,29 +20,21 @@ var _ = Describe("backup", func() {
 			snapshotErr     error
 			redisConfPath   string
 			redisClient     *fakes.Client
-			actualConfVal   string
-			expectedConfVal = "bar"
-			confKey         = "foo"
 		)
 
 		BeforeEach(func() {
 			numConnectCalls = 0
-			actualConfVal = ""
 
 			redisConf, err := ioutil.TempFile("", "redis")
 			Expect(err).ToNot(HaveOccurred())
 			redisConfPath = redisConf.Name()
 
-			_, err = redisConf.WriteString(fmt.Sprintf("%s %s", confKey, expectedConfVal))
-			Expect(err).ToNot(HaveOccurred())
-
 			err = redisConf.Close()
 			Expect(err).ToNot(HaveOccurred())
 
 			redisClient = &fakes.Client{}
-			redisConnect = func(hostname string, conf redisconf.Conf) (client.Client, error) {
+			redisConnect = func(options ...client.Option) (client.Client, error) {
 				numConnectCalls++
-				actualConfVal = conf.Get(confKey)
 				return redisClient, nil
 			}
 		})
@@ -60,10 +50,6 @@ var _ = Describe("backup", func() {
 
 		It("does not return an error", func() {
 			Expect(snapshotErr).ToNot(HaveOccurred())
-		})
-
-		It("loads redis config", func() {
-			Expect(actualConfVal).To(Equal(expectedConfVal))
 		})
 
 		It("connects to redis", func() {
@@ -89,7 +75,7 @@ var _ = Describe("backup", func() {
 			var expectErr = errors.New("failed to connect")
 
 			BeforeEach(func() {
-				redisConnect = func(hostname string, conf redisconf.Conf) (client.Client, error) {
+				redisConnect = func(options ...client.Option) (client.Client, error) {
 					return nil, expectErr
 				}
 			})

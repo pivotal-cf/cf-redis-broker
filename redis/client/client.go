@@ -12,22 +12,85 @@ import (
 	"github.com/pivotal-golang/lager"
 )
 
-func Connect(host string, conf redisconf.Conf) (Client, error) {
-	address := fmt.Sprintf("%v:%v", host, conf.Get("port"))
-	connection, err := redisclient.Dial("tcp", address)
+type client struct {
+	host     string
+	port     int
+	password string
+	aliases  map[string]string
+
+	connection redisclient.Conn
+}
+
+type Option func(*client)
+
+func Password(password string) Option {
+	return func(c *client) {
+		c.password = password
+	}
+}
+
+func Port(port int) Option {
+	return func(c *client) {
+		if port > 0 {
+			c.port = port
+		}
+	}
+}
+
+func Host(host string) Option {
+	return func(c *client) {
+		c.host = host
+	}
+}
+
+func CmdAliases(aliases map[string]string) Option {
+	return func(c *client) {
+		c.aliases = map[string]string{}
+		for cmd, alias := range aliases {
+			c.registerAlias(cmd, alias)
+		}
+	}
+}
+
+func (c *client) registerAlias(cmd, alias string) {
+	c.aliases[strings.ToUpper(cmd)] = alias
+}
+
+func (c *client) lookupAlias(cmd string) string {
+	alias, found := c.aliases[strings.ToUpper(cmd)]
+	if !found {
+		return cmd
+	}
+	return alias
+}
+
+func Connect(options ...Option) (Client, error) {
+	client := &client{
+		host:    "127.0.0.1",
+		port:    redisconf.DefaultPort,
+		aliases: map[string]string{},
+	}
+
+	for _, opt := range options {
+		opt(client)
+	}
+
+	address := fmt.Sprintf("%v:%v", client.host, client.port)
+
+	var err error
+	client.connection, err = redisclient.Dial("tcp", address)
 	if err != nil {
 		return nil, err
 	}
 
-	password := conf.Get("requirepass")
-	if password != "" {
-		if _, err := connection.Do("AUTH", password); err != nil {
-			connection.Close()
+	if client.password != "" {
+		if _, err := client.connection.Do("AUTH", client.password); err != nil {
+			client.connection.Close()
 			return nil, err
 		}
 	}
 
-	return &client{conf: conf, connection: connection}, err
+	return client, nil
 }
 
 type Client interface {
@@ -37,11 +100,6 @@ type Client interface {
 	LastRDBSaveTime() (int64, error)
 	InfoField(fieldName string) (string, error)
 	GetConfig(key string) (string, error)
-}
-
-type client struct {
-	conf       redisconf.Conf
-	connection redisclient.Conn
 }
 
 func (client *client) WaitUntilRedisNotLoading(timeoutMilliseconds int) error {
@@ -108,8 +166,7 @@ func (client *client) EnableAOF() error {
 }
 
 func (client *client) runBGSave() error {
-	bgSaveCommand := client.conf.CommandAlias("BGSAVE")
-	_, err := client.connection.Do(bgSaveCommand)
+	_, err := client.connection.Do(client.lookupAlias("BGSAVE"))
 	return err
 }
 
@@ -154,7 +211,7 @@ func (client *client) waitForNewSaveSince(lastSaveTime int64, timeoutInSeconds i
 }
 
 func (client *client) GetConfig(key string) (string, error) {
-	configCommand := client.conf.CommandAlias("CONFIG")
+	configCommand := client.lookupAlias("CONFIG")
 
 	output, err := redisclient.StringMap(client.connection.Do(configCommand, "GET", key))
 	if err != nil {
@@ -170,14 +227,14 @@ func (client *client) GetConfig(key string) (string, error) {
 }
 
 func (client *client) setConfig(key string, value string) error {
-	configCommand := client.conf.CommandAlias("CONFIG")
+	configCommand := client.lookupAlias("CONFIG")
 
 	_, err := client.connection.Do(configCommand, "SET", key, value)
 	return err
 }
 
 func (client *client) info() (map[string]string, error) {
-	infoCommand := client.conf.CommandAlias("INFO")
+	infoCommand := client.lookupAlias("INFO")
 
 	info := map[string]string{}
 

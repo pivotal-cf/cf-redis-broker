@@ -136,6 +136,7 @@ func (backup Backup) getOrCreateBucket() (s3bucket.Bucket, error) {
 var redisConnect = client.Connect
 
 func (backup Backup) createSnapshot(confPath string) error {
+	// todo: load instance conf further up teh stack
 	instanceConf, err := redisconf.Load(path.Join(confPath))
 	if err != nil {
 		log.Logger().Error("backup", err, lager.Data{
@@ -144,7 +145,13 @@ func (backup Backup) createSnapshot(confPath string) error {
 		return err
 	}
 
-	client, err := redisConnect("localhost", instanceConf)
+	client, err := redisConnect(
+		client.Host("localhost"),
+		client.Port(instanceConf.Port()),
+		client.Password(instanceConf.Password()),
+		client.CmdAliases(instanceConf.CommandAliases()),
+	)
+
 	if err != nil {
 		log.Logger().Error("backup", err, lager.Data{
 			"event": "backup_create_snapshot_connect",

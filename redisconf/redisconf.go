@@ -19,6 +19,10 @@ type Param struct {
 	Value string
 }
 
+const (
+	DefaultPort = 6379
+)
+
 type Conf []Param
 
 func New(params ...Param) Conf {
@@ -74,6 +78,18 @@ func decode(data []byte) (Conf, error) {
 	return conf, nil
 }
 
+func (conf Conf) Port() int {
+	port, err := strconv.Atoi(conf.Get("port"))
+	if err != nil {
+		return DefaultPort
+	}
+	return port
+}
+
+func (conf Conf) Password() string {
+	return conf.Get("requirepass")
+}
+
 func (conf Conf) Get(key string) string {
 	params := conf.getAll(key)
 	if len(params) < 1 {
@@ -101,24 +117,16 @@ func (conf Conf) getAll(key string) []Param {
 	return params
 }
 
-func (conf *Conf) CommandAlias(command string) string {
-	alias, ok := conf.commandMapping()[command]
-	if !ok {
-		return command
-	}
-	return alias
-}
-
-func (conf *Conf) commandMapping() map[string]string {
+func (conf *Conf) CommandAliases() map[string]string {
 	renamedCommands := conf.getAll("rename-command")
-	commandMapping := make(map[string]string)
+	commandAliases := make(map[string]string)
 	for _, param := range renamedCommands {
 		args := strings.Split(param.Value, " ")
 		original := args[0]
 		alias := strings.Replace(args[1], "\"", "", -1)
-		commandMapping[original] = alias
+		commandAliases[original] = alias
 	}
-	return commandMapping
+	return commandAliases
 }
 
 func (conf *Conf) Set(key string, value string) {
@@ -226,8 +234,4 @@ func (c *Conf) setRandomPassword() {
 
 func (c *Conf) setPassword(password string) {
 	c.Set("requirepass", password)
-}
-
-func (c *Conf) Password() string {
-	return c.Get("requirepass")
 }
