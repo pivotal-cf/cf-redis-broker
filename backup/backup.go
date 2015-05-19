@@ -29,7 +29,7 @@ const (
 )
 
 func (backup Backup) Create(instancePath, dataSubDir, instanceID, planName string) error {
-
+	redisConfPath := filepath.Join(instancePath, "redis.conf")
 	log.Logger().Info("backup", lager.Data{
 		"event":         "backup_create_starting",
 		"instance_path": instancePath,
@@ -38,10 +38,10 @@ func (backup Backup) Create(instancePath, dataSubDir, instanceID, planName strin
 		"plan_name":     planName,
 	})
 
-	if err := backup.createSnapshot(instancePath); err != nil {
+	if err := backup.createSnapshot(redisConfPath); err != nil {
 		log.Logger().Error("backup", err, lager.Data{
 			"event":         "backup_create",
-			"instance_path": instancePath,
+			"instance_path": redisConfPath,
 		})
 		return err
 	}
@@ -133,8 +133,10 @@ func (backup Backup) getOrCreateBucket() (s3bucket.Bucket, error) {
 	return s3Client.GetOrCreate(backup.Config.S3Configuration.BucketName)
 }
 
-func (backup Backup) createSnapshot(instancePath string) error {
-	instanceConf, err := redisconf.Load(path.Join(instancePath, "redis.conf"))
+var redisConnect = client.Connect
+
+func (backup Backup) createSnapshot(confPath string) error {
+	instanceConf, err := redisconf.Load(path.Join(confPath))
 	if err != nil {
 		log.Logger().Error("backup", err, lager.Data{
 			"event": "backup_create_snapshot_load",
@@ -142,7 +144,7 @@ func (backup Backup) createSnapshot(instancePath string) error {
 		return err
 	}
 
-	client, err := client.Connect("localhost", instanceConf)
+	client, err := redisConnect("localhost", instanceConf)
 	if err != nil {
 		log.Logger().Error("backup", err, lager.Data{
 			"event": "backup_create_snapshot_connect",

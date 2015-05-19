@@ -1,15 +1,115 @@
 package backup
 
 import (
+	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/pivotal-cf/cf-redis-broker/backupconfig"
+	"github.com/pivotal-cf/cf-redis-broker/redis/client"
+	"github.com/pivotal-cf/cf-redis-broker/redis/client/fakes"
+	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 )
 
 var _ = Describe("backup", func() {
+	Describe(".createSnapshot", func() {
+		var (
+			numConnectCalls int
+			snapshotErr     error
+			redisConfPath   string
+			redisClient     *fakes.Client
+			actualConfVal   string
+			expectedConfVal = "bar"
+			confKey         = "foo"
+		)
+
+		BeforeEach(func() {
+			numConnectCalls = 0
+			actualConfVal = ""
+
+			redisConf, err := ioutil.TempFile("", "redis")
+			Expect(err).ToNot(HaveOccurred())
+			redisConfPath = redisConf.Name()
+
+			_, err = redisConf.WriteString(fmt.Sprintf("%s %s", confKey, expectedConfVal))
+			Expect(err).ToNot(HaveOccurred())
+
+			err = redisConf.Close()
+			Expect(err).ToNot(HaveOccurred())
+
+			redisClient = &fakes.Client{}
+			redisConnect = func(hostname string, conf redisconf.Conf) (client.Client, error) {
+				numConnectCalls++
+				actualConfVal = conf.Get(confKey)
+				return redisClient, nil
+			}
+		})
+
+		JustBeforeEach(func() {
+			backup := Backup{
+				Config: &backupconfig.Config{
+					BGSaveTimeoutSeconds: 100,
+				},
+			}
+			snapshotErr = backup.createSnapshot(redisConfPath)
+		})
+
+		It("does not return an error", func() {
+			Expect(snapshotErr).ToNot(HaveOccurred())
+		})
+
+		It("loads redis config", func() {
+			Expect(actualConfVal).To(Equal(expectedConfVal))
+		})
+
+		It("connects to redis", func() {
+			Expect(numConnectCalls).To(Equal(1))
+		})
+
+		It("takes a snapshot", func() {
+			Expect(redisClient.CreateSnapshotCalls).To(Equal(1))
+		})
+
+		Context("redis config can not be found", func() {
+			BeforeEach(func() {
+				redisConfPath = "non-existent"
+			})
+
+			It("returns an error", func() {
+				Expect(snapshotErr).To(HaveOccurred())
+				Expect(snapshotErr.Error()).To(ContainSubstring("no such file"))
+			})
+		})
+
+		Context("an error occurs during redis connect", func() {
+			var expectErr = errors.New("failed to connect")
+
+			BeforeEach(func() {
+				redisConnect = func(hostname string, conf redisconf.Conf) (client.Client, error) {
+					return nil, expectErr
+				}
+			})
+
+			It("returns the error", func() {
+				Expect(snapshotErr).To(Equal(expectErr))
+			})
+		})
+
+		Context("an error occurs during redis snapshotting", func() {
+			var expectedErr = errors.New("snapshot error")
+			BeforeEach(func() {
+				redisClient.ExpectedCreateSnapshotErr = expectedErr
+			})
+
+			It("returns the error", func() {
+				Expect(snapshotErr).To(Equal(expectedErr))
+			})
+		})
+	})
 
 	Describe(".cleanup", func() {
 		var tempRdbFile *os.File

@@ -12,7 +12,7 @@ import (
 	"github.com/pivotal-golang/lager"
 )
 
-func Connect(host string, conf redisconf.Conf) (*Client, error) {
+func Connect(host string, conf redisconf.Conf) (Client, error) {
 	address := fmt.Sprintf("%v:%v", host, conf.Get("port"))
 	connection, err := redisclient.Dial("tcp", address)
 	if err != nil {
@@ -27,15 +27,24 @@ func Connect(host string, conf redisconf.Conf) (*Client, error) {
 		}
 	}
 
-	return &Client{conf: conf, connection: connection}, err
+	return &client{conf: conf, connection: connection}, err
 }
 
-type Client struct {
+type Client interface {
+	CreateSnapshot(int) error
+	WaitUntilRedisNotLoading(timeoutMilliseconds int) error
+	EnableAOF() error
+	LastRDBSaveTime() (int64, error)
+	InfoField(fieldName string) (string, error)
+	GetConfig(key string) (string, error)
+}
+
+type client struct {
 	conf       redisconf.Conf
 	connection redisclient.Conn
 }
 
-func (client *Client) WaitUntilRedisNotLoading(timeoutMilliseconds int) error {
+func (client *client) WaitUntilRedisNotLoading(timeoutMilliseconds int) error {
 	for i := 0; i < timeoutMilliseconds; i += 100 {
 		loading, err := client.InfoField("loading")
 		if err != nil {
@@ -52,7 +61,7 @@ func (client *Client) WaitUntilRedisNotLoading(timeoutMilliseconds int) error {
 	return nil
 }
 
-func (client *Client) CreateSnapshot(timeoutInSeconds int) error {
+func (client *client) CreateSnapshot(timeoutInSeconds int) error {
 	log.Logger().Info("redis_client", lager.Data{
 		"event":   "creating_snapshot",
 		"timeout": timeoutInSeconds,
@@ -94,17 +103,17 @@ func (client *Client) CreateSnapshot(timeoutInSeconds int) error {
 	return nil
 }
 
-func (client *Client) EnableAOF() error {
+func (client *client) EnableAOF() error {
 	return client.setConfig("appendonly", "yes")
 }
 
-func (client *Client) runBGSave() error {
+func (client *client) runBGSave() error {
 	bgSaveCommand := client.conf.CommandAlias("BGSAVE")
 	_, err := client.connection.Do(bgSaveCommand)
 	return err
 }
 
-func (client *Client) LastRDBSaveTime() (int64, error) {
+func (client *client) LastRDBSaveTime() (int64, error) {
 	saveTimeStr, err := client.connection.Do("LASTSAVE")
 	if err != nil {
 		return 0, err
@@ -113,7 +122,7 @@ func (client *Client) LastRDBSaveTime() (int64, error) {
 	return saveTimeStr.(int64), nil
 }
 
-func (client *Client) InfoField(fieldName string) (string, error) {
+func (client *client) InfoField(fieldName string) (string, error) {
 	info, err := client.info()
 	if err != nil {
 		return "", fmt.Errorf("Error during redis info: %s" + err.Error())
@@ -127,7 +136,7 @@ func (client *Client) InfoField(fieldName string) (string, error) {
 	return value, nil
 }
 
-func (client *Client) waitForNewSaveSince(lastSaveTime int64, timeoutInSeconds int) error {
+func (client *client) waitForNewSaveSince(lastSaveTime int64, timeoutInSeconds int) error {
 	for i := 0; i < timeoutInSeconds; i++ {
 		latestSaveTime, err := client.LastRDBSaveTime()
 		if err != nil {
@@ -144,7 +153,7 @@ func (client *Client) waitForNewSaveSince(lastSaveTime int64, timeoutInSeconds i
 	return errors.New("Timed out waiting for background save to complete")
 }
 
-func (client *Client) GetConfig(key string) (string, error) {
+func (client *client) GetConfig(key string) (string, error) {
 	configCommand := client.conf.CommandAlias("CONFIG")
 
 	output, err := redisclient.StringMap(client.connection.Do(configCommand, "GET", key))
@@ -160,14 +169,14 @@ func (client *Client) GetConfig(key string) (string, error) {
 	return value, nil
 }
 
-func (client *Client) setConfig(key string, value string) error {
+func (client *client) setConfig(key string, value string) error {
 	configCommand := client.conf.CommandAlias("CONFIG")
 
 	_, err := client.connection.Do(configCommand, "SET", key, value)
 	return err
 }
 
-func (client *Client) info() (map[string]string, error) {
+func (client *client) info() (map[string]string, error) {
 	infoCommand := client.conf.CommandAlias("INFO")
 
 	info := map[string]string{}

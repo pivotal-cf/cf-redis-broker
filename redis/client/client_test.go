@@ -157,7 +157,7 @@ var _ = Describe("Client", func() {
 	})
 
 	Describe(".GetConfig", func() {
-		var redisClient *client.Client
+		var redisClient client.Client
 
 		BeforeEach(func() {
 			redisRunner = &integration.RedisRunner{}
