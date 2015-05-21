@@ -50,8 +50,8 @@
 		},
 		{
 			"ImportPath": "github.com/onsi/gomega",
-			"Comment": "v1.0-25-g85936b2",
-			"Rev": "85936b29809b7df066a8d839dd105e158e510264"
+			"Comment": "v1.0-48-g766f404",
+			"Rev": "766f4042b942146e90594d145c5071fa92c0aa9a"
 		},
 		{
 			"ImportPath": "github.com/pivotal-cf-experimental/goamz/s3",
