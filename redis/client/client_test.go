@@ -3,6 +3,8 @@ package client_test
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
+	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -25,8 +27,11 @@ var _ = Describe("Client", func() {
 		pidFile, err := ioutil.TempFile("", "pid")
 		Ω(err).ShouldNot(HaveOccurred())
 		pidFilePath = pidFile.Name()
-
 		redisArgs = []string{"--port", fmt.Sprintf("%d", port), "--pidfile", pidFilePath}
+	})
+
+	AfterEach(func() {
+		os.Remove(pidFilePath)
 	})
 
 	Describe("connecting to a redis server", func() {
@@ -199,6 +204,59 @@ var _ = Describe("Client", func() {
 			It("returns the an error", func() {
 				_, err := redisClient.GetConfig("foobar")
 				Ω(err).Should(MatchError("Key 'foobar' not found"))
+			})
+		})
+	})
+
+	Describe(".RDBPath", func() {
+		var (
+			redisClient  client.Client
+			redisDataDir string
+			redisRDBFile = "dump.rdb"
+		)
+
+		BeforeEach(func() {
+			var err error
+			redisDataDir, err = ioutil.TempDir("", "redisDataDir")
+			Ω(err).ShouldNot(HaveOccurred())
+
+			redisRunner = &integration.RedisRunner{}
+			redisRunner.Start(append(redisArgs, "--dir", redisDataDir, "--dbfilename", redisRDBFile))
+
+			redisClient, err = client.Connect(
+				client.Host(host),
+				client.Port(port),
+			)
+			Ω(err).ShouldNot(HaveOccurred())
+		})
+
+		AfterEach(func() {
+			redisRunner.Stop()
+		})
+
+		It("returns the path to the RDB file", func() {
+			path, _ := redisClient.RDBPath()
+
+			var err error
+			redisDataDir, err = filepath.EvalSymlinks(redisDataDir)
+			Ω(err).ShouldNot(HaveOccurred())
+
+			Ω(path).Should(Equal(filepath.Join(redisDataDir, redisRDBFile)))
+		})
+
+		It("does not return an error", func() {
+			_, err := redisClient.RDBPath()
+			Ω(err).ShouldNot(HaveOccurred())
+		})
+
+		Context("when an error occurs", func() {
+			BeforeEach(func() {
+				redisRunner.Stop()
+			})
+
+			It("returns the error", func() {
+				_, err := redisClient.RDBPath()
+				Ω(err).Should(HaveOccurred())
 			})
 		})
 	})

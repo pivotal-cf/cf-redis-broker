@@ -3,6 +3,7 @@ package client
 import (
 	"errors"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -100,6 +101,7 @@ type Client interface {
 	LastRDBSaveTime() (int64, error)
 	InfoField(fieldName string) (string, error)
 	GetConfig(key string) (string, error)
+	RDBPath() (string, error)
 }
 
 func (client *client) WaitUntilRedisNotLoading(timeoutMilliseconds int) error {
@@ -224,6 +226,24 @@ func (client *client) GetConfig(key string) (string, error) {
 	}
 
 	return value, nil
+}
+
+func (client *client) RDBPath() (string, error) {
+	dataDir, err := client.GetConfig("dir")
+	if err != nil {
+		return "", err
+	}
+
+	if dataDir == "" {
+		return "", errors.New("Data dir not set")
+	}
+
+	dbFilename, err := client.GetConfig("dbfilename")
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Join(dataDir, dbFilename), nil
 }
 
 func (client *client) setConfig(key string, value string) error {

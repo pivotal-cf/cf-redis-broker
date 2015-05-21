@@ -57,7 +57,7 @@ var _ = Describe("backup", func() {
 		})
 
 		It("takes a snapshot", func() {
-			Expect(redisClient.CreateSnapshotCalls).To(Equal(1))
+			Expect(redisClient.InvokedCreateSnapshot).To(HaveLen(1))
 		})
 
 		Context("redis config can not be found", func() {

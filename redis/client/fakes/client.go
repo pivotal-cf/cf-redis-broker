@@ -2,11 +2,18 @@ package fakes
 
 type Client struct {
 	ExpectedCreateSnapshotErr error
-	CreateSnapshotCalls       int
+	InvokedCreateSnapshot     []int
+
+	ExpectedRDBPathErr error
+	ExpectedRDBPath    string
+	InvokedRDBPath     int
 }
 
-func (c *Client) CreateSnapshot(int) error {
-	c.CreateSnapshotCalls++
+func (c *Client) CreateSnapshot(timeout int) error {
+	if c.InvokedCreateSnapshot == nil {
+		c.InvokedCreateSnapshot = []int{}
+	}
+	c.InvokedCreateSnapshot = append(c.InvokedCreateSnapshot, timeout)
 	return c.ExpectedCreateSnapshotErr
 }
 
@@ -28,4 +35,9 @@ func (c *Client) InfoField(fieldName string) (string, error) {
 
 func (c *Client) GetConfig(key string) (string, error) {
 	return "", nil
+}
+
+func (c *Client) RDBPath() (string, error) {
+	c.InvokedRDBPath++
+	return c.ExpectedRDBPath, c.ExpectedRDBPathErr
 }
