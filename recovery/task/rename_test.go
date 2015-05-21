@@ -70,8 +70,8 @@ var _ = Describe("Rename", func() {
 		})
 
 		It("provides logging", func() {
-			Expect(log).To(gbytes.Say(fmt.Sprintf(`"event":"starting","source":"%s","target":"%s","task":"rename"}`, originalPath, finalPath)))
-			Expect(log).To(gbytes.Say(fmt.Sprintf(`"event":"done","source":"%s","target":"%s","task":"rename"}`, originalPath, finalPath)))
+			Expect(log).To(gbytes.Say(fmt.Sprintf(`{"event":"starting","source":"%s","target":"%s","task":"rename"}`, originalPath, finalPath)))
+			Expect(log).To(gbytes.Say(fmt.Sprintf(`{"event":"done","source":"%s","target":"%s","task":"rename"}`, originalPath, finalPath)))
 		})
 
 		Context("when an error occurs", func() {
@@ -87,7 +87,7 @@ var _ = Describe("Rename", func() {
 			})
 
 			It("logs the error", func() {
-				Expect(log).To(gbytes.Say(fmt.Sprintf(`"error":"%s","event":"failed","source":"%s","target":"%s","task":"rename"}`, runErr.Error(), originalPath, finalPath)))
+				Expect(log).To(gbytes.Say(fmt.Sprintf(`{"error":"%s","event":"failed","source":"%s","target":"%s","task":"rename"}`, runErr.Error(), originalPath, finalPath)))
 			})
 		})
 	})

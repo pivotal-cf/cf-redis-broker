@@ -10,7 +10,7 @@ import (
 )
 
 func Backup(client redis.Client, logger lager.Logger) error {
-	snapshot := Snapshot{client}
+	snapshot := NewSnapshot(client, 123, logger)
 	img, err := snapshot.Create()
 	if err != nil {
 		fmt.Println("Snapshot failed: ", err.Error())
@@ -23,7 +23,7 @@ func Backup(client redis.Client, logger lager.Logger) error {
 	img, err = task.NewPipeline(
 		"redis-backup",
 		logger,
-		task.NewRename(tmpSnapshotPath),
+		task.NewRename(tmpSnapshotPath, logger),
 		NewPackager(artifactPath),
 		task.NewGeneric("Generic 1"),
 		task.NewS3Upload("bucket-name", "endpoint", "key", "secret"),
