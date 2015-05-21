@@ -1,10 +1,6 @@
 package task
 
-import (
-	"fmt"
-
-	"github.com/pivotal-cf/cf-redis-broker/recovery"
-)
+import "fmt"
 
 type s3upload struct {
 	bucket   string
@@ -13,7 +9,7 @@ type s3upload struct {
 	secret   string
 }
 
-func NewS3Upload(bucket, endpoint, key, secret string) recovery.Task {
+func NewS3Upload(bucket, endpoint, key, secret string) Task {
 	return &s3upload{
 		bucket:   bucket,
 		endpoint: endpoint,
@@ -22,7 +18,7 @@ func NewS3Upload(bucket, endpoint, key, secret string) recovery.Task {
 	}
 }
 
-func (u *s3upload) Run(artifact recovery.Artifact) (recovery.Artifact, error) {
+func (u *s3upload) Run(artifact Artifact) (Artifact, error) {
 	fmt.Printf("S3 Upload of artifact %s\n", artifact.Path())
 	return artifact, nil
 }

@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"code.google.com/p/go-uuid/uuid"
-	"github.com/pivotal-cf/cf-redis-broker/recovery"
 	"github.com/pivotal-cf/cf-redis-broker/recovery/task"
 	redis "github.com/pivotal-cf/cf-redis-broker/redis/client"
 	"github.com/pivotal-golang/lager"
@@ -21,7 +20,7 @@ func Backup(client redis.Client, logger lager.Logger) error {
 	tmpSnapshotPath := uuid.New()
 	artifactPath := "archive.tgz"
 
-	img, err = recovery.NewPipeline(
+	img, err = task.NewPipeline(
 		"redis-backup",
 		logger,
 		task.NewRename(tmpSnapshotPath),
@@ -31,7 +30,7 @@ func Backup(client redis.Client, logger lager.Logger) error {
 		task.NewGeneric("Generic 2"),
 	).Run(img)
 
-	recovery.NewPipeline(
+	task.NewPipeline(
 		"cleanup",
 		logger,
 		NewCleanup(

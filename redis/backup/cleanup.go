@@ -3,7 +3,7 @@ package backup
 import (
 	"fmt"
 
-	"github.com/pivotal-cf/cf-redis-broker/recovery"
+	"github.com/pivotal-cf/cf-redis-broker/recovery/task"
 )
 
 type cleanup struct {
@@ -12,7 +12,7 @@ type cleanup struct {
 	archive string
 }
 
-func NewCleanup(target, source, archive string) recovery.Task {
+func NewCleanup(target, source, archive string) task.Task {
 	return &cleanup{
 		target:  target,
 		source:  source,
@@ -20,7 +20,7 @@ func NewCleanup(target, source, archive string) recovery.Task {
 	}
 }
 
-func (c *cleanup) Run(artifact recovery.Artifact) (recovery.Artifact, error) {
+func (c *cleanup) Run(artifact task.Artifact) (task.Artifact, error) {
 	fmt.Printf("Check if %s exists\n", c.target)
 	fmt.Printf("Move/delete %s\n", c.source)
 	fmt.Printf("delete %s\n", c.archive)

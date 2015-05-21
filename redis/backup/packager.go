@@ -3,7 +3,7 @@ package backup
 import (
 	"fmt"
 
-	"github.com/pivotal-cf/cf-redis-broker/recovery"
+	"github.com/pivotal-cf/cf-redis-broker/recovery/task"
 )
 
 type packager struct {
@@ -16,10 +16,10 @@ func NewPackager(artifactTarget string) *packager {
 	}
 }
 
-func (p *packager) Run(a recovery.Artifact) (recovery.Artifact, error) {
+func (p *packager) Run(a task.Artifact) (task.Artifact, error) {
 	fmt.Printf("Packaging %s\n", a.Path())
 
-	return recovery.NewArtifact(p.artifactTarget), nil
+	return task.NewArtifact(p.artifactTarget), nil
 }
 
 func (p *packager) Name() string {
