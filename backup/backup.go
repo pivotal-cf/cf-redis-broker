@@ -159,7 +159,7 @@ func (backup Backup) createSnapshot(confPath string) error {
 		return err
 	}
 
-	err = client.CreateSnapshot(backup.Config.BGSaveTimeoutSeconds)
+	err = client.CreateSnapshot(time.Second * time.Duration(backup.Config.BGSaveTimeoutSeconds))
 	if err != nil {
 		log.Logger().Error("backup", err, lager.Data{
 			"event": "backup_create_snapshot_create_snapshot",

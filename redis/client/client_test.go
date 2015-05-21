@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -129,7 +130,7 @@ var _ = Describe("Client", func() {
 				beforeSnapshotLastSaveTime, err := client.LastRDBSaveTime()
 				Ω(err).ShouldNot(HaveOccurred())
 
-				err = client.CreateSnapshot(10)
+				err = client.CreateSnapshot(10 * time.Second)
 				Ω(err).ShouldNot(HaveOccurred())
 
 				afterSnapshotLastSaveTime, err := client.LastRDBSaveTime()

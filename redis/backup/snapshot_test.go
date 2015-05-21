@@ -3,6 +3,7 @@ package backup_test
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/pivotal-cf/cf-redis-broker/recovery/task"
 	"github.com/pivotal-cf/cf-redis-broker/redis/backup"
@@ -23,18 +24,18 @@ var _ = Describe("Snapshot", func() {
 			expectedArtifactPath = "the/artifact/path"
 			logger               lager.Logger
 			log                  *gbytes.Buffer
-			timeoutInSeconds     int
+			timeout              time.Duration
 		)
 
 		BeforeEach(func() {
 			fakeRedisClient = &fakes.Client{
 				ExpectedRDBPath: expectedArtifactPath,
 			}
-			timeoutInSeconds = 123
+			timeout = 123 * time.Second
 			logger = lager.NewLogger("logger")
 			log = gbytes.NewBuffer()
 			logger.RegisterSink(lager.NewWriterSink(log, lager.INFO))
-			snapshot := backup.NewSnapshot(fakeRedisClient, timeoutInSeconds, logger)
+			snapshot := backup.NewSnapshot(fakeRedisClient, timeout, logger)
 			artifact, err = snapshot.Create()
 		})
 
@@ -47,12 +48,12 @@ var _ = Describe("Snapshot", func() {
 		})
 
 		It("triggers create snapshot on the client", func() {
-			Expect(fakeRedisClient.InvokedCreateSnapshot).To(Equal([]int{123}))
+			Expect(fakeRedisClient.InvokedCreateSnapshot).To(Equal([]time.Duration{timeout}))
 		})
 
 		It("provides logging", func() {
-			Expect(log).To(gbytes.Say(fmt.Sprintf(`{"event":"starting","task":"create-snapshot","timeout":%d}`, timeoutInSeconds)))
-			Expect(log).To(gbytes.Say(fmt.Sprintf(`{"event":"done","task":"create-snapshot","timeout":%d}`, timeoutInSeconds)))
+			Expect(log).To(gbytes.Say(fmt.Sprintf(`{"event":"starting","task":"create-snapshot","timeout":"%s"}`, timeout.String())))
+			Expect(log).To(gbytes.Say(fmt.Sprintf(`{"event":"done","task":"create-snapshot","timeout":"%s"}`, timeout.String())))
 			Expect(log).To(gbytes.Say(`{"event":"starting","task":"get-rdb-path"}`))
 			Expect(log).To(gbytes.Say(fmt.Sprintf(`{"event":"done","path":"%s","task":"get-rdb-path"}`, expectedArtifactPath)))
 		})

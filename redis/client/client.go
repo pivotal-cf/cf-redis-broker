@@ -95,7 +95,7 @@ func Connect(options ...Option) (Client, error) {
 }
 
 type Client interface {
-	CreateSnapshot(int) error
+	CreateSnapshot(timeout time.Duration) error
 	WaitUntilRedisNotLoading(timeoutMilliseconds int) error
 	EnableAOF() error
 	LastRDBSaveTime() (int64, error)
@@ -121,10 +121,10 @@ func (client *client) WaitUntilRedisNotLoading(timeoutMilliseconds int) error {
 	return nil
 }
 
-func (client *client) CreateSnapshot(timeoutInSeconds int) error {
+func (client *client) CreateSnapshot(timeout time.Duration) error {
 	log.Logger().Info("redis_client", lager.Data{
 		"event":   "creating_snapshot",
-		"timeout": timeoutInSeconds,
+		"timeout": timeout.String(),
 	})
 
 	lastSaveTime, err := client.LastRDBSaveTime()
@@ -146,12 +146,12 @@ func (client *client) CreateSnapshot(timeoutInSeconds int) error {
 		return err
 	}
 
-	err = client.waitForNewSaveSince(lastSaveTime, timeoutInSeconds)
+	err = client.waitForNewSaveSince(lastSaveTime, timeout)
 	if err != nil {
 		log.Logger().Error("redis_client", err, lager.Data{
-			"event":            "wait_for_new_save_since",
-			"last_time_save":   lastSaveTime,
-			"time_out_seconds": timeoutInSeconds,
+			"event":          "wait_for_new_save_since",
+			"last_time_save": lastSaveTime,
+			"timeout":        timeout.String(),
 		})
 		return err
 	}
@@ -195,21 +195,23 @@ func (client *client) InfoField(fieldName string) (string, error) {
 	return value, nil
 }
 
-func (client *client) waitForNewSaveSince(lastSaveTime int64, timeoutInSeconds int) error {
-	for i := 0; i < timeoutInSeconds; i++ {
-		latestSaveTime, err := client.LastRDBSaveTime()
-		if err != nil {
-			return err
-		}
+func (client *client) waitForNewSaveSince(lastSaveTime int64, timeout time.Duration) error {
+	timer := time.After(timeout)
+	for {
+		select {
+		case <-time.After(time.Second):
+			latestSaveTime, err := client.LastRDBSaveTime()
+			if err != nil {
+				return err
+			}
 
-		if latestSaveTime > lastSaveTime {
-			return nil
+			if latestSaveTime > lastSaveTime {
+				return nil
+			}
+		case <-timer:
+			return errors.New("Timed out waiting for background save to complete")
 		}
-
-		time.Sleep(time.Second)
 	}
-
-	return errors.New("Timed out waiting for background save to complete")
 }
 
 func (client *client) GetConfig(key string) (string, error) {

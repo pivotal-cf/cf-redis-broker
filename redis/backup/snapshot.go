@@ -1,6 +1,8 @@
 package backup
 
 import (
+	"time"
+
 	"github.com/pivotal-cf/cf-redis-broker/recovery"
 	"github.com/pivotal-cf/cf-redis-broker/recovery/task"
 	redis "github.com/pivotal-cf/cf-redis-broker/redis/client"
@@ -9,11 +11,11 @@ import (
 
 type snapshot struct {
 	client  redis.Client
-	timeout int
+	timeout time.Duration
 	logger  lager.Logger
 }
 
-func NewSnapshot(client redis.Client, timeout int, logger lager.Logger) recovery.Snapshot {
+func NewSnapshot(client redis.Client, timeout time.Duration, logger lager.Logger) recovery.Snapshot {
 	return &snapshot{
 		client:  client,
 		timeout: timeout,
@@ -26,7 +28,7 @@ func (s *snapshot) Create() (task.Artifact, error) {
 		lager.Data{
 			"task":    "create-snapshot",
 			"event":   "starting",
-			"timeout": s.timeout,
+			"timeout": s.timeout.String(),
 		},
 	)
 
@@ -45,7 +47,7 @@ func (s *snapshot) Create() (task.Artifact, error) {
 		lager.Data{
 			"task":    "create-snapshot",
 			"event":   "done",
-			"timeout": s.timeout,
+			"timeout": s.timeout.String(),
 		},
 	)
 

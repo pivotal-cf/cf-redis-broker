@@ -1,17 +1,19 @@
 package fakes
 
+import "time"
+
 type Client struct {
 	ExpectedCreateSnapshotErr error
-	InvokedCreateSnapshot     []int
+	InvokedCreateSnapshot     []time.Duration
 
 	ExpectedRDBPathErr error
 	ExpectedRDBPath    string
 	InvokedRDBPath     int
 }
 
-func (c *Client) CreateSnapshot(timeout int) error {
+func (c *Client) CreateSnapshot(timeout time.Duration) error {
 	if c.InvokedCreateSnapshot == nil {
-		c.InvokedCreateSnapshot = []int{}
+		c.InvokedCreateSnapshot = []time.Duration{}
 	}
 	c.InvokedCreateSnapshot = append(c.InvokedCreateSnapshot, timeout)
 	return c.ExpectedCreateSnapshotErr
