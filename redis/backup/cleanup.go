@@ -19,21 +19,23 @@ func NewCleanup(dumpRdbFile, renamedRdbFile string) task.Task {
 }
 
 func (c *cleanup) Run(artifact task.Artifact) (task.Artifact, error) {
-	if _, err := os.Stat(c.dumpRdbFile); os.IsNotExist(err) {
-		os.Rename(c.renamedRdbFile, c.dumpRdbFile)
-	} else if err != nil {
-		return nil, err
-	} else {
-		err = os.Remove(c.renamedRdbFile)
-		if err != nil && !os.IsNotExist(err) {
-			return nil, err
+	if !fileExists(c.dumpRdbFile) {
+		if err := os.Rename(c.renamedRdbFile, c.dumpRdbFile); err != nil {
+			return artifact, err
+		}
+	}
+	if fileExists(c.renamedRdbFile) {
+		if err := os.Remove(c.renamedRdbFile); err != nil {
+			return artifact, err
 		}
 	}
 	return artifact, nil
 }
 
-// func fileExists(filename string) {
-// }
+func fileExists(filename string) bool {
+	_, err := os.Stat(filename)
+	return !os.IsNotExist(err)
+}
 
 func (c *cleanup) Name() string {
 	return "cleanup"
