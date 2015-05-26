@@ -1,31 +1,39 @@
 package backup
 
 import (
-	"fmt"
+	"os"
 
 	"github.com/pivotal-cf/cf-redis-broker/recovery/task"
 )
 
 type cleanup struct {
-	target  string
-	source  string
-	archive string
+	dumpRdbFile    string
+	renamedRdbFile string
 }
 
-func NewCleanup(target, source, archive string) task.Task {
+func NewCleanup(dumpRdbFile, renamedRdbFile string) task.Task {
 	return &cleanup{
-		target:  target,
-		source:  source,
-		archive: archive,
+		dumpRdbFile:    dumpRdbFile,
+		renamedRdbFile: renamedRdbFile,
 	}
 }
 
 func (c *cleanup) Run(artifact task.Artifact) (task.Artifact, error) {
-	fmt.Printf("Check if %s exists\n", c.target)
-	fmt.Printf("Move/delete %s\n", c.source)
-	fmt.Printf("delete %s\n", c.archive)
+	if _, err := os.Stat(c.dumpRdbFile); os.IsNotExist(err) {
+		os.Rename(c.renamedRdbFile, c.dumpRdbFile)
+	} else if err != nil {
+		return nil, err
+	} else {
+		err = os.Remove(c.renamedRdbFile)
+		if err != nil && !os.IsNotExist(err) {
+			return nil, err
+		}
+	}
 	return artifact, nil
 }
+
+// func fileExists(filename string) {
+// }
 
 func (c *cleanup) Name() string {
 	return "cleanup"
