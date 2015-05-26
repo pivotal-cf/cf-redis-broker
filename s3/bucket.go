@@ -30,21 +30,21 @@ type Command interface {
 
 type CommandFactory func(name string, env []string, arg ...string) Command
 
-func InjectCommandFactory(factory CommandFactory) option {
+func InjectCommandFactory(factory CommandFactory) bucketOption {
 	return func(b *s3Bucket) {
 		b.cmdFactory = factory
 	}
 }
 
-func AwsCliPath(path string) option {
+func AwsCliPath(path string) bucketOption {
 	return func(b *s3Bucket) {
 		b.awsCliPath = path
 	}
 }
 
-type option func(*s3Bucket)
+type bucketOption func(*s3Bucket)
 
-func NewBucket(name, endpoint, key, secret string, logger lager.Logger, options ...option) *s3Bucket {
+func NewBucket(name, endpoint, key, secret string, logger lager.Logger, options ...bucketOption) *s3Bucket {
 	defaultCmdFactory := func(name string, env []string, args ...string) Command {
 		cmd := exec.Command(name, args...)
 		cmd.Env = env
