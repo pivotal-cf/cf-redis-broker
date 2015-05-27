@@ -5,6 +5,8 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	. "github.com/st3v/glager"
+
 	"github.com/onsi/gomega/gbytes"
 	"github.com/pivotal-cf/cf-redis-broker/recovery/task"
 	"github.com/pivotal-golang/lager"
@@ -75,10 +77,12 @@ var _ = Describe("Pipeline", func() {
 			})
 
 			It("logs each step", func() {
-				Expect(log).To(gbytes.Say(`{"event":"starting","pipeline":"some-name","task":"task1"}`))
-				Expect(log).To(gbytes.Say(`{"event":"done","pipeline":"some-name","task":"task1"}`))
-				Expect(log).To(gbytes.Say(`{"event":"starting","pipeline":"some-name","task":"task2"}`))
-				Expect(log).To(gbytes.Say(`{"event":"done","pipeline":"some-name","task":"task2"}`))
+				Expect(log).To(ContainSequence(
+					Info(Data("event", "starting", "pipeline", "some-name", "task", "task1")),
+					Info(Data("event", "done", "pipeline", "some-name", "task", "task1")),
+					Info(Data("event", "starting", "pipeline", "some-name", "task", "task2")),
+					Info(Data("event", "done", "pipeline", "some-name", "task", "task2")),
+				))
 			})
 
 			It("does not return an error", func() {
@@ -113,8 +117,11 @@ var _ = Describe("Pipeline", func() {
 			})
 
 			It("logs the error", func() {
-				Expect(log).To(gbytes.Say(
-					`{"error":"some-task-error","event":"failed","pipeline":"some-name","task":"task2"}`,
+				Expect(log).To(ContainSequence(
+					Info(Data("event", "starting", "pipeline", "some-name", "task", "task1")),
+					Info(Data("event", "done", "pipeline", "some-name", "task", "task1")),
+					Info(Data("event", "starting", "pipeline", "some-name", "task", "task2")),
+					Error(expectedError, Data("event", "failed", "pipeline", "some-name", "task", "task2")),
 				))
 			})
 		})
