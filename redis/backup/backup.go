@@ -36,6 +36,7 @@ func Backup(client redis.Client, logger lager.Logger) error {
 		NewCleanup(
 			originalPath,
 			tmpSnapshotPath,
+			logger,
 		),
 	).Run(img)
 

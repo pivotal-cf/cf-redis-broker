@@ -1,21 +1,24 @@
 package backup_test
 
 import (
+	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
-	"path"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
 	"github.com/pivotal-cf/cf-redis-broker/recovery/task"
 	"github.com/pivotal-cf/cf-redis-broker/redis/backup"
+	"github.com/pivotal-golang/lager"
 )
 
-var _ = FDescribe("Cleanup", func() {
+var _ = Describe("Cleanup", func() {
 	Context(".Name", func() {
 		It("returns the name", func() {
-			cleanupTask := backup.NewCleanup("dumpRdb", "renamedRdb")
+			cleanupTask := backup.NewCleanup("dumpRdb", "renamedRdb", nil)
 
 			Expect(cleanupTask.Name()).To(Equal("cleanup"))
 		})
@@ -23,142 +26,282 @@ var _ = FDescribe("Cleanup", func() {
 
 	Context(".Run", func() {
 		var (
-			newDumpFilename     string
-			newDumpContents     []byte
-			renamedDumpFilename string
-			redisDir            string
-			err                 error
-			cleanup             task.Task
-			artifact            task.Artifact = task.NewArtifact("")
+			originalDumpPath string
+			renamedDumpPath  string
+			redisDir         string
+			cleanup          task.Task
+			artifactIn       task.Artifact
+			artifactOut      task.Artifact
+			runErr           error
+			log              *gbytes.Buffer
+			logger           lager.Logger
 		)
 
-		Context("when new dump RDB file exists", func() {
+		BeforeEach(func() {
+			log = gbytes.NewBuffer()
+			logger = lager.NewLogger("redis")
+			logger.RegisterSink(lager.NewWriterSink(log, lager.INFO))
+
+			artifactIn = task.NewArtifact("path/to/artifact")
+
+			var err error
+			redisDir, err = ioutil.TempDir("", "cleanup-test")
+			Expect(err).ToNot(HaveOccurred())
+
+			originalDumpPath = filepath.Join(redisDir, "dump.rdb")
+			renamedDumpPath = filepath.Join(redisDir, "renamed.rdb")
+
+			cleanup = backup.NewCleanup(originalDumpPath, renamedDumpPath, logger)
+		})
+
+		JustBeforeEach(func() {
+			artifactOut, runErr = cleanup.Run(artifactIn)
+		})
+
+		AfterEach(func() {
+			os.RemoveAll(redisDir)
+		})
+
+		Context("when the artifact is nil", func() {
 			BeforeEach(func() {
-				redisDir, err = ioutil.TempDir("", "cleanup-test")
-				Expect(err).ToNot(HaveOccurred())
-
-				newDumpFilename = filepath.Join(redisDir, "dump.rdb")
-				renamedDumpFilename = filepath.Join(redisDir, "renamed.rdb")
-				newDumpContents = []byte("new dump file")
-
-				err = ioutil.WriteFile(newDumpFilename, newDumpContents, os.ModePerm)
-				Expect(err).ToNot(HaveOccurred())
-				err = ioutil.WriteFile(renamedDumpFilename, []byte("renamed dump file"), os.ModePerm)
-				Expect(err).ToNot(HaveOccurred())
-
-				cleanup = backup.NewCleanup(newDumpFilename, renamedDumpFilename)
+				artifactIn = nil
 			})
 
-			AfterEach(func() {
-				os.RemoveAll(redisDir)
+			It("does not return an error", func() {
+				Expect(runErr).ToNot(HaveOccurred())
 			})
+		})
 
-			It("should return the artifact", func() {
-				returnedArtifact, _ := cleanup.Run(artifact)
-
-				Expect(returnedArtifact).To(Equal(artifact))
-			})
-
-			It("should leave the new RDB file as is", func() {
-				cleanup.Run(nil)
-
-				contents, err := ioutil.ReadFile(newDumpFilename)
-				Expect(err).ToNot(HaveOccurred())
-
-				Expect(contents).To(Equal(newDumpContents))
-			})
-
-			It("deletes the renamed RDB file", func() {
-				cleanup.Run(nil)
-
-				Expect(renamedDumpFilename).ToNot(BeAnExistingFile())
-			})
-
-			Context("when renaming fails", func() {
-				It("should return the artifact", func() {
-					returnedArtifact, _ := cleanup.Run(artifact)
-
-					Expect(returnedArtifact).To(Equal(artifact))
+		Context("when the original dump does not exist", func() {
+			Context("when the renamed dump does not exist", func() {
+				It("does not return error", func() {
+					Expect(runErr).ToNot(HaveOccurred())
 				})
 
-				It("cant stat dump RDB file then should return the error", func() {
-					file, err := os.Open(redisDir)
-					Expect(err).ToNot(HaveOccurred())
-					file.Chmod(000)
+				It("returns the passed in artifact", func() {
+					Expect(artifactIn).To(Equal(artifactOut))
+				})
 
-					_, err = cleanup.Run(nil)
-					Expect(os.IsPermission(err)).To(BeTrue())
+				It("provides logging", func() {
+					Expect(log).To(gbytes.Say(fmt.Sprintf(
+						`"redis.cleanup",.*{"event":"starting","original_path":"%s","renamed_path":"%s"}`,
+						originalDumpPath,
+						renamedDumpPath,
+					)))
+					Expect(log).To(gbytes.Say(fmt.Sprintf(
+						`"redis.cleanup",.*{"event":"done","original_path":"%s","renamed_path":"%s"}`,
+						originalDumpPath,
+						renamedDumpPath,
+					)))
 				})
 			})
 
-			Context("removing renamed file fails", func() {
-				It("should return the artifact", func() {
-					returnedArtifact, _ := cleanup.Run(artifact)
+			Context("when the renamed dump exists", func() {
+				var expectedContents = []byte("some-content")
 
-					Expect(returnedArtifact).To(Equal(artifact))
-				})
-
-				It("renamed RDB file does not exist then it should not return an error", func() {
-					os.Remove(renamedDumpFilename)
-
-					_, err = cleanup.Run(nil)
+				BeforeEach(func() {
+					err := ioutil.WriteFile(renamedDumpPath, expectedContents, os.ModePerm)
 					Expect(err).ToNot(HaveOccurred())
 				})
 
-				It("renamed RDB file cannot be accessed then it should return error", func() {
-					renamedRdbDir, err := ioutil.TempDir(redisDir, "")
-					Expect(err).ToNot(HaveOccurred())
-					renamedRdbFile, err := os.Open(renamedRdbDir)
-					Expect(err).ToNot(HaveOccurred())
-					renamedRdbFile.Chmod(000)
+				It("does not return error", func() {
+					Expect(runErr).ToNot(HaveOccurred())
+				})
 
-					renamedDumpFilename = path.Join(renamedRdbDir, "renamed_rdb")
+				It("recreates the original dump with the contents from the renamed dump", func() {
+					Expect(originalDumpPath).To(BeAnExistingFile())
+					contents, err := ioutil.ReadFile(originalDumpPath)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(contents).To(Equal(expectedContents))
+				})
 
-					cleanup = backup.NewCleanup(newDumpFilename, renamedDumpFilename)
-					_, err = cleanup.Run(nil)
-					Expect(err).To(HaveOccurred())
+				It("removes the renamed dump", func() {
+					Expect(renamedDumpPath).ToNot(BeAnExistingFile())
+				})
+
+				It("returns the passed in artifact", func() {
+					Expect(artifactOut).To(Equal(artifactIn))
+				})
+
+				It("provides logging", func() {
+					Expect(log).To(gbytes.Say(fmt.Sprintf(
+						`"redis.cleanup",.*"event":"starting","original_path":"%s","renamed_path":"%s"}`,
+						originalDumpPath,
+						renamedDumpPath,
+					)))
+					Expect(log).To(gbytes.Say(fmt.Sprintf(
+						`"redis.cleanup.rename",.*{"event":"starting","new_path":"%s","old_path":"%s"}`,
+						originalDumpPath,
+						renamedDumpPath,
+					)))
+					Expect(log).To(gbytes.Say(fmt.Sprintf(
+						`"redis.cleanup.rename",.*{"event":"done","new_path":"%s","old_path":"%s"}`,
+						originalDumpPath,
+						renamedDumpPath,
+					)))
+					Expect(log).To(gbytes.Say(fmt.Sprintf(
+						`"redis.cleanup",.*"event":"done","original_path":"%s","renamed_path":"%s"}`,
+						originalDumpPath,
+						renamedDumpPath,
+					)))
+				})
+
+				Context("when renaming the dump fails", func() {
+					var expectedErr = errors.New("rename-error")
+
+					BeforeEach(func() {
+						cleanup = backup.NewCleanup(
+							originalDumpPath,
+							renamedDumpPath,
+							logger,
+							backup.InjectRenamer(func(string, string) error {
+								return expectedErr
+							}))
+					})
+
+					It("returns the error", func() {
+						Expect(runErr).To(Equal(expectedErr))
+					})
+
+					It("returns the passed in artifact", func() {
+						Expect(artifactOut).To(Equal(artifactIn))
+					})
+
+					It("logs the error", func() {
+						Expect(log).To(gbytes.Say(fmt.Sprintf(
+							`"redis.cleanup.rename",.*{"event":"starting","new_path":"%s","old_path":"%s"}`,
+							originalDumpPath,
+							renamedDumpPath,
+						)))
+						Expect(log).To(gbytes.Say(fmt.Sprintf(
+							`"redis.cleanup.rename",.*{"error":"%s","event":"failed","new_path":"%s","old_path":"%s"}`,
+							expectedErr.Error(),
+							originalDumpPath,
+							renamedDumpPath,
+						)))
+					})
 				})
 			})
 		})
 
-		Context("when no new dump RDB file is present", func() {
-			var (
-				dumpFilename        string
-				renamedDumpFilename string
-				renamedDumpContents []byte
-			)
+		Context("when the original dump exists", func() {
+			var expectedContentsOriginalDump = []byte("original-dump")
 
 			BeforeEach(func() {
-				redisDir, err := ioutil.TempDir("", "cleanup-test")
-				Expect(err).ToNot(HaveOccurred())
-
-				dumpFilename = filepath.Join(redisDir, "dump.rdb")
-				renamedDumpFilename = filepath.Join(redisDir, "renamed.rdb")
-				renamedDumpContents = []byte("renamed dump file")
-
-				err = ioutil.WriteFile(renamedDumpFilename, renamedDumpContents, os.ModePerm)
+				err := ioutil.WriteFile(originalDumpPath, expectedContentsOriginalDump, os.ModePerm)
 				Expect(err).ToNot(HaveOccurred())
 			})
 
-			It("should return the artifact", func() {
-				cleanup = backup.NewCleanup(dumpFilename, renamedDumpFilename)
-				returnedArtifact, _ := cleanup.Run(artifact)
+			Context("when the renamed dump does not exist", func() {
+				It("does not return error", func() {
+					Expect(runErr).ToNot(HaveOccurred())
+				})
 
-				Expect(returnedArtifact).To(Equal(artifact))
+				It("does not overwrite the original dump", func() {
+					actualContents, err := ioutil.ReadFile(originalDumpPath)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(actualContents).To(Equal(expectedContentsOriginalDump))
+				})
+
+				It("returns the passed in artifact", func() {
+					Expect(artifactOut).To(Equal(artifactIn))
+				})
+
+				It("provides logging", func() {
+					Expect(log).To(gbytes.Say(fmt.Sprintf(
+						`"redis.cleanup",.*"event":"starting","original_path":"%s","renamed_path":"%s"}`,
+						originalDumpPath,
+						renamedDumpPath,
+					)))
+					Expect(log).To(gbytes.Say(fmt.Sprintf(
+						`"redis.cleanup",.*"event":"done","original_path":"%s","renamed_path":"%s"}`,
+						originalDumpPath,
+						renamedDumpPath,
+					)))
+				})
 			})
 
-			It("renames the renamed RDB to original RDB file name", func() {
-				cleanup = backup.NewCleanup(dumpFilename, renamedDumpFilename)
-				cleanup.Run(nil)
+			Context("when the renamed dump does exist", func() {
+				var expectedContentsRenamedDump = []byte("renamed-dump")
 
-				Expect(renamedDumpFilename).NotTo(BeAnExistingFile())
+				BeforeEach(func() {
+					err := ioutil.WriteFile(renamedDumpPath, expectedContentsRenamedDump, os.ModePerm)
+					Expect(err).ToNot(HaveOccurred())
+				})
 
-				contents, err := ioutil.ReadFile(dumpFilename)
-				Expect(err).ToNot(HaveOccurred())
+				It("does not return error", func() {
+					Expect(runErr).ToNot(HaveOccurred())
+				})
 
-				Expect(contents).To(Equal(renamedDumpContents))
+				It("does not overwrite the original dump", func() {
+					actualContents, err := ioutil.ReadFile(originalDumpPath)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(actualContents).To(Equal(expectedContentsOriginalDump))
+				})
+
+				It("deletes the renamed dump", func() {
+					Expect(renamedDumpPath).ToNot(BeAnExistingFile())
+				})
+
+				It("returns the passed in artifact", func() {
+					Expect(artifactOut).To(Equal(artifactIn))
+				})
+
+				It("provides logging", func() {
+					Expect(log).To(gbytes.Say(fmt.Sprintf(
+						`"redis.cleanup",.*"event":"starting","original_path":"%s","renamed_path":"%s"}`,
+						originalDumpPath,
+						renamedDumpPath,
+					)))
+					Expect(log).To(gbytes.Say(fmt.Sprintf(
+						`"redis.cleanup.remove",.*{"event":"starting","path":"%s"}`,
+						renamedDumpPath,
+					)))
+					Expect(log).To(gbytes.Say(fmt.Sprintf(
+						`"redis.cleanup.remove",.*{"event":"done","path":"%s"}`,
+						renamedDumpPath,
+					)))
+					Expect(log).To(gbytes.Say(fmt.Sprintf(
+						`"redis.cleanup",.*"event":"done","original_path":"%s","renamed_path":"%s"}`,
+						originalDumpPath,
+						renamedDumpPath,
+					)))
+				})
+
+				Context("when renamed dump cannot be removed", func() {
+					var expectedErr = errors.New("remove-error")
+
+					BeforeEach(func() {
+						cleanup = backup.NewCleanup(
+							originalDumpPath,
+							renamedDumpPath,
+							logger,
+							backup.InjectRemover(func(string) error {
+								return expectedErr
+							}))
+					})
+
+					It("returns the error", func() {
+						Expect(runErr).To(Equal(expectedErr))
+					})
+
+					It("returns the passed in artifact", func() {
+						Expect(artifactOut).To(Equal(artifactIn))
+					})
+
+					It("logs the error", func() {
+						Expect(log).To(gbytes.Say(fmt.Sprintf(
+							`"redis.cleanup.remove",.*{"event":"starting","path":"%s"}`,
+							renamedDumpPath,
+						)))
+						Expect(log).To(gbytes.Say(fmt.Sprintf(
+							`"redis.cleanup.remove",.*{"error":"%s","event":"failed","path":"%s"}`,
+							expectedErr.Error(),
+							renamedDumpPath,
+						)))
+					})
+				})
 			})
 		})
 	})
-
 })
