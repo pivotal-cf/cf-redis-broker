@@ -67,7 +67,7 @@
 		},
 		{
 			"ImportPath": "github.com/st3v/glager",
-			"Rev": "3489234121fdc3fc1346360bcc88798cbee6e54e"
+			"Rev": "a3b20db50524eaae6cf9ad7873825eec2531e8f5"
 		},
 		{
 			"ImportPath": "github.com/vaughan0/go-ini",

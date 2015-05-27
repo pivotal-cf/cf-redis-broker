@@ -12,10 +12,10 @@ type s3Client struct {
 }
 
 type Client interface {
-	GetOrCreateBucket(string) (*Bucket, error)
+	GetOrCreateBucket(string) (Bucket, error)
 }
 
-func NewClient(endpoint, accessKey, secretKey string, logger lager.Logger) *s3Client {
+func NewClient(endpoint, accessKey, secretKey string, logger lager.Logger) Client {
 	auth := aws.Auth{
 		AccessKey: accessKey,
 		SecretKey: secretKey,

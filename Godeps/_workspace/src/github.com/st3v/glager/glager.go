@@ -151,7 +151,7 @@ func (lm *logMatcher) NegatedFailureMessage(actual interface{}) (message string)
 	)
 }
 
-func (entry logEntry) LogData() logEntryData {
+func (entry logEntry) logData() logEntryData {
 	return logEntryData(entry.Data)
 }
 
@@ -172,7 +172,7 @@ func (actual logEntry) contains(expected logEntry) bool {
 		return false
 	}
 
-	if !actual.LogData().contains(expected.LogData()) {
+	if !actual.logData().contains(expected.logData()) {
 		return false
 	}
 
