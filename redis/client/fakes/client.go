@@ -1,6 +1,9 @@
 package fakes
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 type Client struct {
 	ExpectedCreateSnapshotErr error
@@ -9,6 +12,13 @@ type Client struct {
 	ExpectedRDBPathErr error
 	ExpectedRDBPath    string
 	InvokedRDBPath     int
+
+	Host string
+	Port int
+}
+
+func (c *Client) Address() string {
+	return fmt.Sprintf("%s:%d", c.Host, c.Port)
 }
 
 func (c *Client) CreateSnapshot(timeout time.Duration) error {

@@ -102,6 +102,11 @@ type Client interface {
 	InfoField(fieldName string) (string, error)
 	GetConfig(key string) (string, error)
 	RDBPath() (string, error)
+	Address() string
+}
+
+func (client *client) Address() string {
+	return fmt.Sprintf("%s:%d", client.host, client.port)
 }
 
 func (client *client) WaitUntilRedisNotLoading(timeoutMilliseconds int) error {

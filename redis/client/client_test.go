@@ -170,6 +170,25 @@ var _ = Describe("Client", func() {
 		})
 	})
 
+	Describe(".Address", func() {
+		var redisClient client.Client
+
+		BeforeEach(func() {
+			redisRunner.Start(redisArgs)
+			var err error
+			redisClient, err = client.Connect(client.Host(host), client.Port(port))
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		AfterEach(func() {
+			redisRunner.Stop()
+		})
+
+		It("returns an address that consists of the client's host and port", func() {
+			Expect(redisClient.Address()).To(Equal(fmt.Sprintf("%s:%d", host, port)))
+		})
+	})
+
 	Describe(".GetConfig", func() {
 		var redisClient client.Client
 
