@@ -18,16 +18,12 @@ func Backup(client redis.Client, logger lager.Logger) error {
 
 	originalPath := img.Path()
 	tmpSnapshotPath := uuid.New()
-	// artifactPath := "archive.tgz"
 
 	img, err = task.NewPipeline(
 		"redis-backup",
 		logger,
 		task.NewRename(tmpSnapshotPath, logger),
-		// NewPackager(artifactPath),
-		// task.NewGeneric("Generic 1"),
 		task.NewS3Upload("bucket-name", "target-path", "endpoint", "key", "secret", logger),
-		// task.NewGeneric("Generic 2"),
 	).Run(img)
 
 	task.NewPipeline(
