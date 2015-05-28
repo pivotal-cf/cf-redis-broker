@@ -17,12 +17,14 @@ var _ = Describe("Client", func() {
 	var (
 		fakeRegion        aws.Region
 		goamzBucketClient *goamz.Bucket
-		bucketName        = "i_am_bucket"
+		bucketName        string
 		log               *gbytes.Buffer
 		logger            lager.Logger
 	)
 
 	BeforeEach(func() {
+		bucketName = "i_am_bucket"
+
 		logger = lager.NewLogger("logger")
 		log = gbytes.NewBuffer()
 		logger.RegisterSink(lager.NewWriterSink(log, lager.INFO))
