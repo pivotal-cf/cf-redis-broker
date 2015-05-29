@@ -12,23 +12,25 @@ import (
 
 type RedisRunner struct {
 	process *os.Process
-	dir     string
+	Dir     string
 }
+
+const RedisPort = 6480
 
 func (runner *RedisRunner) Start(redisArgs []string) {
 	command := exec.Command("redis-server", redisArgs...)
 
 	var err error
-	runner.dir, err = ioutil.TempDir("", "redis-client-test")
+	runner.Dir, err = ioutil.TempDir("", "redis-client-test")
 	Ω(err).ShouldNot(HaveOccurred())
-	command.Dir = runner.dir
+	command.Dir = runner.Dir
 
 	err = command.Start()
 	Ω(err).ShouldNot(HaveOccurred())
 
 	runner.process = command.Process
 
-	Expect(helpers.ServiceAvailable(6480)).To(BeTrue())
+	Expect(helpers.ServiceAvailable(RedisPort)).To(BeTrue())
 }
 
 func (runner *RedisRunner) Stop() {
@@ -40,6 +42,6 @@ func (runner *RedisRunner) Stop() {
 		return err
 	}).Should(HaveOccurred())
 
-	err = os.RemoveAll(runner.dir)
+	err = os.RemoveAll(runner.Dir)
 	Ω(err).ShouldNot(HaveOccurred())
 }

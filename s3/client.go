@@ -7,6 +7,7 @@ import (
 )
 
 type s3Client struct {
+	endpoint    string
 	goamzClient *goamz.S3
 	logger      lager.Logger
 }
@@ -22,6 +23,7 @@ func NewClient(endpoint, accessKey, secretKey string, logger lager.Logger) Clien
 	}
 
 	return &s3Client{
+		endpoint:    endpoint,
 		goamzClient: goamz.New(auth, getRegion(endpoint)),
 		logger:      logger,
 	}
@@ -53,7 +55,7 @@ func (c *s3Client) GetOrCreateBucket(bucketName string) (Bucket, error) {
 
 	return NewBucket(
 		bucket.Name,
-		c.goamzClient.EC2Endpoint,
+		c.endpoint,
 		c.goamzClient.AccessKey,
 		c.goamzClient.SecretKey,
 		c.logger,

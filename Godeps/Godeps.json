@@ -28,6 +28,14 @@
 			"Rev": "535138d7bcd717d6531c701ef5933d98b1866257"
 		},
 		{
+			"ImportPath": "github.com/goamz/goamz/aws",
+			"Rev": "760aa2f8a491b6019dcf2df81d913927cb25fbc6"
+		},
+		{
+			"ImportPath": "github.com/goamz/goamz/s3",
+			"Rev": "760aa2f8a491b6019dcf2df81d913927cb25fbc6"
+		},
+		{
 			"ImportPath": "github.com/gorilla/context",
 			"Rev": "215affda49addc4c8ef7e2534915df2c8c35c6cd"
 		},

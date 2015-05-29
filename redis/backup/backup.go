@@ -1,7 +1,9 @@
 package backup
 
 import (
-	"fmt"
+	"io/ioutil"
+	"path/filepath"
+	"time"
 
 	"code.google.com/p/go-uuid/uuid"
 	"github.com/pivotal-cf/cf-redis-broker/recovery/task"
@@ -9,32 +11,65 @@ import (
 	"github.com/pivotal-golang/lager"
 )
 
-func Backup(client redis.Client, logger lager.Logger) error {
-	snapshot := NewSnapshot(client, 123, logger)
-	img, err := snapshot.Create()
+var snapshotProvider = NewSnapshot
+var renameProvider = task.NewRename
+var s3UploadProvider = task.NewS3Upload
+var cleanupProvider = NewCleanup
+
+func Backup(
+	client redis.Client,
+	snapshotTimeout time.Duration,
+	s3BucketName string,
+	s3TargetPath string,
+	s3Endpoint string,
+	awsAccessKey string,
+	awsSecretKey string,
+	logger lager.Logger,
+) error {
+	localLogger := logger.WithData(lager.Data{
+		"redis_address": client.Address(),
+	})
+
+	localLogger.Info("backup", lager.Data{"event": "starting"})
+
+	snapshot := snapshotProvider(client, snapshotTimeout, logger)
+	artifact, err := snapshot.Create()
 	if err != nil {
-		fmt.Println("Snapshot failed: ", err.Error())
+		localLogger.Error("backup", err, lager.Data{"event": "failed"})
+		return err
 	}
 
-	originalPath := img.Path()
-	tmpSnapshotPath := uuid.New()
+	originalPath := artifact.Path()
+	tmpDir, err := ioutil.TempDir("", "redis-backup")
+	if err != nil {
+		localLogger.Error("backup", err, lager.Data{"event": "failed"})
+		return err
+	}
 
-	img, err = task.NewPipeline(
+	tmpSnapshotPath := filepath.Join(tmpDir, uuid.New())
+
+	artifact, err = task.NewPipeline(
 		"redis-backup",
 		logger,
-		task.NewRename(tmpSnapshotPath, logger),
-		task.NewS3Upload("bucket-name", "target-path", "endpoint", "key", "secret", logger),
-	).Run(img)
+		renameProvider(tmpSnapshotPath, logger),
+		s3UploadProvider(s3BucketName, s3TargetPath, s3Endpoint, awsAccessKey, awsSecretKey, logger),
+	).Run(artifact)
+
+	if err != nil {
+		localLogger.Error("backup", err, lager.Data{"event": "failed"})
+	}
 
 	task.NewPipeline(
 		"cleanup",
 		logger,
-		NewCleanup(
+		cleanupProvider(
 			originalPath,
 			tmpSnapshotPath,
 			logger,
 		),
-	).Run(img)
+	).Run(artifact)
+
+	localLogger.Info("backup", lager.Data{"event": "done"})
 
 	return err
 }

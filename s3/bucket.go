@@ -101,7 +101,8 @@ func (b *s3Bucket) Upload(source, target string) error {
 
 	b.logInfo("s3bucket.upload", "shelling-out", logData)
 
-	if _, err := cmd.CombinedOutput(); err != nil {
+	if output, err := cmd.CombinedOutput(); err != nil {
+		logData["cli_output"] = string(output)
 		b.logError("s3bucket.upload", err, logData)
 		return err
 	}

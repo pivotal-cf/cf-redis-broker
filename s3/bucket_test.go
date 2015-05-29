@@ -191,7 +191,7 @@ var _ = Describe("Bucket", func() {
 
 			It("logs the error", func() {
 				Expect(log).To(gbytes.Say(fmt.Sprintf(
-					`{"aws_access_key":"%s","aws_secret_key":"%s","bucket_path":"%s","cli_path":"%s","endpoint":"%s","error":"%s","event":"%s","source_path":"%s"}`,
+					`{"aws_access_key":"%s","aws_secret_key":"%s","bucket_path":"%s","cli_output":"","cli_path":"%s","endpoint":"%s","error":"%s","event":"%s","source_path":"%s"}`,
 					expectedKey,
 					"\\*{11}KEY",
 					expectedBucketPath,
