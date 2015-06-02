@@ -1,4 +1,4 @@
-package instance_test
+package plan_test
 
 import (
 	"io/ioutil"
@@ -7,7 +7,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/pivotal-cf/cf-redis-broker/instance"
+	"github.com/pivotal-cf/cf-redis-broker/plan"
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 )
 
@@ -22,7 +22,7 @@ var _ = Describe("Backup", func() {
 		)
 
 		JustBeforeEach(func() {
-			loadedConfigs, loadErr = instance.RedisConfigs(configRoot, configFilename)
+			loadedConfigs, loadErr = plan.RedisConfigs(configRoot, configFilename)
 		})
 
 		Context("when the root exists", func() {

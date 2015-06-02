@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/pivotal-cf/cf-redis-broker/instance"
+	"github.com/pivotal-cf/cf-redis-broker/plan"
 	"github.com/pivotal-cf/cf-redis-broker/redisinstance"
 	"github.com/pivotal-golang/lager"
 )
@@ -19,7 +19,7 @@ type idProvider struct {
 	logger         lager.Logger
 }
 
-func InstanceIDProvider(brokerEndpoint, username, password string, logger lager.Logger) instance.IDProvider {
+func InstanceIDProvider(brokerEndpoint, username, password string, logger lager.Logger) plan.IDProvider {
 	return &idProvider{
 		brokerEndpoint: brokerEndpoint,
 		username:       username,

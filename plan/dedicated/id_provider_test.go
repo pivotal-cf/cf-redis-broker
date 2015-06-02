@@ -13,8 +13,8 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/pivotal-cf/brokerapi/auth"
-	"github.com/pivotal-cf/cf-redis-broker/instance"
-	"github.com/pivotal-cf/cf-redis-broker/instance/dedicated"
+	"github.com/pivotal-cf/cf-redis-broker/plan"
+	"github.com/pivotal-cf/cf-redis-broker/plan/dedicated"
 	"github.com/pivotal-cf/cf-redis-broker/redisinstance"
 	"github.com/pivotal-golang/lager"
 	. "github.com/st3v/glager"
@@ -30,7 +30,7 @@ var _ = Describe("dedicated.InstanceIDProvider", func() {
 			server             *httptest.Server
 			endpoint           string
 			expectedURL        string
-			plan               instance.IDProvider
+			plan               plan.IDProvider
 			expectedInstanceID = "some-instance-id"
 			actualInstanceID   string
 			instanceIDErr      error

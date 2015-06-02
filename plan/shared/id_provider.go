@@ -4,7 +4,7 @@ import (
 	"errors"
 	"path/filepath"
 
-	"github.com/pivotal-cf/cf-redis-broker/instance"
+	"github.com/pivotal-cf/cf-redis-broker/plan"
 	"github.com/pivotal-golang/lager"
 )
 
@@ -12,7 +12,7 @@ type idProvider struct {
 	logger lager.Logger
 }
 
-func InstanceIDProvider(logger lager.Logger) instance.IDProvider {
+func InstanceIDProvider(logger lager.Logger) plan.IDProvider {
 	return &idProvider{
 		logger: logger,
 	}

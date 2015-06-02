@@ -6,7 +6,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/pivotal-cf/cf-redis-broker/instance/backup"
+	"github.com/pivotal-cf/cf-redis-broker/plan/backup"
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 )
 
