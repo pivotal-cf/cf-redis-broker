@@ -1,0 +1,12 @@
+s3:
+  endpoint_url: endpointurl.com
+  bucket_name: some-bucket-name
+  access_key_id: some-access-key-id
+  secret_access_key: secret-access-key
+  path: some-s3-path
+snapshot_timeout: 10s
+plan_name: plan-name
+redis_data_root: /the/path/to/redis/data
+redis_config_filename: /the/path/to/the/redis/config
+log_file_path: /log/file/path
+aws_cli_path: /path/to/aws-cli
