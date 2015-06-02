@@ -54,12 +54,25 @@ var _ = Describe("Config", func() {
 				Expect(config.SnapshotTimeout).To(Equal("10s"))
 			})
 
-			It("Has the correct redis_data_root", func() {
-				Expect(config.RedisDataRoot).To(Equal("/the/path/to/redis/data"))
+			It("Has the correct redis_config_root", func() {
+				Expect(config.RedisConfigRoot).To(Equal("/the/path/to/redis/config"))
 			})
 
 			It("Has the correct redis_config_filename", func() {
-				Expect(config.RedisConfigFilename).To(Equal("/the/path/to/the/redis/config"))
+				Expect(config.RedisConfigFilename).To(Equal("redis.conf"))
+			})
+
+			It("Has the correct broker_address", func() {
+				Expect(config.BrokerAddress).To(Equal("localhost:1234"))
+			})
+
+			It("has the correct broker credentials", func() {
+				Expect(config.BrokerCredentials.Username).To(Equal("admin"))
+				Expect(config.BrokerCredentials.Password).To(Equal("secret"))
+			})
+
+			It("Has the correct node_ip", func() {
+				Expect(config.NodeIP).To(Equal("127.0.0.1"))
 			})
 
 			It("Has the correct plan_name", func() {

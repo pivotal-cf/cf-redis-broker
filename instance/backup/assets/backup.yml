@@ -5,8 +5,13 @@ s3:
   secret_access_key: secret-access-key
   path: some-s3-path
 snapshot_timeout: 10s
+broker_address: localhost:1234
+broker_credentials:
+  username: admin
+  password: secret
+node_ip: 127.0.0.1
 plan_name: plan-name
-redis_data_root: /the/path/to/redis/data
-redis_config_filename: /the/path/to/the/redis/config
+redis_config_root: /the/path/to/redis/config
+redis_config_filename: redis.conf
 log_file_path: /log/file/path
 aws_cli_path: /path/to/aws-cli
