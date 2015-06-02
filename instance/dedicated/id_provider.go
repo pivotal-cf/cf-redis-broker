@@ -1,4 +1,4 @@
-package backup
+package dedicated
 
 import (
 	"encoding/json"
@@ -7,24 +7,25 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/pivotal-cf/cf-redis-broker/instance"
 	"github.com/pivotal-cf/cf-redis-broker/redisinstance"
 )
 
-type dedicatedPlan struct {
+type idProvider struct {
 	brokerEndpoint string
 	username       string
 	password       string
 }
 
-func NewDedicatedPlan(brokerEndpoint, username, password string) *dedicatedPlan {
-	return &dedicatedPlan{
+func InstanceIDProvider(brokerEndpoint, username, password string) instance.IDProvider {
+	return &idProvider{
 		brokerEndpoint: brokerEndpoint,
 		username:       username,
 		password:       password,
 	}
 }
 
-func (p *dedicatedPlan) InstanceID(string, nodeIP string) (string, error) {
+func (p *idProvider) InstanceID(string, nodeIP string) (string, error) {
 	query := url.Values{}
 	query.Set("host", nodeIP)
 	requestURL := fmt.Sprintf("%s?%s", p.brokerEndpoint, query.Encode())

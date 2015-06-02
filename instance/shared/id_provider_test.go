@@ -1,14 +1,16 @@
-package backup
+package shared_test
 
 import (
 	"fmt"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/pivotal-cf/cf-redis-broker/instance/shared"
 )
 
-var _ = Describe("sharedPlan", func() {
-	var sharedPlan = &sharedPlan{}
+var _ = Describe("shared.InstanceIDProvider", func() {
+	var sharedPlan = shared.InstanceIDProvider()
+
 	Describe(".InstanceId", func() {
 		var (
 			expectedInstanceID = "some-instance-id"

@@ -1,4 +1,4 @@
-package backup_test
+package instance_test
 
 import (
 	"io/ioutil"
@@ -7,22 +7,22 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/pivotal-cf/cf-redis-broker/instance/backup"
+	"github.com/pivotal-cf/cf-redis-broker/instance"
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 )
 
 var _ = Describe("Backup", func() {
 
-	Describe(".LoadRedisConfigs", func() {
+	Describe(".RedisConfigs", func() {
 		var (
-			loadedConfigs  []redisconf.Conf
+			loadedConfigs  map[string]redisconf.Conf
 			loadErr        error
 			configRoot     string
 			configFilename = "redis.conf"
 		)
 
 		JustBeforeEach(func() {
-			loadedConfigs, loadErr = backup.LoadRedisConfigs(configRoot, configFilename)
+			loadedConfigs, loadErr = instance.RedisConfigs(configRoot, configFilename)
 		})
 
 		Context("when the root exists", func() {
@@ -59,8 +59,10 @@ var _ = Describe("Backup", func() {
 			})
 
 			Context("when there is one redis configuration", func() {
+				var redisConfigPath string
+
 				BeforeEach(func() {
-					redisConfigPath := filepath.Join(configRoot, configFilename)
+					redisConfigPath = filepath.Join(configRoot, configFilename)
 					err := createRedisConfig(redisConfigPath, expectedKey, expectedValue)
 					Expect(err).ToNot(HaveOccurred())
 				})
@@ -70,13 +72,19 @@ var _ = Describe("Backup", func() {
 				})
 
 				It("returns the redis conf", func() {
-					Expect(loadedConfigs).To(HaveLen(1))
-					Expect(loadedConfigs[0].Get(expectedKey)).To(Equal(expectedValue))
+					Expect(loadedConfigs).To(HaveKey(redisConfigPath))
+					Expect(loadedConfigs[redisConfigPath].Get(expectedKey)).To(
+						Equal(expectedValue),
+					)
 				})
 			})
 
 			Context("when the root contains multiple redis configurations", func() {
+				var redisConfigPaths []string
+
 				BeforeEach(func() {
+					redisConfigPaths = []string{}
+
 					for i := 0; i < 3; i++ {
 						path, err := ioutil.TempDir(configRoot, "instance")
 						Expect(err).ToNot(HaveOccurred())
@@ -85,6 +93,8 @@ var _ = Describe("Backup", func() {
 
 						err = createRedisConfig(path, expectedKey, expectedValue)
 						Expect(err).ToNot(HaveOccurred())
+
+						redisConfigPaths = append(redisConfigPaths, path)
 					}
 				})
 
@@ -93,10 +103,11 @@ var _ = Describe("Backup", func() {
 				})
 
 				It("returns all redis configs", func() {
-					Expect(loadedConfigs).To(HaveLen(3))
-
-					for _, config := range loadedConfigs {
-						Expect(config.Get(expectedKey)).To(Equal(expectedValue))
+					for _, redisConfigPath := range redisConfigPaths {
+						Expect(loadedConfigs).To(HaveKey(redisConfigPath))
+						Expect(loadedConfigs[redisConfigPath].Get(expectedKey)).To(
+							Equal(expectedValue),
+						)
 					}
 				})
 			})

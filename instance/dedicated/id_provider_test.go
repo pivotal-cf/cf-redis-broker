@@ -1,4 +1,4 @@
-package backup_test
+package dedicated_test
 
 import (
 	"encoding/json"
@@ -12,11 +12,12 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pivotal-cf/brokerapi/auth"
-	"github.com/pivotal-cf/cf-redis-broker/instance/backup"
+	"github.com/pivotal-cf/cf-redis-broker/instance"
+	"github.com/pivotal-cf/cf-redis-broker/instance/dedicated"
 	"github.com/pivotal-cf/cf-redis-broker/redisinstance"
 )
 
-var _ = Describe("DedicatedPlan", func() {
+var _ = Describe("dedicated.InstanceIDProvider", func() {
 	Describe(".InstanceID", func() {
 		var (
 			brokerUsername     = "some-username"
@@ -25,7 +26,7 @@ var _ = Describe("DedicatedPlan", func() {
 			clientPassword     string
 			server             *httptest.Server
 			endpoint           string
-			plan               backup.InstanceIDProvider
+			plan               instance.IDProvider
 			expectedInstanceID = "some-instance-id"
 			actualInstanceID   string
 			instanceIDErr      error
@@ -33,7 +34,7 @@ var _ = Describe("DedicatedPlan", func() {
 		)
 
 		JustBeforeEach(func() {
-			plan = backup.NewDedicatedPlan(endpoint, clientUsername, clientPassword)
+			plan = dedicated.InstanceIDProvider(endpoint, clientUsername, clientPassword)
 			actualInstanceID, instanceIDErr = plan.InstanceID("", nodeIP)
 		})
 

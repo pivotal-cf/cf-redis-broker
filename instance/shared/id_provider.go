@@ -1,13 +1,19 @@
-package backup
+package shared
 
 import (
 	"errors"
 	"path/filepath"
+
+	"github.com/pivotal-cf/cf-redis-broker/instance"
 )
 
-type sharedPlan struct{}
+type idProvider struct{}
 
-func (p *sharedPlan) InstanceID(redisConfigPath, nodeIP string) (string, error) {
+func InstanceIDProvider() instance.IDProvider {
+	return &idProvider{}
+}
+
+func (p *idProvider) InstanceID(redisConfigPath, nodeIP string) (string, error) {
 	cleanPath := filepath.Clean(redisConfigPath)
 
 	dir, _ := filepath.Split(cleanPath)
