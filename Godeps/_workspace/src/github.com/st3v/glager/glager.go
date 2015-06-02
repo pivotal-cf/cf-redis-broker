@@ -1,13 +1,13 @@
 package glager
 
 import (
+	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
-	"time"
 
 	"github.com/onsi/gomega/format"
+	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/types"
 	"github.com/pivotal-golang/lager"
 )
@@ -40,15 +40,18 @@ func Debug(options ...option) logEntry {
 }
 
 func Error(err error, options ...option) logEntry {
-	if err == nil {
-		err = errors.New("")
+	if err != nil {
+		options = append(options, Data("error", err.Error()))
 	}
 
-	options = append(options, Data("error", err.Error()))
 	return Entry(lager.ERROR, options...)
 }
 
-func Fatal(options ...option) logEntry {
+func Fatal(err error, options ...option) logEntry {
+	if err != nil {
+		options = append(options, Data("error", err.Error()))
+	}
+
 	return Entry(lager.FATAL, options...)
 }
 
@@ -81,13 +84,6 @@ func Source(src string) option {
 	}
 }
 
-func Timestamp(time.Time) option {
-	ts := fmt.Sprintf("%.9f", float64(time.Now().UnixNano())/1e9)
-	return func(e *logEntry) {
-		e.Timestamp = ts
-	}
-}
-
 func Data(kv ...string) option {
 	if len(kv)%2 == 1 {
 		kv = append(kv, "")
@@ -100,10 +96,22 @@ func Data(kv ...string) option {
 	}
 }
 
+type ContentsProvider interface {
+	Contents() []byte
+}
+
 func (lm *logMatcher) Match(actual interface{}) (success bool, err error) {
-	reader, ok := actual.(io.Reader)
-	if !ok {
-		return false, fmt.Errorf("Contains must be passed an io.Reader. Got:\n%s", format.Object(actual, 1))
+	var reader io.Reader
+
+	switch x := actual.(type) {
+	case gbytes.BufferProvider:
+		reader = bytes.NewReader(x.Buffer().Contents())
+	case ContentsProvider:
+		reader = bytes.NewReader(x.Contents())
+	case io.Reader:
+		reader = x
+	default:
+		return false, fmt.Errorf("ContainSequence must be passed an io.Reader, glager.ContentsProvider, or gbytes.BufferProvider. Got:\n%s", format.Object(actual, 1))
 	}
 
 	decoder := json.NewDecoder(reader)
@@ -165,10 +173,6 @@ func (actual logEntry) contains(expected logEntry) bool {
 	}
 
 	if actual.LogLevel != expected.LogLevel {
-		return false
-	}
-
-	if expected.Timestamp != "" && actual.Timestamp != expected.Timestamp {
 		return false
 	}
 

@@ -11,10 +11,13 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
 	"github.com/pivotal-cf/brokerapi/auth"
 	"github.com/pivotal-cf/cf-redis-broker/instance"
 	"github.com/pivotal-cf/cf-redis-broker/instance/dedicated"
 	"github.com/pivotal-cf/cf-redis-broker/redisinstance"
+	"github.com/pivotal-golang/lager"
+	. "github.com/st3v/glager"
 )
 
 var _ = Describe("dedicated.InstanceIDProvider", func() {
@@ -26,20 +29,30 @@ var _ = Describe("dedicated.InstanceIDProvider", func() {
 			clientPassword     string
 			server             *httptest.Server
 			endpoint           string
+			expectedURL        string
 			plan               instance.IDProvider
 			expectedInstanceID = "some-instance-id"
 			actualInstanceID   string
 			instanceIDErr      error
-			nodeIP             = "8.8.8.8"
+			nodeIP             string
+			log                *gbytes.Buffer
 		)
 
 		JustBeforeEach(func() {
-			plan = dedicated.InstanceIDProvider(endpoint, clientUsername, clientPassword)
+			log = gbytes.NewBuffer()
+			logger := lager.NewLogger("provider")
+			logger.RegisterSink(lager.NewWriterSink(log, lager.DEBUG))
+
+			plan = dedicated.InstanceIDProvider(endpoint, clientUsername, clientPassword, logger)
 			actualInstanceID, instanceIDErr = plan.InstanceID("", nodeIP)
+
+			expectedURL = fmt.Sprintf("%s?host=%s", endpoint, nodeIP)
 		})
 
 		Context("when the broker responds", func() {
 			BeforeEach(func() {
+				nodeIP = "8.8.8.8"
+
 				authWrapper := auth.NewWrapper(brokerUsername, brokerPassword)
 
 				instanceHandler := authWrapper.WrapFunc(redisinstance.NewHandler(&instanceFinder{
@@ -66,6 +79,27 @@ var _ = Describe("dedicated.InstanceIDProvider", func() {
 				Expect(actualInstanceID).To(Equal(expectedInstanceID))
 			})
 
+			It("provides logging", func() {
+				Expect(log).To(ContainSequence(
+					Info(
+						Action("provider.dedicated-instance-id"),
+						Data("event", "starting", "node_ip", nodeIP),
+					),
+					Info(
+						Action("provider.broker-request"),
+						Data("event", "starting", "url", expectedURL),
+					),
+					Info(
+						Action("provider.broker-request"),
+						Data("event", "done", "url", expectedURL),
+					),
+					Info(
+						Action("provider.dedicated-instance-id"),
+						Data("event", "done", "node_ip", nodeIP, "instance_id", expectedInstanceID),
+					),
+				))
+			})
+
 			Context("when the node is not found", func() {
 				BeforeEach(func() {
 					nodeIP = "8.8.4.4"
@@ -74,6 +108,16 @@ var _ = Describe("dedicated.InstanceIDProvider", func() {
 				It("returns an error", func() {
 					Expect(instanceIDErr).To(HaveOccurred())
 					Expect(instanceIDErr.Error()).To(ContainSubstring("404"))
+				})
+
+				It("logs the error", func() {
+					Expect(log).To(ContainSequence(
+						Error(
+							instanceIDErr,
+							Action("provider.check-response-status"),
+							Data("event", "failed", "url", expectedURL),
+						),
+					))
 				})
 			})
 
@@ -86,6 +130,16 @@ var _ = Describe("dedicated.InstanceIDProvider", func() {
 					Expect(instanceIDErr).To(HaveOccurred())
 					Expect(instanceIDErr.Error()).To(ContainSubstring("401"))
 				})
+
+				It("logs the error", func() {
+					Expect(log).To(ContainSequence(
+						Error(
+							instanceIDErr,
+							Action("provider.check-response-status"),
+							Data("event", "failed", "url", expectedURL),
+						),
+					))
+				})
 			})
 		})
 
@@ -97,6 +151,16 @@ var _ = Describe("dedicated.InstanceIDProvider", func() {
 			It("returns an error", func() {
 				Expect(instanceIDErr).To(HaveOccurred())
 				Expect(instanceIDErr).To(BeAssignableToTypeOf(&url.Error{}))
+			})
+
+			It("logs the error", func() {
+				Expect(log).To(ContainSequence(
+					Error(
+						instanceIDErr,
+						Action("provider.broker-request"),
+						Data("event", "failed", "url", expectedURL),
+					),
+				))
 			})
 		})
 
@@ -123,6 +187,16 @@ var _ = Describe("dedicated.InstanceIDProvider", func() {
 			It("returns an error", func() {
 				Expect(instanceIDErr).To(HaveOccurred())
 				Expect(instanceIDErr).To(BeAssignableToTypeOf(&json.SyntaxError{}))
+			})
+
+			It("logs the error", func() {
+				Expect(log).To(ContainSequence(
+					Error(
+						nil,
+						Action("provider.unmarshal-response-body"),
+						Data("event", "failed"),
+					),
+				))
 			})
 		})
 	})
