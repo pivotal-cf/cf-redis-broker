@@ -7,6 +7,11 @@ import (
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
 )
 
+const (
+	PlanNameShared    = "shared-vm"
+	PlanNameDedicated = "dedicated-vm"
+)
+
 type InstanceCredentials struct {
 	Host     string
 	Port     int
@@ -145,7 +150,7 @@ func (redisServiceBroker *RedisServiceBroker) plans() map[string]*brokerapi.Serv
 	if redisServiceBroker.Config.SharedEnabled() {
 		plans["shared"] = &brokerapi.ServicePlan{
 			ID:          redisServiceBroker.Config.RedisConfiguration.SharedVMPlanID,
-			Name:        "shared-vm",
+			Name:        PlanNameShared,
 			Description: "This plan provides a single Redis process on a shared VM, which is suitable for development and testing workloads",
 			Metadata: brokerapi.ServicePlanMetadata{
 				Bullets: []string{
@@ -161,7 +166,7 @@ func (redisServiceBroker *RedisServiceBroker) plans() map[string]*brokerapi.Serv
 	if redisServiceBroker.Config.DedicatedEnabled() {
 		plans["dedicated"] = &brokerapi.ServicePlan{
 			ID:          redisServiceBroker.Config.RedisConfiguration.DedicatedVMPlanID,
-			Name:        "dedicated-vm",
+			Name:        PlanNameDedicated,
 			Description: "This plan provides a single Redis process on a dedicated VM, which is suitable for production workloads",
 			Metadata: brokerapi.ServicePlanMetadata{
 				Bullets: []string{
