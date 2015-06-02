@@ -29,6 +29,10 @@ func (c *Client) CreateSnapshot(timeout time.Duration) error {
 	return c.ExpectedCreateSnapshotErr
 }
 
+func (c *Client) Disconnect() error {
+	return nil
+}
+
 func (c *Client) WaitUntilRedisNotLoading(timeoutMilliseconds int) error {
 	return nil
 }

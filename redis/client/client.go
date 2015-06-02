@@ -95,6 +95,7 @@ func Connect(options ...Option) (Client, error) {
 }
 
 type Client interface {
+	Disconnect() error
 	CreateSnapshot(timeout time.Duration) error
 	WaitUntilRedisNotLoading(timeoutMilliseconds int) error
 	EnableAOF() error
@@ -103,6 +104,10 @@ type Client interface {
 	GetConfig(key string) (string, error)
 	RDBPath() (string, error)
 	Address() string
+}
+
+func (client *client) Disconnect() error {
+	return client.connection.Close()
 }
 
 func (client *client) Address() string {

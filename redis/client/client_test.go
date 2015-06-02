@@ -87,6 +87,53 @@ var _ = Describe("Client", func() {
 		})
 	})
 
+	Describe(".Disconnect", func() {
+		var (
+			disconnectErr error
+			redisClient   client.Client
+		)
+
+		BeforeEach(func() {
+			redisRunner = &integration.RedisRunner{}
+			redisRunner.Start(redisArgs)
+
+			var err error
+			redisClient, err = client.Connect(
+				client.Host(host),
+				client.Port(port),
+			)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		AfterEach(func() {
+			redisRunner.Stop()
+		})
+
+		JustBeforeEach(func() {
+			disconnectErr = redisClient.Disconnect()
+		})
+
+		It("does not return an error", func() {
+			Expect(disconnectErr).ToNot(HaveOccurred())
+		})
+
+		It("closes the redis connection", func() {
+			_, err := redisClient.RDBPath()
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("closed network connection"))
+		})
+
+		Context("when the client is not connected", func() {
+			BeforeEach(func() {
+				Expect(redisClient.Disconnect()).ToNot(HaveOccurred())
+			})
+
+			It("returns an error", func() {
+				Expect(disconnectErr).To(HaveOccurred())
+			})
+		})
+	})
+
 	Describe("using the client", func() {
 		BeforeEach(func() {
 			redisRunner = &integration.RedisRunner{}
