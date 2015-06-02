@@ -23,15 +23,17 @@ func (finder fakeInstanceFinder) IDForHost(host string) string {
 }
 
 var _ = Describe("Redisinstance", func() {
-	var recorder *httptest.ResponseRecorder
+	var (
+		recorder *httptest.ResponseRecorder
+		handler  http.HandlerFunc
+	)
 
 	BeforeEach(func() {
 		recorder = httptest.NewRecorder()
+		handler = redisinstance.NewHandler(fakeInstanceFinder{})
 	})
 
 	It("it responds with a 200", func() {
-		handler := redisinstance.NewHandler(fakeInstanceFinder{})
-
 		request, err := http.NewRequest("GET", "http://localhost/instances?host=1.2.3.4", nil)
 		Expect(err).NotTo(HaveOccurred())
 		handler.ServeHTTP(recorder, request)
@@ -40,8 +42,6 @@ var _ = Describe("Redisinstance", func() {
 	})
 
 	It("returns the correct instance id for the host provided", func() {
-		handler := redisinstance.NewHandler(fakeInstanceFinder{})
-
 		request, err := http.NewRequest("GET", "http://localhost/instances?host=1.2.3.4", nil)
 		Expect(err).NotTo(HaveOccurred())
 		handler.ServeHTTP(recorder, request)
@@ -50,8 +50,6 @@ var _ = Describe("Redisinstance", func() {
 	})
 
 	It("returns a not found in case the host is not allocated", func() {
-		handler := redisinstance.NewHandler(fakeInstanceFinder{})
-
 		request, err := http.NewRequest("GET", "http://localhost/instances?host=unknown.host", nil)
 		Expect(err).NotTo(HaveOccurred())
 		handler.ServeHTTP(recorder, request)
@@ -61,6 +59,16 @@ var _ = Describe("Redisinstance", func() {
 		bytes, err := ioutil.ReadAll(recorder.Body)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(string(bytes)).To(Equal("\n"))
+	})
+
+	Context("when host query param is not provided", func() {
+		It("returns a 400", func() {
+			request, err := http.NewRequest("GET", "http://localhost/instances", nil)
+			Expect(err).NotTo(HaveOccurred())
+			handler.ServeHTTP(recorder, request)
+
+			Expect(recorder.Code).To(Equal(http.StatusBadRequest))
+		})
 	})
 })
 
