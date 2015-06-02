@@ -20,6 +20,7 @@ type Param struct {
 }
 
 const (
+	DefaultHost = "127.0.0.1"
 	DefaultPort = 6379
 )
 
@@ -76,6 +77,14 @@ func decode(data []byte) (Conf, error) {
 	}
 
 	return conf, nil
+}
+
+func (conf Conf) Host() string {
+	host := conf.Get("bind")
+	if host == "" {
+		return DefaultHost
+	}
+	return host
 }
 
 func (conf Conf) Port() int {

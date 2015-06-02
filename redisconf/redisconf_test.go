@@ -154,6 +154,15 @@ var _ = Describe("redisconf", func() {
 			})
 		})
 
+		Context("when the file is not valid", func() {
+			It("returns an error", func() {
+				invalidRedisConf, err := filepath.Abs(path.Join("assets", "invalid.conf"))
+				Expect(err).ToNot(HaveOccurred())
+				_, err = redisconf.Load(invalidRedisConf)
+				Expect(err).To(HaveOccurred())
+			})
+		})
+
 		Context("When the file does not exist", func() {
 			It("returns an error", func() {
 				_, err := redisconf.Load("/this/is/an/invalid/path")
