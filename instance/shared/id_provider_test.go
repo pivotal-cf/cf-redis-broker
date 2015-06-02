@@ -5,26 +5,37 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
+	"github.com/pivotal-cf/cf-redis-broker/instance"
 	"github.com/pivotal-cf/cf-redis-broker/instance/shared"
+	"github.com/pivotal-golang/lager"
+	. "github.com/st3v/glager"
 )
 
 var _ = Describe("shared.InstanceIDProvider", func() {
-	var sharedPlan = shared.InstanceIDProvider()
 
 	Describe(".InstanceId", func() {
 		var (
+			idProvider         instance.IDProvider
 			expectedInstanceID = "some-instance-id"
 			actualInstanceID   string
 			instanceIDErr      error
 			redisConfigPath    string
+			log                *gbytes.Buffer
 		)
 
 		BeforeEach(func() {
+			log = gbytes.NewBuffer()
+			logger := lager.NewLogger("provider")
+			logger.RegisterSink(lager.NewWriterSink(log, lager.DEBUG))
+
 			redisConfigPath = fmt.Sprintf("/var/vcap/store/redis/%s/redis.conf", expectedInstanceID)
+
+			idProvider = shared.InstanceIDProvider(logger)
 		})
 
 		JustBeforeEach(func() {
-			actualInstanceID, instanceIDErr = sharedPlan.InstanceID(redisConfigPath, "")
+			actualInstanceID, instanceIDErr = idProvider.InstanceID(redisConfigPath, "")
 		})
 
 		It("does not return an error", func() {
@@ -33,6 +44,19 @@ var _ = Describe("shared.InstanceIDProvider", func() {
 
 		It("returns the instance ID based on the redis config path", func() {
 			Expect(actualInstanceID).To(Equal(expectedInstanceID))
+		})
+
+		It("provides logging", func() {
+			Expect(log).To(ContainSequence(
+				Info(
+					Action("provider.shared-instance-id"),
+					Data("event", "starting", "path", redisConfigPath),
+				),
+				Info(
+					Action("provider.shared-instance-id"),
+					Data("event", "done", "path", redisConfigPath, "instance_id", expectedInstanceID),
+				),
+			))
 		})
 
 		Context("when redis config path is a relative path", func() {
@@ -66,6 +90,19 @@ var _ = Describe("shared.InstanceIDProvider", func() {
 
 			It("returns an error", func() {
 				Expect(instanceIDErr).To(HaveOccurred())
+			})
+			It("logs the error", func() {
+				Expect(log).To(ContainSequence(
+					Info(
+						Action("provider.shared-instance-id"),
+						Data("event", "starting", "path", redisConfigPath),
+					),
+					Error(
+						instanceIDErr,
+						Action("provider.shared-instance-id"),
+						Data("event", "failed", "path", redisConfigPath),
+					),
+				))
 			})
 		})
 	})
