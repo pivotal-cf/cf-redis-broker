@@ -50,8 +50,8 @@ var _ = Describe("Config", func() {
 				Expect(config.S3Config.Path).To(Equal("some-s3-path"))
 			})
 
-			It("Has the correct snapshot_timeout", func() {
-				Expect(config.SnapshotTimeout).To(Equal("10s"))
+			It("Has the correct snapshot_timeout_seconds", func() {
+				Expect(config.SnapshotTimeoutSeconds).To(Equal(10))
 			})
 
 			It("Has the correct redis_config_root", func() {
@@ -59,7 +59,7 @@ var _ = Describe("Config", func() {
 			})
 
 			It("Has the correct redis_config_filename", func() {
-				Expect(config.RedisConfigFilename).To(Equal("redis.conf"))
+				Expect(config.RedisConfigFilename).To(Equal("redis-config-filename"))
 			})
 
 			It("Has the correct broker_address", func() {
@@ -72,7 +72,7 @@ var _ = Describe("Config", func() {
 			})
 
 			It("Has the correct node_ip", func() {
-				Expect(config.NodeIP).To(Equal("127.0.0.1"))
+				Expect(config.NodeIP).To(Equal("1.2.3.4"))
 			})
 
 			It("Has the correct plan_name", func() {

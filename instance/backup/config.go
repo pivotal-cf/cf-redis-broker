@@ -7,16 +7,16 @@ import (
 )
 
 type Config struct {
-	S3Config            S3Configuration   `yaml:"s3"`
-	SnapshotTimeout     string            `yaml:"snapshot_timeout"`
-	NodeIP              string            `yaml:"node_ip"`
-	RedisConfigRoot     string            `yaml:"redis_config_root"`
-	RedisConfigFilename string            `yaml:"redis_config_filename"`
-	PlanName            string            `yaml:"plan_name"`
-	BrokerCredentials   BrokerCredentials `yaml:"broker_credentials"`
-	BrokerAddress       string            `yaml:"broker_address"`
-	LogFilepath         string            `yaml:"log_file_path"`
-	AwsCLIPath          string            `yaml:"aws_cli_path"`
+	S3Config               S3Configuration   `yaml:"s3"`
+	SnapshotTimeoutSeconds int               `yaml:"snapshot_timeout_seconds"`
+	NodeIP                 string            `yaml:"node_ip"`
+	RedisConfigRoot        string            `yaml:"redis_config_root"`
+	RedisConfigFilename    string            `yaml:"redis_config_filename"`
+	PlanName               string            `yaml:"plan_name"`
+	BrokerCredentials      BrokerCredentials `yaml:"broker_credentials"`
+	BrokerAddress          string            `yaml:"broker_address"`
+	LogFilepath            string            `yaml:"log_file_path"`
+	AwsCLIPath             string            `yaml:"aws_cli_path"`
 }
 
 type S3Configuration struct {
