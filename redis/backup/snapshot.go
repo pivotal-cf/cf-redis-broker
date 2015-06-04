@@ -9,21 +9,21 @@ import (
 	"github.com/pivotal-golang/lager"
 )
 
-type snapshot struct {
+type snapshotter struct {
 	client  redis.Client
 	timeout time.Duration
 	logger  lager.Logger
 }
 
-func NewSnapshot(client redis.Client, timeout time.Duration, logger lager.Logger) recovery.Snapshot {
-	return &snapshot{
+func NewSnapshotter(client redis.Client, timeout time.Duration, logger lager.Logger) recovery.Snapshotter {
+	return &snapshotter{
 		client:  client,
 		timeout: timeout,
 		logger:  logger,
 	}
 }
 
-func (s *snapshot) Create() (task.Artifact, error) {
+func (s *snapshotter) Snapshot() (task.Artifact, error) {
 	s.logger.Info("snapshot",
 		lager.Data{
 			"task":    "create-snapshot",

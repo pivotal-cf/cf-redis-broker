@@ -16,15 +16,15 @@ import (
 	"github.com/pivotal-golang/lager"
 )
 
-type fakeSnapshot struct {
-	CreateErr     error
-	CreateResult  task.Artifact
-	CreateInvoked int
+type fakeSnapshotter struct {
+	SnapshotErr    error
+	SnapshotResult task.Artifact
+	SnaphotTaken   int
 }
 
-func (s *fakeSnapshot) Create() (task.Artifact, error) {
-	s.CreateInvoked++
-	return s.CreateResult, s.CreateErr
+func (s *fakeSnapshotter) Snapshot() (task.Artifact, error) {
+	s.SnaphotTaken++
+	return s.SnapshotResult, s.SnapshotErr
 }
 
 type fakeTask struct {
@@ -52,7 +52,7 @@ var _ = Describe("backup", func() {
 			backupErr       error
 			log             *gbytes.Buffer
 			logger          lager.Logger
-			snapshot        *fakeSnapshot
+			snapshotter     *fakeSnapshotter
 			initialArtifact task.Artifact
 			renamer         *fakeTask
 			s3Uploader      *fakeTask
@@ -67,11 +67,11 @@ var _ = Describe("backup", func() {
 
 			initialArtifact = task.NewArtifact("path/to/artifact")
 
-			snapshot = &fakeSnapshot{
-				CreateResult: initialArtifact,
+			snapshotter = &fakeSnapshotter{
+				SnapshotResult: initialArtifact,
 			}
-			snapshotProvider = func(client redis.Client, timeout time.Duration, logger lager.Logger) recovery.Snapshot {
-				return snapshot
+			snapshotterProvider = func(client redis.Client, timeout time.Duration, logger lager.Logger) recovery.Snapshotter {
+				return snapshotter
 			}
 
 			renamer = &fakeTask{
@@ -119,7 +119,7 @@ var _ = Describe("backup", func() {
 		})
 
 		It("takes a snapshot", func() {
-			Expect(snapshot.CreateInvoked).To(Equal(1))
+			Expect(snapshotter.SnaphotTaken).To(Equal(1))
 		})
 
 		It("renames the original snapshot", func() {
@@ -158,8 +158,8 @@ var _ = Describe("backup", func() {
 			var expectedErr = errors.New("snapshot-error")
 
 			BeforeEach(func() {
-				snapshot = &fakeSnapshot{
-					CreateErr: expectedErr,
+				snapshotter = &fakeSnapshotter{
+					SnapshotErr: expectedErr,
 				}
 			})
 

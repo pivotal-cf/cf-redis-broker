@@ -15,8 +15,8 @@ import (
 	"github.com/onsi/gomega/gbytes"
 )
 
-var _ = Describe("Snapshot", func() {
-	Describe(".Create", func() {
+var _ = Describe("Snapshotter", func() {
+	Describe(".Snapshot", func() {
 		var (
 			artifact             task.Artifact
 			err                  error
@@ -35,8 +35,8 @@ var _ = Describe("Snapshot", func() {
 			logger = lager.NewLogger("logger")
 			log = gbytes.NewBuffer()
 			logger.RegisterSink(lager.NewWriterSink(log, lager.INFO))
-			snapshot := backup.NewSnapshot(fakeRedisClient, timeout, logger)
-			artifact, err = snapshot.Create()
+			snapshotter := backup.NewSnapshotter(fakeRedisClient, timeout, logger)
+			artifact, err = snapshotter.Snapshot()
 		})
 
 		It("creates an artifact with the right path", func() {
@@ -70,8 +70,8 @@ var _ = Describe("Snapshot", func() {
 				log = gbytes.NewBuffer()
 				logger.RegisterSink(lager.NewWriterSink(log, lager.INFO))
 
-				snapshot := backup.NewSnapshot(fakeRedisClient, 123, logger)
-				artifact, err = snapshot.Create()
+				snapshotter := backup.NewSnapshotter(fakeRedisClient, 123, logger)
+				artifact, err = snapshotter.Snapshot()
 			})
 
 			It("returns the error", func() {
@@ -95,8 +95,8 @@ var _ = Describe("Snapshot", func() {
 				log = gbytes.NewBuffer()
 				logger.RegisterSink(lager.NewWriterSink(log, lager.INFO))
 
-				snapshot := backup.NewSnapshot(fakeRedisClient, 123, logger)
-				artifact, err = snapshot.Create()
+				snapshotter := backup.NewSnapshotter(fakeRedisClient, 123, logger)
+				artifact, err = snapshotter.Snapshot()
 			})
 
 			It("returns the error", func() {

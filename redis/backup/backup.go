@@ -11,7 +11,7 @@ import (
 	"github.com/pivotal-golang/lager"
 )
 
-var snapshotProvider = NewSnapshot
+var snapshotterProvider = NewSnapshotter
 var renameProvider = task.NewRename
 var s3UploadProvider = task.NewS3Upload
 var cleanupProvider = NewCleanup
@@ -32,8 +32,8 @@ func Backup(
 
 	localLogger.Info("backup", lager.Data{"event": "starting"})
 
-	snapshot := snapshotProvider(client, snapshotTimeout, logger)
-	artifact, err := snapshot.Create()
+	snapshotter := snapshotterProvider(client, snapshotTimeout, logger)
+	artifact, err := snapshotter.Snapshot()
 	if err != nil {
 		localLogger.Error("backup", err, lager.Data{"event": "failed"})
 		return err
