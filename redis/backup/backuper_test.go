@@ -1,4 +1,4 @@
-package backup
+package backup_test
 
 import (
 	"errors"
@@ -11,53 +11,25 @@ import (
 	"github.com/onsi/gomega/gbytes"
 	"github.com/pivotal-cf/cf-redis-broker/recovery"
 	"github.com/pivotal-cf/cf-redis-broker/recovery/task"
+	"github.com/pivotal-cf/cf-redis-broker/redis/backup"
+	"github.com/pivotal-cf/cf-redis-broker/redis/backup/fakes"
 	redis "github.com/pivotal-cf/cf-redis-broker/redis/client"
-	"github.com/pivotal-cf/cf-redis-broker/redis/client/fakes"
 	"github.com/pivotal-golang/lager"
 )
 
-type fakeSnapshotter struct {
-	SnapshotErr    error
-	SnapshotResult task.Artifact
-	SnaphotTaken   int
-}
-
-func (s *fakeSnapshotter) Snapshot() (task.Artifact, error) {
-	s.SnaphotTaken++
-	return s.SnapshotResult, s.SnapshotErr
-}
-
-type fakeTask struct {
-	TaskName               string
-	RunInvokedWithArtifact []task.Artifact
-	RunErr                 error
-}
-
-func (t *fakeTask) Name() string {
-	return t.TaskName
-}
-
-func (t *fakeTask) Run(artifact task.Artifact) (task.Artifact, error) {
-	if t.RunInvokedWithArtifact == nil {
-		t.RunInvokedWithArtifact = []task.Artifact{}
-	}
-
-	t.RunInvokedWithArtifact = append(t.RunInvokedWithArtifact, artifact)
-	return task.NewArtifact(t.Name()), t.RunErr
-}
-
-var _ = Describe("backup", func() {
+var _ = Describe("RedisBackuper", func() {
 	Describe(".Backup", func() {
 		var (
 			backupErr       error
 			log             *gbytes.Buffer
 			logger          lager.Logger
-			snapshotter     *fakeSnapshotter
+			snapshotter     *fakes.FakeSnapshotter
 			initialArtifact task.Artifact
-			renamer         *fakeTask
-			s3Uploader      *fakeTask
-			cleaner         *fakeTask
-			redisClient     redis.Client
+			renameTask      *fakes.FakeTask
+			s3UploadTask    *fakes.FakeTask
+			cleanupTask     *fakes.FakeTask
+			redisClient     *fakes.FakeRedisClient
+			backuper        backup.RedisBackuper
 		)
 
 		BeforeEach(func() {
@@ -67,50 +39,58 @@ var _ = Describe("backup", func() {
 
 			initialArtifact = task.NewArtifact("path/to/artifact")
 
-			snapshotter = &fakeSnapshotter{
-				SnapshotResult: initialArtifact,
-			}
-			snapshotterProvider = func(client redis.Client, timeout time.Duration, logger lager.Logger) recovery.Snapshotter {
+			snapshotter = new(fakes.FakeSnapshotter)
+			snapshotter.SnapshotReturns(initialArtifact, nil)
+			snapshotterProvider := func(redis.Client, time.Duration, lager.Logger) recovery.Snapshotter {
 				return snapshotter
 			}
 
-			renamer = &fakeTask{
-				TaskName: "renamer",
-			}
-			renameProvider = func(string, lager.Logger) task.Task {
-				return renamer
-			}
-
-			s3Uploader = &fakeTask{
-				TaskName: "s3uploader",
-			}
-			s3UploadProvider = func(bucketName, targetPath, endpoint, key, secret string, logger lager.Logger, options ...task.S3UploadOption) task.Task {
-				return s3Uploader
+			renameTask = new(fakes.FakeTask)
+			renameTask.NameReturns("rename")
+			renameTask.RunReturns(task.NewArtifact("rename"), nil)
+			renameTaskProvider := func(string, lager.Logger) task.Task {
+				return renameTask
 			}
 
-			cleaner = &fakeTask{
-				TaskName: "cleaner",
-			}
-			cleanupProvider = func(originalRdbPath, renamedRdbPath string, logger lager.Logger, options ...cleanupOption) task.Task {
-				return cleaner
+			s3UploadTask = new(fakes.FakeTask)
+			s3UploadTask.NameReturns("s3upload")
+			s3UploadTask.RunReturns(task.NewArtifact("s3upload"), nil)
+			s3UploadTaskProvider := func(
+				string, string, string, string, string, lager.Logger, ...task.S3UploadInjector,
+			) task.Task {
+				return s3UploadTask
 			}
 
-			redisClient = &fakes.Client{
-				Host: "test-host",
-				Port: 1446,
+			cleanupTask = new(fakes.FakeTask)
+			cleanupTask.NameReturns("cleaner")
+			cleanupTask.RunReturns(task.NewArtifact("cleanup"), nil)
+			cleanupTaskProvider := func(
+				string, string, lager.Logger, ...backup.CleanupInjector,
+			) task.Task {
+				return cleanupTask
 			}
-		})
 
-		JustBeforeEach(func() {
-			backupErr = Backup(
-				redisClient,
+			redisClient = new(fakes.FakeRedisClient)
+			redisClient.AddressReturns("test-host:1446")
+
+			backuper = backup.NewRedisBackuper(
 				time.Second,
 				"bucket-name",
-				"target-path",
 				"endpoint",
 				"key",
 				"secret",
 				logger,
+				backup.InjectSnapshotterProvider(snapshotterProvider),
+				backup.InjectRenameTaskProvider(renameTaskProvider),
+				backup.InjectS3UploadTaskProvider(s3UploadTaskProvider),
+				backup.InjectCleanupTaskProvider(cleanupTaskProvider),
+			)
+		})
+
+		JustBeforeEach(func() {
+			backupErr = backuper.Backup(
+				redisClient,
+				"target-path",
 			)
 		})
 
@@ -119,24 +99,24 @@ var _ = Describe("backup", func() {
 		})
 
 		It("takes a snapshot", func() {
-			Expect(snapshotter.SnaphotTaken).To(Equal(1))
+			Expect(snapshotter.SnapshotCallCount()).To(Equal(1))
 		})
 
 		It("renames the original snapshot", func() {
-			Expect(renamer.RunInvokedWithArtifact).To(HaveLen(1))
-			Expect(renamer.RunInvokedWithArtifact[0]).To(Equal(initialArtifact))
+			Expect(renameTask.RunCallCount()).To(Equal(1))
+			Expect(renameTask.RunArgsForCall(0)).To(Equal(initialArtifact))
 		})
 
 		It("uploads the renamed snapshot to s3", func() {
-			expectedArtifact := task.NewArtifact(renamer.Name())
-			Expect(s3Uploader.RunInvokedWithArtifact).To(HaveLen(1))
-			Expect(s3Uploader.RunInvokedWithArtifact[0]).To(Equal(expectedArtifact))
+			expectedArtifact := task.NewArtifact(renameTask.Name())
+			Expect(s3UploadTask.RunCallCount()).To(Equal(1))
+			Expect(s3UploadTask.RunArgsForCall(0)).To(Equal(expectedArtifact))
 		})
 
 		It("cleans up", func() {
-			expectedArtifact := task.NewArtifact(s3Uploader.Name())
-			Expect(cleaner.RunInvokedWithArtifact).To(HaveLen(1))
-			Expect(cleaner.RunInvokedWithArtifact[0]).To(Equal(expectedArtifact))
+			expectedArtifact := task.NewArtifact(s3UploadTask.Name())
+			Expect(cleanupTask.RunCallCount()).To(Equal(1))
+			Expect(cleanupTask.RunArgsForCall(0)).To(Equal(expectedArtifact))
 		})
 
 		It("logs", func() {
@@ -158,9 +138,7 @@ var _ = Describe("backup", func() {
 			var expectedErr = errors.New("snapshot-error")
 
 			BeforeEach(func() {
-				snapshotter = &fakeSnapshotter{
-					SnapshotErr: expectedErr,
-				}
+				snapshotter.SnapshotReturns(nil, expectedErr)
 			})
 
 			It("returns the error", func() {
@@ -184,15 +162,15 @@ var _ = Describe("backup", func() {
 			})
 
 			It("does not rename anything", func() {
-				Expect(renamer.RunInvokedWithArtifact).To(HaveLen(0))
+				Expect(renameTask.RunCallCount()).To(Equal(0))
 			})
 
 			It("does not upload anything to s3", func() {
-				Expect(s3Uploader.RunInvokedWithArtifact).To(HaveLen(0))
+				Expect(s3UploadTask.RunCallCount()).To(Equal(0))
 			})
 
 			It("does not cleanup", func() {
-				Expect(cleaner.RunInvokedWithArtifact).To(HaveLen(0))
+				Expect(cleanupTask.RunCallCount()).To(Equal(0))
 			})
 		})
 
@@ -200,9 +178,7 @@ var _ = Describe("backup", func() {
 			var expectedErr = errors.New("rename-error")
 
 			BeforeEach(func() {
-				renamer = &fakeTask{
-					RunErr: expectedErr,
-				}
+				renameTask.RunReturns(nil, expectedErr)
 			})
 
 			It("returns the error", func() {
@@ -226,11 +202,11 @@ var _ = Describe("backup", func() {
 			})
 
 			It("does not upload anything to s3", func() {
-				Expect(s3Uploader.RunInvokedWithArtifact).To(HaveLen(0))
+				Expect(s3UploadTask.RunCallCount()).To(Equal(0))
 			})
 
 			It("does cleanup", func() {
-				Expect(cleaner.RunInvokedWithArtifact).To(HaveLen(1))
+				Expect(cleanupTask.RunCallCount()).To(Equal(1))
 			})
 		})
 
@@ -238,9 +214,7 @@ var _ = Describe("backup", func() {
 			var expectedErr = errors.New("upload-error")
 
 			BeforeEach(func() {
-				s3Uploader = &fakeTask{
-					RunErr: expectedErr,
-				}
+				s3UploadTask.RunReturns(nil, expectedErr)
 			})
 
 			It("returns the error", func() {
@@ -264,7 +238,7 @@ var _ = Describe("backup", func() {
 			})
 
 			It("does cleanup", func() {
-				Expect(cleaner.RunInvokedWithArtifact).To(HaveLen(1))
+				Expect(cleanupTask.RunCallCount()).To(Equal(1))
 			})
 		})
 	})

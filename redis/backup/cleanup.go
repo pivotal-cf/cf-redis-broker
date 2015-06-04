@@ -19,21 +19,21 @@ type cleanup struct {
 type renamer func(string, string) error
 type remover func(string) error
 
-type cleanupOption func(*cleanup)
+type CleanupInjector func(*cleanup)
 
-func InjectRemover(r remover) cleanupOption {
+func InjectRemover(r remover) CleanupInjector {
 	return func(c *cleanup) {
 		c.remove = r
 	}
 }
 
-func InjectRenamer(r renamer) cleanupOption {
+func InjectRenamer(r renamer) CleanupInjector {
 	return func(c *cleanup) {
 		c.rename = r
 	}
 }
 
-func NewCleanup(originalRdbPath, renamedRdbPath string, logger lager.Logger, options ...cleanupOption) task.Task {
+func NewCleanup(originalRdbPath, renamedRdbPath string, logger lager.Logger, injectors ...CleanupInjector) task.Task {
 	c := &cleanup{
 		remove:          os.Remove,
 		rename:          os.Rename,
@@ -42,8 +42,8 @@ func NewCleanup(originalRdbPath, renamedRdbPath string, logger lager.Logger, opt
 		logger:          logger,
 	}
 
-	for _, option := range options {
-		option(c)
+	for _, injector := range injectors {
+		injector(c)
 	}
 
 	return c

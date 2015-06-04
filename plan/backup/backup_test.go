@@ -116,22 +116,22 @@ var _ = Describe("backup", func() {
 			s3TargetPaths = []string{}
 			s3BucketNames = []string{}
 
-			defaultRedisBackupFunc = func(
-				client redis.Client,
-				timeout time.Duration,
-				bucketName string,
-				targetPath string,
-				endpoint string,
-				eccessKey string,
-				secretKey string,
-				logger lager.Logger,
-			) error {
-				snapshotTimeout = timeout
-				s3BucketNames = append(s3BucketNames, bucketName)
-				s3TargetPaths = append(s3TargetPaths, targetPath)
-				backedUpClients = append(backedUpClients, client)
-				return nil
-			}
+			// defaultRedisBackupFunc = func(
+			// 	client redis.Client,
+			// 	timeout time.Duration,
+			// 	bucketName string,
+			// 	targetPath string,
+			// 	endpoint string,
+			// 	eccessKey string,
+			// 	secretKey string,
+			// 	logger lager.Logger,
+			// ) error {
+			// 	snapshotTimeout = timeout
+			// 	s3BucketNames = append(s3BucketNames, bucketName)
+			// 	s3TargetPaths = append(s3TargetPaths, targetPath)
+			// 	backedUpClients = append(backedUpClients, client)
+			// 	return nil
+			// }
 		})
 
 		JustBeforeEach(func() {

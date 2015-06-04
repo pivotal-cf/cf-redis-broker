@@ -17,15 +17,19 @@ type s3upload struct {
 	logger     lager.Logger
 }
 
-func InjectS3Client(s3client s3.Client) S3UploadOption {
+func InjectS3Client(s3client s3.Client) S3UploadInjector {
 	return func(u *s3upload) {
 		u.client = s3client
 	}
 }
 
-type S3UploadOption func(*s3upload)
+type S3UploadInjector func(*s3upload)
 
-func NewS3Upload(bucketName, targetPath, endpoint, key, secret string, logger lager.Logger, options ...S3UploadOption) Task {
+func NewS3Upload(
+	bucketName, targetPath, endpoint, key, secret string,
+	logger lager.Logger,
+	injectors ...S3UploadInjector,
+) Task {
 	upload := &s3upload{
 		bucketName: bucketName,
 		targetPath: targetPath,
@@ -36,8 +40,8 @@ func NewS3Upload(bucketName, targetPath, endpoint, key, secret string, logger la
 		logger:     logger,
 	}
 
-	for _, option := range options {
-		option(upload)
+	for _, injector := range injectors {
+		injector(upload)
 	}
 
 	return upload

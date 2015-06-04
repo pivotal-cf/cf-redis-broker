@@ -10,7 +10,6 @@ import (
 	"github.com/pivotal-cf/cf-redis-broker/plan"
 	"github.com/pivotal-cf/cf-redis-broker/plan/dedicated"
 	"github.com/pivotal-cf/cf-redis-broker/plan/shared"
-	"github.com/pivotal-cf/cf-redis-broker/redis/backup"
 	redis "github.com/pivotal-cf/cf-redis-broker/redis/client"
 	"github.com/pivotal-golang/lager"
 )
@@ -42,7 +41,7 @@ var defaultRedisConfigLoader = plan.RedisConfigs
 
 var defaultRedisClientProvider = redis.Connect
 
-var defaultRedisBackupFunc = backup.Backup
+// var defaultRedisBackupFunc = backup.Backup
 
 var clock = time.Now
 
@@ -79,20 +78,21 @@ func Backup(configPath string, logger lager.Logger) ([]Result, error) {
 		return nil, err
 	}
 
-	timeout := time.Second * time.Duration(backupConfig.SnapshotTimeoutSeconds)
+	// timeout := time.Second * time.Duration(backupConfig.SnapshotTimeoutSeconds)
 	results := []Result{}
 
 	for redisConfigPath, redisConfig := range redisConfigs {
 		result := Result{}
 
 		// log start instance id
-		instanceID, _ := idProvider.InstanceID(redisConfigPath, backupConfig.NodeIP)
+		// instanceID, _ :=
+		idProvider.InstanceID(redisConfigPath, backupConfig.NodeIP)
 		// check for err
 		// log err if happened
 		// log end instance id
 
 		//log start redis connect
-		client, err := defaultRedisClientProvider(
+		_, err := defaultRedisClientProvider(
 			redis.Host(redisConfig.Host()),
 			redis.Port(redisConfig.Port()),
 			redis.Password(redisConfig.Password()),
@@ -111,16 +111,16 @@ func Backup(configPath string, logger lager.Logger) ([]Result, error) {
 		//log end redis connect
 
 		// log backup start
-		defaultRedisBackupFunc(
-			client,
-			timeout,
-			backupConfig.S3Config.BucketName,
-			targetFilename(backupConfig.S3Config.Path, instanceID, backupConfig.PlanName),
-			"s3-endpoint",
-			"s3-access-id",
-			"s3-secret-key",
-			logger,
-		)
+		// defaultRedisBackupFunc(
+		// 	client,
+		// 	timeout,
+		// 	backupConfig.S3Config.BucketName,
+		// 	targetFilename(backupConfig.S3Config.Path, instanceID, backupConfig.PlanName),
+		// 	"s3-endpoint",
+		// 	"s3-access-id",
+		// 	"s3-secret-key",
+		// 	logger,
+		// )
 		// keep track of backup err
 		// log backup err if happened
 
@@ -202,7 +202,7 @@ func REMOVE_ME_LATER(configPath string, logger lager.Logger) ([]Result, error) {
 	configRoot := backupConfig.RedisConfigRoot
 	configFilename := backupConfig.RedisConfigFilename
 
-	timeout := time.Second
+	// timeout := time.Second
 	redisConfigs, err := plan.RedisConfigs(configRoot, configFilename)
 	if err != nil {
 		return []Result{}, err
@@ -253,18 +253,18 @@ func REMOVE_ME_LATER(configPath string, logger lager.Logger) ([]Result, error) {
 			backupConfig.PlanName,
 		)
 
-		targetPath := fmt.Sprintf("%s/%d/%d/%d/%s", s3.Path, year, month, day, filename)
+		fmt.Sprintf("%s/%d/%d/%d/%s", s3.Path, year, month, day, filename)
 
-		err = backup.Backup(
-			client,
-			timeout,
-			s3.BucketName,
-			targetPath,
-			s3.EndpointUrl,
-			s3.AccessKeyId,
-			s3.SecretAccessKey,
-			logger,
-		)
+		// err = backup.Backup(
+		// 	client,
+		// 	timeout,
+		// 	s3.BucketName,
+		// 	targetPath,
+		// 	s3.EndpointUrl,
+		// 	s3.AccessKeyId,
+		// 	s3.SecretAccessKey,
+		// 	logger,
+		// )
 		if err != nil {
 			result.Err = err
 			results = append(results, result)

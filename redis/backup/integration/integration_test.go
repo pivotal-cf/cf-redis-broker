@@ -63,15 +63,18 @@ var _ = BeforeSuite(func() {
 	_, err = bucket.Get(targetPath)
 	Expect(err).To(HaveOccurred())
 
-	backupErr = backup.Backup(
-		client,
+	backuper := backup.NewRedisBackuper(
 		10*time.Second,
 		bucketName,
-		targetPath,
 		s3Server.URL(),
 		"access-key",
 		"secret-key",
 		logger,
+	)
+
+	backupErr = backuper.Backup(
+		client,
+		targetPath,
 	)
 
 	uploadedObject, err = bucket.Get(targetPath)
