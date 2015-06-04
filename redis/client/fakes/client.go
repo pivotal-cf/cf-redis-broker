@@ -18,6 +18,9 @@ type Client struct {
 }
 
 func (c *Client) Address() string {
+	if c.Host == "" {
+		return ""
+	}
 	return fmt.Sprintf("%s:%d", c.Host, c.Port)
 }
 
