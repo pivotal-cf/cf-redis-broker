@@ -100,83 +100,88 @@ func NewInstanceBackuper(
 func (b *instanceBackuper) Backup() []BackupResult {
 	backupResults := make([]BackupResult, len(b.redisConfigs))
 	for i, redisConfig := range b.redisConfigs {
-		result := BackupResult{
-			RedisConfigPath: redisConfig.Path,
-			NodeIP:          b.backupConfig.NodeIP,
-		}
-
-		logger := b.logger.WithData(
-			lager.Data{
-				"node_ip":           b.backupConfig.NodeIP,
-				"redis_config_path": redisConfig.Path,
-			},
-		)
-
-		logger.Info("instance-backup", lager.Data{"event": "starting"})
-
-		logger.Info("instance-backup.locate-iid", lager.Data{"event": "starting"})
-		instanceID, err := b.instanceIDLocator.LocateID(
-			redisConfig.Path,
-			b.backupConfig.NodeIP,
-		)
-		if err != nil {
-			logger.Error("instance-backup.locate-iid", err, lager.Data{"event": "failed"})
-			result.Err = err
-			backupResults[i] = result
-			continue
-		}
-
-		result.InstanceID = instanceID
-
-		logger.Info("instance-backup.locate-iid", lager.Data{
-			"event":       "done",
-			"instance_id": instanceID,
-		})
-
-		redisAddress := fmt.Sprintf("%s:%d", redisConfig.Conf.Host(), redisConfig.Conf.Port())
-		logger.Info("instance-backup.redis-connect", lager.Data{
-			"event":         "starting",
-			"redis_address": redisAddress,
-		})
-		redisClient, err := b.redisClientProvider(
-			redis.Host(redisConfig.Conf.Host()),
-			redis.Port(redisConfig.Conf.Port()),
-			redis.Password(redisConfig.Conf.Password()),
-			redis.CmdAliases(redisConfig.Conf.CommandAliases()),
-		)
-		if err != nil {
-			logger.Error("instance-backup.redis-connect", err, lager.Data{"event": "failed"})
-			result.Err = err
-			backupResults[i] = result
-			continue
-		}
-		logger.Info("instance-backup.redis-connect", lager.Data{
-			"event":         "done",
-			"redis_address": redisAddress,
-		})
-
-		targetPath := b.buildTargetPath(instanceID)
-		logger.Info("instance-backup.redis-backup", lager.Data{
-			"event":       "starting",
-			"target_path": targetPath,
-		})
-		err = b.redisBackuper.Backup(redisClient, targetPath)
-		if err != nil {
-			logger.Error("instance-backup.redis-backup", err, lager.Data{"event": "failed"})
-			result.Err = err
-			backupResults[i] = result
-			continue
-		}
-		logger.Info("instance-backup.redis-backup", lager.Data{
-			"event":       "done",
-			"target_path": targetPath,
-		})
-
-		backupResults[i] = result
-
-		logger.Info("instance-backup", lager.Data{"event": "done"})
+		backupResults[i] = b.instanceBackup(redisConfig)
 	}
 	return backupResults
+}
+
+func (b *instanceBackuper) instanceBackup(redisConfig instance.RedisConfig) BackupResult {
+	result := BackupResult{
+		RedisConfigPath: redisConfig.Path,
+		NodeIP:          b.backupConfig.NodeIP,
+	}
+
+	logger := b.logger.WithData(
+		lager.Data{
+			"node_ip":           b.backupConfig.NodeIP,
+			"redis_config_path": redisConfig.Path,
+		},
+	)
+
+	logger.Info("instance-backup", lager.Data{"event": "starting"})
+
+	logger.Info("instance-backup.locate-iid", lager.Data{"event": "starting"})
+	instanceID, err := b.instanceIDLocator.LocateID(
+		redisConfig.Path,
+		b.backupConfig.NodeIP,
+	)
+	if err != nil {
+		logger.Error("instance-backup.locate-iid", err, lager.Data{"event": "failed"})
+		result.Err = err
+		return result
+	}
+
+	result.InstanceID = instanceID
+
+	logger.Info("instance-backup.locate-iid", lager.Data{
+		"event":       "done",
+		"instance_id": instanceID,
+	})
+
+	redisAddress := fmt.Sprintf("%s:%d", redisConfig.Conf.Host(), redisConfig.Conf.Port())
+	logger.Info("instance-backup.redis-connect", lager.Data{
+		"event":         "starting",
+		"redis_address": redisAddress,
+	})
+	redisClient, err := b.redisClientProvider(
+		redis.Host(redisConfig.Conf.Host()),
+		redis.Port(redisConfig.Conf.Port()),
+		redis.Password(redisConfig.Conf.Password()),
+		redis.CmdAliases(redisConfig.Conf.CommandAliases()),
+	)
+	if err != nil {
+		logger.Error("instance-backup.redis-connect", err, lager.Data{"event": "failed"})
+		result.Err = err
+		return result
+	}
+	defer func() {
+		if err := redisClient.Disconnect(); err != nil {
+			logger.Error("instance-backup.redis-disconnect", err, lager.Data{"event": "failed"})
+		}
+	}()
+	logger.Info("instance-backup.redis-connect", lager.Data{
+		"event":         "done",
+		"redis_address": redisAddress,
+	})
+
+	targetPath := b.buildTargetPath(instanceID)
+	logger.Info("instance-backup.redis-backup", lager.Data{
+		"event":       "starting",
+		"target_path": targetPath,
+	})
+	err = b.redisBackuper.Backup(redisClient, targetPath)
+	if err != nil {
+		logger.Error("instance-backup.redis-backup", err, lager.Data{"event": "failed"})
+		result.Err = err
+		return result
+	}
+	logger.Info("instance-backup.redis-backup", lager.Data{
+		"event":       "done",
+		"target_path": targetPath,
+	})
+
+	logger.Info("instance-backup", lager.Data{"event": "done"})
+	return result
 }
 
 func (b *instanceBackuper) buildTargetPath(instanceID string) string {
