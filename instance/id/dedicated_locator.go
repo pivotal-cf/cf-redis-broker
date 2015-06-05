@@ -1,4 +1,4 @@
-package dedicated
+package id
 
 import (
 	"encoding/json"
@@ -7,20 +7,19 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/pivotal-cf/cf-redis-broker/plan"
 	"github.com/pivotal-cf/cf-redis-broker/redisinstance"
 	"github.com/pivotal-golang/lager"
 )
 
-type idProvider struct {
+type dedicatedInstanceIDLocator struct {
 	brokerEndpoint string
 	username       string
 	password       string
 	logger         lager.Logger
 }
 
-func InstanceIDProvider(brokerEndpoint, username, password string, logger lager.Logger) plan.IDProvider {
-	return &idProvider{
+func DedicatedInstanceIDLocator(brokerEndpoint, username, password string, logger lager.Logger) InstanceIDLocator {
+	return &dedicatedInstanceIDLocator{
 		brokerEndpoint: brokerEndpoint,
 		username:       username,
 		password:       password,
@@ -28,7 +27,7 @@ func InstanceIDProvider(brokerEndpoint, username, password string, logger lager.
 	}
 }
 
-func (p *idProvider) InstanceID(string, nodeIP string) (string, error) {
+func (p *dedicatedInstanceIDLocator) LocateID(string, nodeIP string) (string, error) {
 	p.logger.Info(
 		"dedicated-instance-id",
 		lager.Data{

@@ -1,4 +1,4 @@
-package dedicated_test
+package id_test
 
 import (
 	"encoding/json"
@@ -13,14 +13,13 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/pivotal-cf/brokerapi/auth"
-	"github.com/pivotal-cf/cf-redis-broker/plan"
-	"github.com/pivotal-cf/cf-redis-broker/plan/dedicated"
+	"github.com/pivotal-cf/cf-redis-broker/instance/id"
 	"github.com/pivotal-cf/cf-redis-broker/redisinstance"
 	"github.com/pivotal-golang/lager"
 	. "github.com/st3v/glager"
 )
 
-var _ = Describe("dedicated.InstanceIDProvider", func() {
+var _ = Describe("InstanceIDLocator", func() {
 	Describe(".InstanceID", func() {
 		var (
 			brokerUsername     = "some-username"
@@ -30,7 +29,7 @@ var _ = Describe("dedicated.InstanceIDProvider", func() {
 			server             *httptest.Server
 			endpoint           string
 			expectedURL        string
-			plan               plan.IDProvider
+			idLocator          id.InstanceIDLocator
 			expectedInstanceID = "some-instance-id"
 			actualInstanceID   string
 			instanceIDErr      error
@@ -43,8 +42,8 @@ var _ = Describe("dedicated.InstanceIDProvider", func() {
 			logger := lager.NewLogger("provider")
 			logger.RegisterSink(lager.NewWriterSink(log, lager.DEBUG))
 
-			plan = dedicated.InstanceIDProvider(endpoint, clientUsername, clientPassword, logger)
-			actualInstanceID, instanceIDErr = plan.InstanceID("", nodeIP)
+			idLocator = id.DedicatedInstanceIDLocator(endpoint, clientUsername, clientPassword, logger)
+			actualInstanceID, instanceIDErr = idLocator.LocateID("", nodeIP)
 
 			expectedURL = fmt.Sprintf("%s?host=%s", endpoint, nodeIP)
 		})

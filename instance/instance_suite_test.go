@@ -1,4 +1,4 @@
-package plan_test
+package instance_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -9,5 +9,5 @@ import (
 
 func TestInstance(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Plan Suite")
+	RunSpecs(t, "Instance Suite")
 }

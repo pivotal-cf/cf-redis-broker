@@ -6,7 +6,7 @@ import (
 	"github.com/cloudfoundry-incubator/candiedyaml"
 )
 
-type Config struct {
+type BackupConfig struct {
 	S3Config               S3Configuration   `yaml:"s3"`
 	SnapshotTimeoutSeconds int               `yaml:"snapshot_timeout_seconds"`
 	NodeIP                 string            `yaml:"node_ip"`
@@ -32,13 +32,13 @@ type BrokerCredentials struct {
 	Password string `yaml:"password"`
 }
 
-func LoadConfig(path string) (*Config, error) {
+func LoadBackupConfig(path string) (*BackupConfig, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
 
-	config := &Config{}
+	config := &BackupConfig{}
 	if err := candiedyaml.NewDecoder(file).Decode(config); err != nil {
 		return nil, err
 	}

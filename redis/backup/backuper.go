@@ -75,7 +75,7 @@ func NewRedisBackuper(
 	awsSecretKey string,
 	logger lager.Logger,
 	injectors ...BackupInjector,
-) *backuper {
+) RedisBackuper {
 	backuper := &backuper{
 		snapshotterProvider:  NewSnapshotter,
 		renameTaskProvider:   task.NewRename,

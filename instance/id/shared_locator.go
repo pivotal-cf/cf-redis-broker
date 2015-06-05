@@ -1,24 +1,23 @@
-package shared
+package id
 
 import (
 	"errors"
 	"path/filepath"
 
-	"github.com/pivotal-cf/cf-redis-broker/plan"
 	"github.com/pivotal-golang/lager"
 )
 
-type idProvider struct {
+type sharedInstanceIDLocator struct {
 	logger lager.Logger
 }
 
-func InstanceIDProvider(logger lager.Logger) plan.IDProvider {
-	return &idProvider{
+func SharedInstanceIDLocator(logger lager.Logger) InstanceIDLocator {
+	return &sharedInstanceIDLocator{
 		logger: logger,
 	}
 }
 
-func (p *idProvider) InstanceID(redisConfigPath, nodeIP string) (string, error) {
+func (p *sharedInstanceIDLocator) LocateID(redisConfigPath, nodeIP string) (string, error) {
 	p.logger.Info("shared-instance-id", lager.Data{
 		"event": "starting",
 		"path":  redisConfigPath,

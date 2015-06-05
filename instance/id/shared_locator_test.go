@@ -1,4 +1,4 @@
-package shared_test
+package id_test
 
 import (
 	"fmt"
@@ -6,17 +6,16 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
-	"github.com/pivotal-cf/cf-redis-broker/plan"
-	"github.com/pivotal-cf/cf-redis-broker/plan/shared"
+	"github.com/pivotal-cf/cf-redis-broker/instance/id"
 	"github.com/pivotal-golang/lager"
 	. "github.com/st3v/glager"
 )
 
-var _ = Describe("shared.InstanceIDProvider", func() {
+var _ = Describe("SharedInstanceIDLocator", func() {
 
-	Describe(".InstanceId", func() {
+	Describe(".LocateID", func() {
 		var (
-			idProvider         plan.IDProvider
+			idLocator          id.InstanceIDLocator
 			expectedInstanceID = "some-instance-id"
 			actualInstanceID   string
 			instanceIDErr      error
@@ -31,11 +30,11 @@ var _ = Describe("shared.InstanceIDProvider", func() {
 
 			redisConfigPath = fmt.Sprintf("/var/vcap/store/redis/%s/redis.conf", expectedInstanceID)
 
-			idProvider = shared.InstanceIDProvider(logger)
+			idLocator = id.SharedInstanceIDLocator(logger)
 		})
 
 		JustBeforeEach(func() {
-			actualInstanceID, instanceIDErr = idProvider.InstanceID(redisConfigPath, "")
+			actualInstanceID, instanceIDErr = idLocator.LocateID(redisConfigPath, "")
 		})
 
 		It("does not return an error", func() {

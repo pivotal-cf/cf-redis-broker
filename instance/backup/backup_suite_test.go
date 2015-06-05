@@ -1,4 +1,4 @@
-package dedicated_test
+package backup_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestDedicated(t *testing.T) {
+func TestConfig(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Dedicated Plan Suite")
+	RunSpecs(t, "Instance Backup Suite")
 }
