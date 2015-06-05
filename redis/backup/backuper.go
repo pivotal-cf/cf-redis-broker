@@ -12,6 +12,13 @@ import (
 	"github.com/pivotal-golang/lager"
 )
 
+type ProviderFactory interface {
+	SnapshotterProvider(redis.Client, time.Duration, lager.Logger) recovery.Snapshotter
+	RenameTaskProvider(string, lager.Logger) task.Task
+	S3UploadTaskProvider(string, string, string, string, string, lager.Logger, ...task.S3UploadInjector) task.Task
+	CleanupTaskProvider(string, string, lager.Logger, ...CleanupInjector) task.Task
+}
+
 type RedisSnapshotterProvider func(
 	client redis.Client,
 	timeout time.Duration,

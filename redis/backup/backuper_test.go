@@ -9,11 +9,9 @@ import (
 	. "github.com/st3v/glager"
 
 	"github.com/onsi/gomega/gbytes"
-	"github.com/pivotal-cf/cf-redis-broker/recovery"
 	"github.com/pivotal-cf/cf-redis-broker/recovery/task"
 	"github.com/pivotal-cf/cf-redis-broker/redis/backup"
 	"github.com/pivotal-cf/cf-redis-broker/redis/backup/fakes"
-	redis "github.com/pivotal-cf/cf-redis-broker/redis/client"
 	"github.com/pivotal-golang/lager"
 )
 
@@ -23,6 +21,7 @@ var _ = Describe("RedisBackuper", func() {
 			backupErr       error
 			log             *gbytes.Buffer
 			logger          lager.Logger
+			providerFactory *fakes.FakeProviderFactory
 			snapshotter     *fakes.FakeSnapshotter
 			initialArtifact task.Artifact
 			renameTask      *fakes.FakeTask
@@ -30,6 +29,13 @@ var _ = Describe("RedisBackuper", func() {
 			cleanupTask     *fakes.FakeTask
 			redisClient     *fakes.FakeRedisClient
 			backuper        backup.RedisBackuper
+
+			expectedTimeout    = 123 * time.Second
+			expectedBucketName = "some-bucket-name"
+			expectedTargetPath = "some-target-path"
+			expectedEndpoint   = "some-endpoint"
+			expectedAccessKey  = "some-access-key"
+			expectedSecretKey  = "some-secret-key"
 		)
 
 		BeforeEach(func() {
@@ -39,58 +45,48 @@ var _ = Describe("RedisBackuper", func() {
 
 			initialArtifact = task.NewArtifact("path/to/artifact")
 
+			providerFactory = new(fakes.FakeProviderFactory)
+
 			snapshotter = new(fakes.FakeSnapshotter)
 			snapshotter.SnapshotReturns(initialArtifact, nil)
-			snapshotterProvider := func(redis.Client, time.Duration, lager.Logger) recovery.Snapshotter {
-				return snapshotter
-			}
+			providerFactory.SnapshotterProviderReturns(snapshotter)
 
 			renameTask = new(fakes.FakeTask)
 			renameTask.NameReturns("rename")
 			renameTask.RunReturns(task.NewArtifact("rename"), nil)
-			renameTaskProvider := func(string, lager.Logger) task.Task {
-				return renameTask
-			}
+			providerFactory.RenameTaskProviderReturns(renameTask)
 
 			s3UploadTask = new(fakes.FakeTask)
 			s3UploadTask.NameReturns("s3upload")
 			s3UploadTask.RunReturns(task.NewArtifact("s3upload"), nil)
-			s3UploadTaskProvider := func(
-				string, string, string, string, string, lager.Logger, ...task.S3UploadInjector,
-			) task.Task {
-				return s3UploadTask
-			}
+			providerFactory.S3UploadTaskProviderReturns(s3UploadTask)
 
 			cleanupTask = new(fakes.FakeTask)
 			cleanupTask.NameReturns("cleaner")
 			cleanupTask.RunReturns(task.NewArtifact("cleanup"), nil)
-			cleanupTaskProvider := func(
-				string, string, lager.Logger, ...backup.CleanupInjector,
-			) task.Task {
-				return cleanupTask
-			}
+			providerFactory.CleanupTaskProviderReturns(cleanupTask)
 
 			redisClient = new(fakes.FakeRedisClient)
 			redisClient.AddressReturns("test-host:1446")
 
 			backuper = backup.NewRedisBackuper(
-				time.Second,
-				"bucket-name",
-				"endpoint",
-				"key",
-				"secret",
+				expectedTimeout,
+				expectedBucketName,
+				expectedEndpoint,
+				expectedAccessKey,
+				expectedSecretKey,
 				logger,
-				backup.InjectSnapshotterProvider(snapshotterProvider),
-				backup.InjectRenameTaskProvider(renameTaskProvider),
-				backup.InjectS3UploadTaskProvider(s3UploadTaskProvider),
-				backup.InjectCleanupTaskProvider(cleanupTaskProvider),
+				backup.InjectSnapshotterProvider(providerFactory.SnapshotterProvider),
+				backup.InjectRenameTaskProvider(providerFactory.RenameTaskProvider),
+				backup.InjectS3UploadTaskProvider(providerFactory.S3UploadTaskProvider),
+				backup.InjectCleanupTaskProvider(providerFactory.CleanupTaskProvider),
 			)
 		})
 
 		JustBeforeEach(func() {
 			backupErr = backuper.Backup(
 				redisClient,
-				"target-path",
+				expectedTargetPath,
 			)
 		})
 
@@ -98,8 +94,89 @@ var _ = Describe("RedisBackuper", func() {
 			Expect(backupErr).ToNot(HaveOccurred())
 		})
 
+		It("creates the snapshotter with the correct client", func() {
+			actualClient, _, _ := providerFactory.SnapshotterProviderArgsForCall(0)
+			Expect(actualClient).To(Equal(redisClient))
+		})
+
+		It("creates the snapshotter with the correct timeout", func() {
+			_, actualTimeout, _ := providerFactory.SnapshotterProviderArgsForCall(0)
+			Expect(actualTimeout).To(Equal(expectedTimeout))
+		})
+
+		It("creates the snapshotter with the correct logger", func() {
+			_, _, actualLogger := providerFactory.SnapshotterProviderArgsForCall(0)
+			Expect(actualLogger).To(Equal(logger))
+		})
+
 		It("takes a snapshot", func() {
 			Expect(snapshotter.SnapshotCallCount()).To(Equal(1))
+		})
+
+		It("creates the rename task with a new path that is different from the initial artifact", func() {
+			newPath, _ := providerFactory.RenameTaskProviderArgsForCall(0)
+			Expect(newPath).ToNot(Equal(initialArtifact.Path()))
+		})
+
+		It("creates the rename task with the correct logger", func() {
+			_, actualLogger := providerFactory.RenameTaskProviderArgsForCall(0)
+			Expect(actualLogger).To(Equal(logger))
+		})
+
+		It("creates the s3 upload task with the correct bucket name", func() {
+			actualBucketName, _, _, _, _, _, _ := providerFactory.S3UploadTaskProviderArgsForCall(0)
+			Expect(actualBucketName).To(Equal(expectedBucketName))
+		})
+
+		It("creates the s3 upload task with the correct target path", func() {
+			_, actualTargetPath, _, _, _, _, _ := providerFactory.S3UploadTaskProviderArgsForCall(0)
+			Expect(actualTargetPath).To(Equal(expectedTargetPath))
+		})
+
+		It("creates the s3 upload task with the correct endpoint", func() {
+			_, _, actualEndpoint, _, _, _, _ := providerFactory.S3UploadTaskProviderArgsForCall(0)
+			Expect(actualEndpoint).To(Equal(expectedEndpoint))
+		})
+
+		It("creates the s3 upload task with the correct access key", func() {
+			_, _, _, actualAccessKey, _, _, _ := providerFactory.S3UploadTaskProviderArgsForCall(0)
+			Expect(actualAccessKey).To(Equal(expectedAccessKey))
+		})
+
+		It("creates the s3 upload task with the correct endpoint", func() {
+			_, _, _, _, actualSecretKey, _, _ := providerFactory.S3UploadTaskProviderArgsForCall(0)
+			Expect(actualSecretKey).To(Equal(expectedSecretKey))
+		})
+
+		It("creates the s3 upload task with the correct logger", func() {
+			_, _, _, _, _, actualLogger, _ := providerFactory.S3UploadTaskProviderArgsForCall(0)
+			Expect(actualLogger).To(Equal(logger))
+		})
+
+		It("does not inject anything into the s3 upload task", func() {
+			_, _, _, _, _, _, injectors := providerFactory.S3UploadTaskProviderArgsForCall(0)
+			Expect(injectors).To(BeEmpty())
+		})
+
+		It("creates the cleanup task with the correct original path", func() {
+			originalPath, _, _, _ := providerFactory.CleanupTaskProviderArgsForCall(0)
+			Expect(originalPath).To(Equal(initialArtifact.Path()))
+		})
+
+		It("creates the cleanup task with the correct temporary path", func() {
+			expectedTempPath, _ := providerFactory.RenameTaskProviderArgsForCall(0)
+			_, tempPath, _, _ := providerFactory.CleanupTaskProviderArgsForCall(0)
+			Expect(tempPath).To(Equal(expectedTempPath))
+		})
+
+		It("creates the cleanup task with the correct logger", func() {
+			_, _, actualLogger, _ := providerFactory.CleanupTaskProviderArgsForCall(0)
+			Expect(actualLogger).To(Equal(logger))
+		})
+
+		It("does not inject anything into the cleanup task", func() {
+			_, _, _, injectors := providerFactory.CleanupTaskProviderArgsForCall(0)
+			Expect(injectors).To(BeEmpty())
 		})
 
 		It("renames the original snapshot", func() {
