@@ -2,6 +2,7 @@ package backup_test
 
 import (
 	"errors"
+	"fmt"
 	"path/filepath"
 	"time"
 
@@ -9,57 +10,322 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/pivotal-cf/cf-redis-broker/broker"
+	"github.com/pivotal-cf/cf-redis-broker/instance"
 	"github.com/pivotal-cf/cf-redis-broker/instance/backup"
 	"github.com/pivotal-cf/cf-redis-broker/instance/backup/fakes"
+	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 	"github.com/pivotal-golang/lager"
 	. "github.com/st3v/glager"
 )
 
 var _ = Describe("Instance Backuper", func() {
-	Describe("NewInstanceBackuper", func() {
-		var (
-			providerFactory            *fakes.FakeProviderFactory
-			redisBackuper              *fakes.FakeRedisBackuper
-			redisConfigFinder          *fakes.FakeRedisConfigFinder
-			sharedInstanceIDLocator    *fakes.FakeInstanceIDLocator
-			dedicatedInstanceIDLocator *fakes.FakeInstanceIDLocator
-			backupConfig               *backup.BackupConfig
-			logger                     lager.Logger
-			log                        *gbytes.Buffer
-			backuper                   backup.InstanceBackuper
-			backuperErr                error
-		)
+	var (
+		providerFactory   *fakes.FakeProviderFactory
+		redisClient       *fakes.FakeRedisClient
+		redisBackuper     *fakes.FakeRedisBackuper
+		redisConfigFinder *fakes.FakeRedisConfigFinder
+		instanceIDLocator *fakes.FakeInstanceIDLocator
+		backupConfig      *backup.BackupConfig
+		logger            lager.Logger
+		log               *gbytes.Buffer
+	)
 
-		BeforeEach(func() {
-			log = gbytes.NewBuffer()
-			logger = lager.NewLogger("logger")
-			logger.RegisterSink(lager.NewWriterSink(log, lager.DEBUG))
+	BeforeEach(func() {
+		log = gbytes.NewBuffer()
+		logger = lager.NewLogger("logger")
+		logger.RegisterSink(lager.NewWriterSink(log, lager.DEBUG))
 
-			providerFactory = new(fakes.FakeProviderFactory)
+		providerFactory = new(fakes.FakeProviderFactory)
 
-			redisBackuper = new(fakes.FakeRedisBackuper)
-			providerFactory.RedisBackuperProviderReturns(redisBackuper)
+		redisClient = new(fakes.FakeRedisClient)
+		providerFactory.RedisClientProviderReturns(redisClient, nil)
 
-			redisConfigFinder = new(fakes.FakeRedisConfigFinder)
-			providerFactory.RedisConfigFinderProviderReturns(redisConfigFinder)
+		redisBackuper = new(fakes.FakeRedisBackuper)
+		providerFactory.RedisBackuperProviderReturns(redisBackuper)
 
-			sharedInstanceIDLocator = new(fakes.FakeInstanceIDLocator)
-			providerFactory.SharedInstanceIDLocatorProviderReturns(sharedInstanceIDLocator)
+		redisConfigFinder = new(fakes.FakeRedisConfigFinder)
+		providerFactory.RedisConfigFinderProviderReturns(redisConfigFinder)
 
-			dedicatedInstanceIDLocator = new(fakes.FakeInstanceIDLocator)
-			providerFactory.DedicatedInstanceIDLocatorProviderReturns(dedicatedInstanceIDLocator)
+		instanceIDLocator = new(fakes.FakeInstanceIDLocator)
+		providerFactory.SharedInstanceIDLocatorProviderReturns(instanceIDLocator)
+		providerFactory.DedicatedInstanceIDLocatorProviderReturns(instanceIDLocator)
 
-			providerFactory.TimeProviderStub = func() time.Time {
-				now, _ := time.Parse("200601020304", "200102030405")
-				return now
-			}
+		providerFactory.TimeProviderStub = func() time.Time {
+			now, _ := time.Parse("200601020304", "200102030405")
+			return now
+		}
 
-			var err error
-			backupConfig, err = backup.LoadBackupConfig(filepath.Join("assets", "backup.yml"))
+		var err error
+		backupConfig, err = backup.LoadBackupConfig(filepath.Join("assets", "backup.yml"))
+		Expect(err).ToNot(HaveOccurred())
+
+		backupConfig.PlanName = broker.PlanNameShared
+	})
+
+	Describe(".Backup", func() {
+		var backupResults []backup.BackupResult
+
+		JustBeforeEach(func() {
+			backuper, err := backup.NewInstanceBackuper(
+				*backupConfig,
+				logger,
+				backup.InjectTimeProvider(providerFactory.TimeProvider),
+				backup.InjectRedisClientProvider(providerFactory.RedisClientProvider),
+				backup.InjectRedisBackuperProvider(providerFactory.RedisBackuperProvider),
+				backup.InjectRedisConfigFinderProvider(providerFactory.RedisConfigFinderProvider),
+				backup.InjectSharedInstanceIDLocatorProvider(providerFactory.SharedInstanceIDLocatorProvider),
+				backup.InjectDedicatedInstanceIDLocatorProvider(providerFactory.DedicatedInstanceIDLocatorProvider),
+			)
+
 			Expect(err).ToNot(HaveOccurred())
 
-			backupConfig.PlanName = broker.PlanNameShared
+			backupResults = backuper.Backup()
 		})
+
+		Context("when there are no redis configs in the config root", func() {
+			It("does returns an empty slice of BackupResult", func() {
+				Expect(backupResults).ToNot(BeNil())
+				Expect(backupResults).To(BeEmpty())
+			})
+		})
+
+		Context("when there is one redis config in the config root", func() {
+			var (
+				expectedPath         = "path/to/the/redis/config"
+				expectedInstanceID   = "some-instance-id"
+				expectedTargetPath   string
+				expectedRedisConfigs = []instance.RedisConfig{
+					instance.RedisConfig{
+						Path: expectedPath,
+						Conf: redisconf.New(
+							redisconf.Param{"bind", "8.8.8.8"},
+							redisconf.Param{"port", "1234"},
+						),
+					},
+				}
+			)
+
+			BeforeEach(func() {
+				redisConfigFinder.FindReturns(expectedRedisConfigs, nil)
+				instanceIDLocator.LocateIDReturns(expectedInstanceID, nil)
+				expectedFilename := fmt.Sprintf("200102030405_%s_%s", expectedInstanceID, backupConfig.PlanName)
+				expectedTargetPath = filepath.Join(
+					backupConfig.S3Config.Path,
+					"2001",
+					"02",
+					"03",
+					expectedFilename,
+				)
+			})
+
+			It("does return a single BackupResult", func() {
+				Expect(backupResults).To(HaveLen(1))
+			})
+
+			It("does return a BackupResult with no error", func() {
+				Expect(backupResults[0].Err).To(BeNil())
+			})
+
+			It("does return a BackupResult with the correct instance ID", func() {
+				Expect(backupResults[0].InstanceID).To(Equal(expectedInstanceID))
+			})
+
+			It("does return a BackupResult with the correct path", func() {
+				Expect(backupResults[0].RedisConfigPath).To(Equal(expectedPath))
+			})
+
+			It("does return a BackupResult with the correct node ip", func() {
+				Expect(backupResults[0].NodeIP).To(Equal(backupConfig.NodeIP))
+			})
+
+			It("does connect to redis", func() {
+				Expect(providerFactory.RedisClientProviderCallCount()).To(Equal(1))
+			})
+
+			It("does perform a redis backup", func() {
+				Expect(redisBackuper.BackupCallCount()).To(Equal(1))
+			})
+
+			It("does perform a redis backup using the correct redis client", func() {
+				actualClient, _ := redisBackuper.BackupArgsForCall(0)
+				Expect(actualClient).To(Equal(redisClient))
+			})
+
+			It("does perform a redis backup using the correct targetPath", func() {
+				_, actualTargetPath := redisBackuper.BackupArgsForCall(0)
+				Expect(actualTargetPath).To(Equal(expectedTargetPath))
+			})
+
+			It("provides logging", func() {
+				expectedLogData := Data(
+					"redis_config_path", expectedRedisConfigs[0].Path,
+					"node_ip", backupConfig.NodeIP,
+				)
+
+				Expect(log).To(ContainSequence(
+					Info(
+						Action("logger.instance-backup"),
+						Data("event", "starting"),
+						expectedLogData,
+					),
+					Info(
+						Action("logger.instance-backup.locate-iid"),
+						Data("event", "starting"),
+						expectedLogData,
+					),
+					Info(
+						Action("logger.instance-backup.locate-iid"),
+						Data("event", "done"),
+						Data("instance_id", expectedInstanceID),
+						expectedLogData,
+					),
+					Info(
+						Action("logger.instance-backup.redis-connect"),
+						Data("event", "starting"),
+						Data("redis_address", "8.8.8.8:1234"),
+						expectedLogData,
+					),
+					Info(
+						Action("logger.instance-backup.redis-connect"),
+						Data("event", "done"),
+						Data("redis_address", "8.8.8.8:1234"),
+						expectedLogData,
+					),
+					Info(
+						Action("logger.instance-backup.redis-backup"),
+						Data("event", "starting"),
+						Data("target_path", expectedTargetPath),
+						expectedLogData,
+					),
+					Info(
+						Action("logger.instance-backup.redis-backup"),
+						Data("event", "done"),
+						Data("target_path", expectedTargetPath),
+						expectedLogData,
+					),
+					Info(
+						Action("logger.instance-backup"),
+						Data("event", "done"),
+						expectedLogData,
+					),
+				))
+			})
+
+			Context("when locating the instance ID fails", func() {
+				var expectedErr = errors.New("eaten by a grue")
+
+				BeforeEach(func() {
+					instanceIDLocator.LocateIDReturns("", expectedErr)
+				})
+
+				It("reports the error in the BackupResult", func() {
+					Expect(backupResults[0].Err).To(Equal(expectedErr))
+				})
+
+				It("logs the error", func() {
+					expectedLogData := Data(
+						"redis_config_path", expectedRedisConfigs[0].Path,
+						"node_ip", backupConfig.NodeIP,
+					)
+					Expect(log).To(ContainSequence(
+						Info(
+							Action("logger.instance-backup.locate-iid"),
+							Data("event", "starting"),
+							expectedLogData,
+						),
+						Error(
+							expectedErr,
+							Action("logger.instance-backup.locate-iid"),
+							Data("event", "failed"),
+							expectedLogData,
+						),
+					))
+				})
+
+				It("does not connect to redis", func() {
+					Expect(providerFactory.RedisClientProviderCallCount()).To(Equal(0))
+				})
+
+				It("does not perform a redis backup", func() {
+					Expect(redisBackuper.BackupCallCount()).To(Equal(0))
+				})
+			})
+
+			Context("when connecting to redis fails", func() {
+				var expectedErr = errors.New("lost in time and space")
+
+				BeforeEach(func() {
+					providerFactory.RedisClientProviderReturns(nil, expectedErr)
+				})
+
+				It("reports the error in the BackupResult", func() {
+					Expect(backupResults[0].Err).To(Equal(expectedErr))
+				})
+
+				It("logs the error", func() {
+					expectedLogData := Data(
+						"redis_config_path", expectedRedisConfigs[0].Path,
+						"node_ip", backupConfig.NodeIP,
+					)
+					Expect(log).To(ContainSequence(
+						Info(
+							Action("logger.instance-backup.redis-connect"),
+							Data("event", "starting"),
+							expectedLogData,
+						),
+						Error(
+							expectedErr,
+							Action("logger.instance-backup.redis-connect"),
+							Data("event", "failed"),
+							expectedLogData,
+						),
+					))
+				})
+
+				It("does not perform a redis backup", func() {
+					Expect(redisBackuper.BackupCallCount()).To(Equal(0))
+				})
+			})
+
+			Context("when the redis backup fails", func() {
+				var expectedErr = errors.New("Communist state expected")
+
+				BeforeEach(func() {
+					redisBackuper.BackupReturns(expectedErr)
+				})
+
+				It("reports the error in the BackupResult", func() {
+					Expect(backupResults[0].Err).To(Equal(expectedErr))
+				})
+
+				It("logs the error", func() {
+					expectedLogData := Data(
+						"redis_config_path", expectedRedisConfigs[0].Path,
+						"node_ip", backupConfig.NodeIP,
+					)
+					Expect(log).To(ContainSequence(
+						Info(
+							Action("logger.instance-backup.redis-backup"),
+							Data("event", "starting"),
+							expectedLogData,
+						),
+						Error(
+							expectedErr,
+							Action("logger.instance-backup.redis-backup"),
+							Data("event", "failed"),
+							expectedLogData,
+						),
+					))
+				})
+			})
+		})
+	})
+
+	Describe("NewInstanceBackuper", func() {
+		var (
+			backuper    backup.InstanceBackuper
+			backuperErr error
+		)
 
 		JustBeforeEach(func() {
 			backuper, backuperErr = backup.NewInstanceBackuper(

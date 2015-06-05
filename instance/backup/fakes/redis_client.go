@@ -8,7 +8,7 @@ import (
 	"github.com/pivotal-cf/cf-redis-broker/redis/client"
 )
 
-type FakeClient struct {
+type FakeRedisClient struct {
 	DisconnectStub        func() error
 	disconnectMutex       sync.RWMutex
 	disconnectArgsForCall []struct{}
@@ -77,7 +77,7 @@ type FakeClient struct {
 	}
 }
 
-func (fake *FakeClient) Disconnect() error {
+func (fake *FakeRedisClient) Disconnect() error {
 	fake.disconnectMutex.Lock()
 	fake.disconnectArgsForCall = append(fake.disconnectArgsForCall, struct{}{})
 	fake.disconnectMutex.Unlock()
@@ -88,20 +88,20 @@ func (fake *FakeClient) Disconnect() error {
 	}
 }
 
-func (fake *FakeClient) DisconnectCallCount() int {
+func (fake *FakeRedisClient) DisconnectCallCount() int {
 	fake.disconnectMutex.RLock()
 	defer fake.disconnectMutex.RUnlock()
 	return len(fake.disconnectArgsForCall)
 }
 
-func (fake *FakeClient) DisconnectReturns(result1 error) {
+func (fake *FakeRedisClient) DisconnectReturns(result1 error) {
 	fake.DisconnectStub = nil
 	fake.disconnectReturns = struct {
 		result1 error
 	}{result1}
 }
 
-func (fake *FakeClient) CreateSnapshot(timeout time.Duration) error {
+func (fake *FakeRedisClient) CreateSnapshot(timeout time.Duration) error {
 	fake.createSnapshotMutex.Lock()
 	fake.createSnapshotArgsForCall = append(fake.createSnapshotArgsForCall, struct {
 		timeout time.Duration
@@ -114,26 +114,26 @@ func (fake *FakeClient) CreateSnapshot(timeout time.Duration) error {
 	}
 }
 
-func (fake *FakeClient) CreateSnapshotCallCount() int {
+func (fake *FakeRedisClient) CreateSnapshotCallCount() int {
 	fake.createSnapshotMutex.RLock()
 	defer fake.createSnapshotMutex.RUnlock()
 	return len(fake.createSnapshotArgsForCall)
 }
 
-func (fake *FakeClient) CreateSnapshotArgsForCall(i int) time.Duration {
+func (fake *FakeRedisClient) CreateSnapshotArgsForCall(i int) time.Duration {
 	fake.createSnapshotMutex.RLock()
 	defer fake.createSnapshotMutex.RUnlock()
 	return fake.createSnapshotArgsForCall[i].timeout
 }
 
-func (fake *FakeClient) CreateSnapshotReturns(result1 error) {
+func (fake *FakeRedisClient) CreateSnapshotReturns(result1 error) {
 	fake.CreateSnapshotStub = nil
 	fake.createSnapshotReturns = struct {
 		result1 error
 	}{result1}
 }
 
-func (fake *FakeClient) WaitUntilRedisNotLoading(timeoutMilliseconds int) error {
+func (fake *FakeRedisClient) WaitUntilRedisNotLoading(timeoutMilliseconds int) error {
 	fake.waitUntilRedisNotLoadingMutex.Lock()
 	fake.waitUntilRedisNotLoadingArgsForCall = append(fake.waitUntilRedisNotLoadingArgsForCall, struct {
 		timeoutMilliseconds int
@@ -146,26 +146,26 @@ func (fake *FakeClient) WaitUntilRedisNotLoading(timeoutMilliseconds int) error 
 	}
 }
 
-func (fake *FakeClient) WaitUntilRedisNotLoadingCallCount() int {
+func (fake *FakeRedisClient) WaitUntilRedisNotLoadingCallCount() int {
 	fake.waitUntilRedisNotLoadingMutex.RLock()
 	defer fake.waitUntilRedisNotLoadingMutex.RUnlock()
 	return len(fake.waitUntilRedisNotLoadingArgsForCall)
 }
 
-func (fake *FakeClient) WaitUntilRedisNotLoadingArgsForCall(i int) int {
+func (fake *FakeRedisClient) WaitUntilRedisNotLoadingArgsForCall(i int) int {
 	fake.waitUntilRedisNotLoadingMutex.RLock()
 	defer fake.waitUntilRedisNotLoadingMutex.RUnlock()
 	return fake.waitUntilRedisNotLoadingArgsForCall[i].timeoutMilliseconds
 }
 
-func (fake *FakeClient) WaitUntilRedisNotLoadingReturns(result1 error) {
+func (fake *FakeRedisClient) WaitUntilRedisNotLoadingReturns(result1 error) {
 	fake.WaitUntilRedisNotLoadingStub = nil
 	fake.waitUntilRedisNotLoadingReturns = struct {
 		result1 error
 	}{result1}
 }
 
-func (fake *FakeClient) EnableAOF() error {
+func (fake *FakeRedisClient) EnableAOF() error {
 	fake.enableAOFMutex.Lock()
 	fake.enableAOFArgsForCall = append(fake.enableAOFArgsForCall, struct{}{})
 	fake.enableAOFMutex.Unlock()
@@ -176,20 +176,20 @@ func (fake *FakeClient) EnableAOF() error {
 	}
 }
 
-func (fake *FakeClient) EnableAOFCallCount() int {
+func (fake *FakeRedisClient) EnableAOFCallCount() int {
 	fake.enableAOFMutex.RLock()
 	defer fake.enableAOFMutex.RUnlock()
 	return len(fake.enableAOFArgsForCall)
 }
 
-func (fake *FakeClient) EnableAOFReturns(result1 error) {
+func (fake *FakeRedisClient) EnableAOFReturns(result1 error) {
 	fake.EnableAOFStub = nil
 	fake.enableAOFReturns = struct {
 		result1 error
 	}{result1}
 }
 
-func (fake *FakeClient) LastRDBSaveTime() (int64, error) {
+func (fake *FakeRedisClient) LastRDBSaveTime() (int64, error) {
 	fake.lastRDBSaveTimeMutex.Lock()
 	fake.lastRDBSaveTimeArgsForCall = append(fake.lastRDBSaveTimeArgsForCall, struct{}{})
 	fake.lastRDBSaveTimeMutex.Unlock()
@@ -200,13 +200,13 @@ func (fake *FakeClient) LastRDBSaveTime() (int64, error) {
 	}
 }
 
-func (fake *FakeClient) LastRDBSaveTimeCallCount() int {
+func (fake *FakeRedisClient) LastRDBSaveTimeCallCount() int {
 	fake.lastRDBSaveTimeMutex.RLock()
 	defer fake.lastRDBSaveTimeMutex.RUnlock()
 	return len(fake.lastRDBSaveTimeArgsForCall)
 }
 
-func (fake *FakeClient) LastRDBSaveTimeReturns(result1 int64, result2 error) {
+func (fake *FakeRedisClient) LastRDBSaveTimeReturns(result1 int64, result2 error) {
 	fake.LastRDBSaveTimeStub = nil
 	fake.lastRDBSaveTimeReturns = struct {
 		result1 int64
@@ -214,7 +214,7 @@ func (fake *FakeClient) LastRDBSaveTimeReturns(result1 int64, result2 error) {
 	}{result1, result2}
 }
 
-func (fake *FakeClient) InfoField(fieldName string) (string, error) {
+func (fake *FakeRedisClient) InfoField(fieldName string) (string, error) {
 	fake.infoFieldMutex.Lock()
 	fake.infoFieldArgsForCall = append(fake.infoFieldArgsForCall, struct {
 		fieldName string
@@ -227,19 +227,19 @@ func (fake *FakeClient) InfoField(fieldName string) (string, error) {
 	}
 }
 
-func (fake *FakeClient) InfoFieldCallCount() int {
+func (fake *FakeRedisClient) InfoFieldCallCount() int {
 	fake.infoFieldMutex.RLock()
 	defer fake.infoFieldMutex.RUnlock()
 	return len(fake.infoFieldArgsForCall)
 }
 
-func (fake *FakeClient) InfoFieldArgsForCall(i int) string {
+func (fake *FakeRedisClient) InfoFieldArgsForCall(i int) string {
 	fake.infoFieldMutex.RLock()
 	defer fake.infoFieldMutex.RUnlock()
 	return fake.infoFieldArgsForCall[i].fieldName
 }
 
-func (fake *FakeClient) InfoFieldReturns(result1 string, result2 error) {
+func (fake *FakeRedisClient) InfoFieldReturns(result1 string, result2 error) {
 	fake.InfoFieldStub = nil
 	fake.infoFieldReturns = struct {
 		result1 string
@@ -247,7 +247,7 @@ func (fake *FakeClient) InfoFieldReturns(result1 string, result2 error) {
 	}{result1, result2}
 }
 
-func (fake *FakeClient) GetConfig(key string) (string, error) {
+func (fake *FakeRedisClient) GetConfig(key string) (string, error) {
 	fake.getConfigMutex.Lock()
 	fake.getConfigArgsForCall = append(fake.getConfigArgsForCall, struct {
 		key string
@@ -260,19 +260,19 @@ func (fake *FakeClient) GetConfig(key string) (string, error) {
 	}
 }
 
-func (fake *FakeClient) GetConfigCallCount() int {
+func (fake *FakeRedisClient) GetConfigCallCount() int {
 	fake.getConfigMutex.RLock()
 	defer fake.getConfigMutex.RUnlock()
 	return len(fake.getConfigArgsForCall)
 }
 
-func (fake *FakeClient) GetConfigArgsForCall(i int) string {
+func (fake *FakeRedisClient) GetConfigArgsForCall(i int) string {
 	fake.getConfigMutex.RLock()
 	defer fake.getConfigMutex.RUnlock()
 	return fake.getConfigArgsForCall[i].key
 }
 
-func (fake *FakeClient) GetConfigReturns(result1 string, result2 error) {
+func (fake *FakeRedisClient) GetConfigReturns(result1 string, result2 error) {
 	fake.GetConfigStub = nil
 	fake.getConfigReturns = struct {
 		result1 string
@@ -280,7 +280,7 @@ func (fake *FakeClient) GetConfigReturns(result1 string, result2 error) {
 	}{result1, result2}
 }
 
-func (fake *FakeClient) RDBPath() (string, error) {
+func (fake *FakeRedisClient) RDBPath() (string, error) {
 	fake.rDBPathMutex.Lock()
 	fake.rDBPathArgsForCall = append(fake.rDBPathArgsForCall, struct{}{})
 	fake.rDBPathMutex.Unlock()
@@ -291,13 +291,13 @@ func (fake *FakeClient) RDBPath() (string, error) {
 	}
 }
 
-func (fake *FakeClient) RDBPathCallCount() int {
+func (fake *FakeRedisClient) RDBPathCallCount() int {
 	fake.rDBPathMutex.RLock()
 	defer fake.rDBPathMutex.RUnlock()
 	return len(fake.rDBPathArgsForCall)
 }
 
-func (fake *FakeClient) RDBPathReturns(result1 string, result2 error) {
+func (fake *FakeRedisClient) RDBPathReturns(result1 string, result2 error) {
 	fake.RDBPathStub = nil
 	fake.rDBPathReturns = struct {
 		result1 string
@@ -305,7 +305,7 @@ func (fake *FakeClient) RDBPathReturns(result1 string, result2 error) {
 	}{result1, result2}
 }
 
-func (fake *FakeClient) Address() string {
+func (fake *FakeRedisClient) Address() string {
 	fake.addressMutex.Lock()
 	fake.addressArgsForCall = append(fake.addressArgsForCall, struct{}{})
 	fake.addressMutex.Unlock()
@@ -316,17 +316,17 @@ func (fake *FakeClient) Address() string {
 	}
 }
 
-func (fake *FakeClient) AddressCallCount() int {
+func (fake *FakeRedisClient) AddressCallCount() int {
 	fake.addressMutex.RLock()
 	defer fake.addressMutex.RUnlock()
 	return len(fake.addressArgsForCall)
 }
 
-func (fake *FakeClient) AddressReturns(result1 string) {
+func (fake *FakeRedisClient) AddressReturns(result1 string) {
 	fake.AddressStub = nil
 	fake.addressReturns = struct {
 		result1 string
 	}{result1}
 }
 
-var _ client.Client = new(FakeClient)
+var _ client.Client = new(FakeRedisClient)

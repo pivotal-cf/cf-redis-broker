@@ -62,6 +62,7 @@ type instanceBackuper struct {
 	redisConfigs      []instance.RedisConfig
 	instanceIDLocator id.InstanceIDLocator
 	logger            lager.Logger
+	backupConfig      BackupConfig
 }
 
 func NewInstanceBackuper(
@@ -77,6 +78,7 @@ func NewInstanceBackuper(
 		dedicatedInstanceIDLocatorProvider: id.DedicatedInstanceIDLocator,
 		timeProvider:                       time.Now,
 		logger:                             logger,
+		backupConfig:                       backupConfig,
 	}
 
 	for _, injector := range injectors {
@@ -85,7 +87,7 @@ func NewInstanceBackuper(
 
 	logger.Info("init-instance-backuper", lager.Data{"event": "starting"})
 
-	if err := backuper.init(backupConfig); err != nil {
+	if err := backuper.init(); err != nil {
 		logger.Error("init-instance-backuper", err, lager.Data{"event": "failed"})
 		return nil, err
 	}
@@ -96,7 +98,107 @@ func NewInstanceBackuper(
 }
 
 func (b *instanceBackuper) Backup() []BackupResult {
-	return nil
+	backupResults := make([]BackupResult, len(b.redisConfigs))
+	for i, redisConfig := range b.redisConfigs {
+		result := BackupResult{
+			RedisConfigPath: redisConfig.Path,
+			NodeIP:          b.backupConfig.NodeIP,
+		}
+
+		logger := b.logger.WithData(
+			lager.Data{
+				"node_ip":           b.backupConfig.NodeIP,
+				"redis_config_path": redisConfig.Path,
+			},
+		)
+
+		logger.Info("instance-backup", lager.Data{"event": "starting"})
+
+		logger.Info("instance-backup.locate-iid", lager.Data{"event": "starting"})
+		instanceID, err := b.instanceIDLocator.LocateID(
+			redisConfig.Path,
+			b.backupConfig.NodeIP,
+		)
+		if err != nil {
+			logger.Error("instance-backup.locate-iid", err, lager.Data{"event": "failed"})
+			result.Err = err
+			backupResults[i] = result
+			continue
+		}
+
+		result.InstanceID = instanceID
+
+		logger.Info("instance-backup.locate-iid", lager.Data{
+			"event":       "done",
+			"instance_id": instanceID,
+		})
+
+		redisAddress := fmt.Sprintf("%s:%d", redisConfig.Conf.Host(), redisConfig.Conf.Port())
+		logger.Info("instance-backup.redis-connect", lager.Data{
+			"event":         "starting",
+			"redis_address": redisAddress,
+		})
+		redisClient, err := b.redisClientProvider(
+			redis.Host(redisConfig.Conf.Host()),
+			redis.Port(redisConfig.Conf.Port()),
+			redis.Password(redisConfig.Conf.Password()),
+			redis.CmdAliases(redisConfig.Conf.CommandAliases()),
+		)
+		if err != nil {
+			logger.Error("instance-backup.redis-connect", err, lager.Data{"event": "failed"})
+			result.Err = err
+			backupResults[i] = result
+			continue
+		}
+		logger.Info("instance-backup.redis-connect", lager.Data{
+			"event":         "done",
+			"redis_address": redisAddress,
+		})
+
+		targetPath := b.buildTargetPath(instanceID)
+		logger.Info("instance-backup.redis-backup", lager.Data{
+			"event":       "starting",
+			"target_path": targetPath,
+		})
+		err = b.redisBackuper.Backup(redisClient, targetPath)
+		if err != nil {
+			logger.Error("instance-backup.redis-backup", err, lager.Data{"event": "failed"})
+			result.Err = err
+			backupResults[i] = result
+			continue
+		}
+		logger.Info("instance-backup.redis-backup", lager.Data{
+			"event":       "done",
+			"target_path": targetPath,
+		})
+
+		backupResults[i] = result
+
+		logger.Info("instance-backup", lager.Data{"event": "done"})
+	}
+	return backupResults
+}
+
+func (b *instanceBackuper) buildTargetPath(instanceID string) string {
+	now := b.timeProvider()
+	year := now.Year()
+	month := int(now.Month())
+	day := now.Day()
+
+	filename := fmt.Sprintf(
+		"%s_%s_%s",
+		now.Format("200601021504"),
+		instanceID,
+		b.backupConfig.PlanName,
+	)
+
+	return fmt.Sprintf("%s/%d/%02d/%02d/%s",
+		b.backupConfig.S3Config.Path,
+		year,
+		month,
+		day,
+		filename,
+	)
 }
 
 type BackupInjector func(*instanceBackuper)
@@ -137,36 +239,36 @@ func InjectTimeProvider(p TimeProvider) BackupInjector {
 	}
 }
 
-func (b *instanceBackuper) init(config BackupConfig) error {
+func (b *instanceBackuper) init() error {
 	b.redisBackuper = b.redisBackuperProvider(
-		time.Duration(config.SnapshotTimeoutSeconds)*time.Second,
-		config.S3Config.BucketName,
-		config.S3Config.EndpointUrl,
-		config.S3Config.AccessKeyId,
-		config.S3Config.SecretAccessKey,
+		time.Duration(b.backupConfig.SnapshotTimeoutSeconds)*time.Second,
+		b.backupConfig.S3Config.BucketName,
+		b.backupConfig.S3Config.EndpointUrl,
+		b.backupConfig.S3Config.AccessKeyId,
+		b.backupConfig.S3Config.SecretAccessKey,
 		b.logger,
 	)
 
-	err := b.initInstanceIDLocator(config)
+	err := b.initInstanceIDLocator()
 	if err != nil {
 		b.logger.Error("init-iid-locator", err, lager.Data{
 			"event":     "failed",
-			"plan_name": config.PlanName,
+			"plan_name": b.backupConfig.PlanName,
 		})
 		return err
 	}
 
 	redisConfigFinder := b.redisConfigFinderProvider(
-		config.RedisConfigRoot,
-		config.RedisConfigFilename,
+		b.backupConfig.RedisConfigRoot,
+		b.backupConfig.RedisConfigFilename,
 	)
 
 	b.redisConfigs, err = redisConfigFinder.Find()
 	if err != nil {
 		b.logger.Error("redis-config-finder", err, lager.Data{
 			"event":     "failed",
-			"root_path": config.RedisConfigRoot,
-			"file_name": config.RedisConfigFilename,
+			"root_path": b.backupConfig.RedisConfigRoot,
+			"file_name": b.backupConfig.RedisConfigFilename,
 		})
 		return err
 	}
@@ -174,19 +276,19 @@ func (b *instanceBackuper) init(config BackupConfig) error {
 	return nil
 }
 
-func (b *instanceBackuper) initInstanceIDLocator(config BackupConfig) error {
-	switch config.PlanName {
+func (b *instanceBackuper) initInstanceIDLocator() error {
+	switch b.backupConfig.PlanName {
 	case broker.PlanNameShared:
 		b.instanceIDLocator = b.sharedInstanceIDLocatorProvider(b.logger)
 		return nil
 	case broker.PlanNameDedicated:
 		b.instanceIDLocator = b.dedicatedInstanceIDLocatorProvider(
-			config.BrokerAddress,
-			config.BrokerCredentials.Username,
-			config.BrokerCredentials.Password,
+			b.backupConfig.BrokerAddress,
+			b.backupConfig.BrokerCredentials.Username,
+			b.backupConfig.BrokerCredentials.Password,
 			b.logger,
 		)
 		return nil
 	}
-	return fmt.Errorf("Unknown plan name %s", config.PlanName)
+	return fmt.Errorf("Unknown plan name %s", b.backupConfig.PlanName)
 }
