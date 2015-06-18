@@ -2,6 +2,8 @@ package backup_integration_test
 
 import (
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"time"
@@ -42,10 +44,12 @@ var _ = Describe("backups", func() {
 			planName           string
 			awsAccessKey       string
 			awsSecretAccessKey string
+			brokerUrl          string
 		)
 
 		BeforeEach(func() {
 			configDir, dataDir, logDir = helpers.CreateTestDirs()
+			brokerUrl = fmt.Sprintf("http://%s:%d", brokerHost, brokerPort)
 		})
 
 		JustBeforeEach(func() {
@@ -66,8 +70,7 @@ var _ = Describe("backups", func() {
 				AwsAccessKey:       awsAccessKey,
 				AwsSecretAccessKey: awsSecretAccessKey,
 				PlanName:           planName,
-				BrokerHost:         brokerHost,
-				BrokerPort:         brokerPort,
+				BrokerUrl:          brokerUrl,
 			}
 			redisConfig = filepath.Join(configDir, "redis.conf")
 			err := helpers.HandleTemplate(
@@ -133,18 +136,26 @@ var _ = Describe("backups", func() {
 				}
 			})
 
-			// Context("when broker is not responding", func() {
-			// 	It("returns non-zero exit code", func() {
-			// 	})
-			// })
+			FContext("when broker returns an error", func() {
+				var (
+					ts *httptest.Server
+				)
+				BeforeEach(func() {
+					ts = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						w.Header().Add("Content-Type", "application/json")
+						w.WriteHeader(500)
+						fmt.Fprintf(w, "{}")
+					}))
+					brokerUrl = ts.URL
+				})
 
-			// Context("when broker returns an error", func() {
-			// 	It("returns non-zero exit code", func() {
-			// 	})
-			// })
+				AfterEach(func() {
+					ts.Close()
+				})
 
-			XContext("when the instance backup fails", func() {
 				It("returns non-zero exit code", func() {
+					backupExitCode := runBackup(configFile)
+					Expect(backupExitCode).To(Equal(70))
 				})
 			})
 		})

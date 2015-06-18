@@ -17,8 +17,7 @@ type TemplateData struct {
 	AwsAccessKey       string
 	AwsSecretAccessKey string
 	PlanName           string
-	BrokerHost         string
-	BrokerPort         int
+	BrokerUrl          string
 }
 
 func HandleTemplate(sourceFile, destFile string, data interface{}) error {

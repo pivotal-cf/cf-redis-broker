@@ -11,6 +11,6 @@ broker_credentials:
     username: admin
 password: admin
 snapshot_timeout_seconds: 3600
-broker_address: http://{{.BrokerHost}}:{{.BrokerPort}}
+broker_address: {{.BrokerUrl}}
 redis_config_root: {{.ConfigDir}} 
 redis_config_filename: redis.conf

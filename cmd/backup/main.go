@@ -46,6 +46,7 @@ func main() {
 	hasError := false
 	for _, result := range backupResults {
 		if result.Err != nil {
+			hasError = true
 			logger.Error(
 				"snapshot-main",
 				result.Err,
