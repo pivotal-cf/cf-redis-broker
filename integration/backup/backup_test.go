@@ -16,6 +16,13 @@ import (
 )
 
 var _ = Describe("backups", func() {
+	Context("when config is invalid", func() {
+		It("exits with status code 78", func() {
+			configFile := helpers.AssetPath("invalid-backup.yml")
+			backupExitCode := runBackup(configFile)
+			Expect(backupExitCode).Should(Equal(78))
+		})
+	})
 
 	Context("when S3 is not configured", func() {
 		It("exits with status code 0", func() {
@@ -89,6 +96,16 @@ var _ = Describe("backups", func() {
 			redisRunner.Stop()
 			helpers.RemoveTestDirs(configDir, dataDir, logDir)
 			cleanupS3(awsAccessKey, awsSecretAccessKey)
+		})
+
+		Context("when the plan name is unknown", func() {
+			BeforeEach(func() {
+				planName = "unknown-plan-id"
+			})
+			It("exits with exit code 70", func() {
+				backupExitCode := runBackup(configFile)
+				Expect(backupExitCode).Should(Equal(70))
+			})
 		})
 
 		Context("when its a dedicated instance to back up", func() {
