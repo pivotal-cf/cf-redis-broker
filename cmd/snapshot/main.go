@@ -26,6 +26,12 @@ func main() {
 
 	backupConfig, _ := backup.LoadBackupConfig(configPath)
 
+	logFile, err := os.OpenFile(backupConfig.LogFilepath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0660)
+	if err != nil {
+		logger.Error("snapshot-main", err, lager.Data{"event": "failed", "LogFilepath": backupConfig.LogFilepath})
+	}
+	logger.RegisterSink(lager.NewWriterSink(logFile, lager.INFO))
+
 	//	TODO: handle error
 
 	// TODO: Should this really be a pointer not a struct?
