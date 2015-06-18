@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
-	goamz "github.com/mitchellh/goamz/s3"
+	goamz "github.com/goamz/goamz/s3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pivotal-cf/cf-redis-broker/integration"
