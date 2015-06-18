@@ -136,7 +136,7 @@ var _ = Describe("backups", func() {
 				}
 			})
 
-			FContext("when broker returns an error", func() {
+			Context("when broker returns an error", func() {
 				var (
 					ts *httptest.Server
 				)
@@ -160,21 +160,30 @@ var _ = Describe("backups", func() {
 			})
 		})
 
-		XContext("when there are shared-vm instances to back up", func() {
-			Context("when the backup command completes successfully", func() {
-				It("exits with status code 0", func() {
-				})
-
-				It("uploads a dump.rdb file to S3 for each Redis instance", func() {
-				})
-
-				It("creates a dump.rdb file for each Redis instance", func() {
-				})
+		Context("when there are shared-vm instances to back up", func() {
+			BeforeEach(func() {
+				planName = "shared-vm"
 			})
 
-			Context("when an instance backup fails", func() {
-				It("still backs up the other instances", func() {
-				})
+			It("creates a dump.rdb file in the redis data dir", func() {
+				backupExitCode := runBackup(configFile)
+				Expect(backupExitCode).Should(Equal(0))
+				_, err := os.Stat(filepath.Join(dataDir, "dump.rdb"))
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("uploads the dump.rdb file to the correct S3 bucket", func() {
+				backupExitCode := runBackup(configFile)
+				Expect(backupExitCode).To(Equal(0))
+				apiClient := newApiClient(awsAccessKey, awsSecretAccessKey)
+
+				m, err := apiClient.Bucket("redis-backup-test").GetBucketContents()
+				Expect(err).ToNot(HaveOccurred())
+				Expect(len(*m)).To(Equal(1))
+				for k, _ := range *m {
+					Expect(k).To(ContainSubstring(filepath.Base(configDir) + "_shared-vm"))
+
+				}
 			})
 		})
 	})

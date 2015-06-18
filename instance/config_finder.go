@@ -36,16 +36,16 @@ func (f *configFinder) Find() ([]RedisConfig, error) {
 
 	redisConfigs := make([]RedisConfig, len(paths))
 
-	for _, path := range paths {
+	for i, path := range paths {
 		config, err := redisconf.Load(path)
 		if err != nil {
 			return nil, err
 		}
 
-		redisConfigs = append(redisConfigs, RedisConfig{
+		redisConfigs[i] = RedisConfig{
 			Conf: config,
 			Path: path,
-		})
+		}
 	}
 
 	return redisConfigs, err
