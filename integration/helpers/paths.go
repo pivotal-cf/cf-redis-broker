@@ -1,8 +1,9 @@
 package helpers
 
 import (
+	"fmt"
+	"io/ioutil"
 	"os"
-	"path"
 	"path/filepath"
 
 	. "github.com/onsi/gomega"
@@ -14,6 +15,40 @@ func ResetTestDirs() {
 	removeAndRecreateDir("/tmp/redis-config-dir")
 }
 
+func CreateTestDirs() (string, string, string) {
+	var err error
+	configDir, err := ioutil.TempDir("", "redis-config-")
+	if err != nil {
+		panic(err)
+	}
+	dataDir, err := ioutil.TempDir("", "redis-data-")
+	if err != nil {
+		panic(err)
+	}
+	logDir, err := ioutil.TempDir("", "redis-log-")
+	if err != nil {
+		panic(err)
+	}
+	return configDir, dataDir, logDir
+}
+
+func RemoveTestDirs(configDir, dataDir, logDir string) {
+	err := os.RemoveAll(configDir)
+	if err != nil {
+		fmt.Printf("Error [%v] deleting config dir [%v] - delete manually!", err, configDir)
+	}
+	// Redis is weird
+	os.Chmod(filepath.Join(dataDir, "instance1"), 0700)
+	err = os.RemoveAll(dataDir)
+	if err != nil {
+		fmt.Printf("Error [%v] deleting data dir [%v] - delete manually!", err, dataDir)
+	}
+	err = os.RemoveAll(logDir)
+	if err != nil {
+		fmt.Printf("Error [%v] deleting log dir [%v] - delete manually!", err, logDir)
+	}
+}
+
 func removeAndRecreateDir(path string) {
 	err := os.RemoveAll(path)
 	Ω(err).ShouldNot(HaveOccurred())
@@ -22,7 +57,7 @@ func removeAndRecreateDir(path string) {
 }
 
 func AssetPath(filename string) string {
-	path, err := filepath.Abs(path.Join("assets", filename))
+	path, err := filepath.Abs(filepath.Join("assets", filename))
 	Ω(err).ShouldNot(HaveOccurred())
 	return path
 }

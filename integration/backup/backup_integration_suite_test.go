@@ -2,6 +2,7 @@ package backup_integration_test
 
 import (
 	"fmt"
+	"net/http"
 	"os/exec"
 
 	. "github.com/onsi/ginkgo"
@@ -17,6 +18,8 @@ var (
 	backupExecutablePath string
 	awsCliPath           = "aws"
 	redisRunner          *integration.RedisRunner
+	brokerHost           = "127.0.0.1"
+	brokerPort           = 8080
 )
 
 func TestBackupintegration(t *testing.T) {
@@ -27,15 +30,18 @@ func TestBackupintegration(t *testing.T) {
 var _ = BeforeSuite(func() {
 	backupExecutablePath = helpers.BuildExecutable("github.com/pivotal-cf/cf-redis-broker/cmd/snapshot")
 
-	redisHost := "127.0.0.1"
-	redisPort := integration.RedisPort
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Content-Type", "application/json")
+		fmt.Fprintf(w, "{\"instance_id\": \"this_is_an_instance_id\"}")
+	})
 
-	redisRunner = &integration.RedisRunner{}
-	redisRunner.Start([]string{"--bind", redisHost, "--port", fmt.Sprintf("%d", redisPort)})
+	go func() {
+		http.ListenAndServe(fmt.Sprintf(":%v", brokerPort), nil)
+	}()
 })
 
 var _ = AfterSuite(func() {
-	redisRunner.Stop()
+	gexec.CleanupBuildArtifacts()
 })
 
 func runBackup(configPath string) int {

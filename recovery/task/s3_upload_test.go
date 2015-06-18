@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/st3v/glager"
 
+	goamz "github.com/mitchellh/goamz/s3"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/pivotal-cf/cf-redis-broker/recovery/task"
 	"github.com/pivotal-cf/cf-redis-broker/s3"
@@ -27,6 +28,8 @@ func (c *fakeS3Client) GetOrCreateBucket(name string) (s3.Bucket, error) {
 	c.GetOrCreateBucketInvokedWithArg = append(c.GetOrCreateBucketInvokedWithArg, name)
 	return c.GetOrCreateBucketResult, c.GetOrCreateBucketErr
 }
+
+func (c *fakeS3Client) ApiClient() *goamz.S3 { return nil }
 
 type fakeS3Bucket struct {
 	BucketName            string

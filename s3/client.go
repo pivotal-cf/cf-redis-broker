@@ -1,8 +1,8 @@
 package s3
 
 import (
-	"github.com/goamz/goamz/aws"
-	goamz "github.com/goamz/goamz/s3"
+	"github.com/mitchellh/goamz/aws"
+	goamz "github.com/mitchellh/goamz/s3"
 	"github.com/pivotal-golang/lager"
 )
 
@@ -14,6 +14,7 @@ type s3Client struct {
 
 type Client interface {
 	GetOrCreateBucket(string) (Bucket, error)
+	ApiClient() *goamz.S3
 }
 
 func NewClient(endpoint, accessKey, secretKey string, logger lager.Logger) Client {
@@ -60,6 +61,10 @@ func (c *s3Client) GetOrCreateBucket(bucketName string) (Bucket, error) {
 		c.goamzClient.SecretKey,
 		c.logger,
 	), nil
+}
+
+func (c *s3Client) ApiClient() *goamz.S3 {
+	return c.goamzClient
 }
 
 func (c *s3Client) logInfo(action, event string, data lager.Data) {

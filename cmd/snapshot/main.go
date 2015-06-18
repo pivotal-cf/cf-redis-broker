@@ -26,6 +26,14 @@ func main() {
 
 	backupConfig, _ := backup.LoadBackupConfig(configPath)
 
+	//	TODO: handle error
+
+	// TODO: Should this really be a pointer not a struct?
+	if (backupConfig.S3Config == backup.S3Configuration{}) {
+		logger.Info("snapshot-main", lager.Data{"event": "cancelled", "message": "S3 configuration not found - skipping backup"})
+		os.Exit(0)
+	}
+
 	backuper, _ := backup.NewInstanceBackuper(*backupConfig, logger)
 
 	backuper.Backup()
