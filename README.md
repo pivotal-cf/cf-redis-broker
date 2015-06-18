@@ -15,23 +15,25 @@ It also expect a bucket called `redis-backup-test`, and the user whose key is
 provided, above, should have the following access to the bucket for testing
 purposes:
 
-    {
-        "Version": "2012-10-17",
-        "Statement": [
-            {
-                "Sid": "RestrictiveBackups",
-                "Effect": "Allow",
-                "Action": [
-                    "s3:CreateBucket",
-                    "s3:PutObject",
-                    "s3:DeleteObject",
-                    "s3:ListObject",
-                    "s3:ListBucket"
-                ],
-                "Resource": [
-                    "arn:aws:s3:::redis-backup-test",
-                    "arn:aws:s3:::redis-backup-test/*"
-                ]
-            },
-        ]
-    }
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "RestrictiveBackups",
+            "Effect": "Allow",
+            "Action": [
+                "s3:CreateBucket",
+                "s3:PutObject",
+                "s3:DeleteObject",
+                "s3:ListObject",
+                "s3:ListBucket"
+            ],
+            "Resource": [
+                "arn:aws:s3:::redis-backup-test",
+                "arn:aws:s3:::redis-backup-test/*"
+            ]
+        },
+    ]
+}
+```
