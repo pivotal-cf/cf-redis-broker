@@ -28,7 +28,7 @@ func TestBackupintegration(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	backupExecutablePath = helpers.BuildExecutable("github.com/pivotal-cf/cf-redis-broker/cmd/snapshot")
+	backupExecutablePath = helpers.BuildExecutable("github.com/pivotal-cf/cf-redis-broker/cmd/backup")
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Content-Type", "application/json")
