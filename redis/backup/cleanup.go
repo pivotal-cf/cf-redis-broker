@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/pivotal-cf/cf-redis-broker/recovery/task"
+	"github.com/pivotal-cf/cf-redis-broker/utils"
 	"github.com/pivotal-golang/lager"
 )
 
@@ -36,7 +37,7 @@ func InjectRenamer(r renamer) CleanupInjector {
 func NewCleanup(originalRdbPath, renamedRdbPath string, logger lager.Logger, injectors ...CleanupInjector) task.Task {
 	c := &cleanup{
 		remove:          os.Remove,
-		rename:          os.Rename,
+		rename:          utils.MoveFile,
 		originalRdbPath: originalRdbPath,
 		renamedRdbPath:  renamedRdbPath,
 		logger:          logger,
