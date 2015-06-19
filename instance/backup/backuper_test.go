@@ -99,8 +99,14 @@ var _ = Describe("Instance Backuper", func() {
 					instance.RedisConfig{
 						Path: expectedPath,
 						Conf: redisconf.New(
-							redisconf.Param{"bind", "8.8.8.8"},
-							redisconf.Param{"port", "1234"},
+							redisconf.Param{
+								Key:   "bind",
+								Value: "8.8.8.8",
+							},
+							redisconf.Param{
+								Key:   "port",
+								Value: "1234",
+							},
 						),
 					},
 				}
@@ -262,15 +268,27 @@ var _ = Describe("Instance Backuper", func() {
 					instance.RedisConfig{
 						Path: expectedPaths[0],
 						Conf: redisconf.New(
-							redisconf.Param{"bind", "8.8.8.8"},
-							redisconf.Param{"port", "1234"},
+							redisconf.Param{
+								Key:   "bind",
+								Value: "8.8.8.8",
+							},
+							redisconf.Param{
+								Key:   "port",
+								Value: "1234",
+							},
 						),
 					},
 					instance.RedisConfig{
 						Path: expectedPaths[1],
 						Conf: redisconf.New(
-							redisconf.Param{"bind", "9.9.9.9"},
-							redisconf.Param{"port", "4321"},
+							redisconf.Param{
+								Key:   "bind",
+								Value: "9.9.9.9",
+							},
+							redisconf.Param{
+								Key:   "port",
+								Value: "4321",
+							},
 						),
 					},
 				}
