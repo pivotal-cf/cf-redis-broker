@@ -83,7 +83,7 @@ var _ = Describe("Rename", func() {
 			})
 
 			It("returns the error", func() {
-				Expect(runErr).To(BeAssignableToTypeOf(&os.LinkError{}))
+				Expect(runErr).To(HaveOccurred())
 			})
 
 			It("logs the error", func() {
