@@ -30,7 +30,7 @@ func (repo *LocalRepository) FindByID(instanceID string) (*Instance, error) {
 
 	instance := &Instance{
 		ID:       instanceID,
-		Password: conf.Get("requirepass"),
+		Password: conf.Password(),
 		Port:     port,
 		Host:     repo.RedisConf.Host,
 	}

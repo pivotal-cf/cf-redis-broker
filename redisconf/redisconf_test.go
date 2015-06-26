@@ -33,6 +33,46 @@ var _ = Describe("redisconf", func() {
 		})
 	})
 
+	Describe("Password", func() {
+		var conf redisconf.Conf
+
+		Context("when password is not quoted", func() {
+			BeforeEach(func() {
+				conf = redisconf.New(
+					redisconf.Param{Key: "requirepass", Value: "foo"},
+				)
+			})
+
+			It("returns the password as is", func() {
+				Expect(conf.Password()).To(Equal("foo"))
+			})
+		})
+
+		Context("when password does have unbalanced quotes", func() {
+			BeforeEach(func() {
+				conf = redisconf.New(
+					redisconf.Param{Key: "requirepass", Value: `"foo`},
+				)
+			})
+
+			It("returns the password as is", func() {
+				Expect(conf.Password()).To(Equal(`"foo`))
+			})
+		})
+
+		Context("when password is quoted", func() {
+			BeforeEach(func() {
+				conf = redisconf.New(
+					redisconf.Param{Key: "requirepass", Value: `"foo"`},
+				)
+			})
+
+			It("returns the password without the quotation marks", func() {
+				Expect(conf.Password()).To(Equal("foo"))
+			})
+		})
+	})
+
 	Describe("CommandAlias", func() {
 		conf := redisconf.New(
 			redisconf.Param{Key: "rename-command", Value: "CONFIG abc-def"},

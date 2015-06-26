@@ -203,6 +203,25 @@ var _ = Describe("Local Repository", func() {
 	})
 
 	Describe("FindByID", func() {
+		Context("when the instance exists", func() {
+			BeforeEach(func() {
+				instance := &redis.Instance{
+					ID:       instanceID,
+					Host:     "127.0.0.1",
+					Port:     8080,
+					Password: `"foo"`,
+				}
+				writeInstance(instance, repo)
+			})
+
+			It("returns the instance with unquoted password", func() {
+				instance, err := repo.FindByID(instanceID)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(instance).ToNot(BeNil())
+				Expect(instance.Password).To(Equal("foo"))
+			})
+		})
+
 		Context("when instance does not exist", func() {
 			It("returns an error", func() {
 				_, err := repo.FindByID(instanceID)

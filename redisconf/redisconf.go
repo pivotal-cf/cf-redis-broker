@@ -69,6 +69,14 @@ func decode(data []byte) (Conf, error) {
 	return conf, nil
 }
 
+func (conf Conf) Password() string {
+	pass := []byte(conf.Get("requirepass"))
+	if len(pass) > 0 && pass[0] == '"' && pass[len(pass)-1] == '"' {
+		pass = pass[1 : len(pass)-1]
+	}
+	return string(pass)
+}
+
 func (conf Conf) Get(key string) string {
 	params := conf.getAll(key)
 	if len(params) < 1 {
