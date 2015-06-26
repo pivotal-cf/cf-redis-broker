@@ -1,7 +1,6 @@
 package redis_test
 
 import (
-	"net"
 	"net/http"
 	"net/http/httptest"
 
@@ -17,11 +16,7 @@ var _ = Describe("RemoteAgentClient", func() {
 	var agentCalled int
 	var remoteAgentClient redis.RemoteAgentClient
 	var status int
-
-	const (
-		hostAndPort = "127.0.0.1:8080"
-		rootURL     = "http://127.0.0.1:8080"
-	)
+	var url string
 
 	BeforeEach(func() {
 		remoteAgentClient = redis.RemoteAgentClient{
@@ -48,18 +43,12 @@ var _ = Describe("RemoteAgentClient", func() {
 			}
 		})
 
-		listener, err := net.Listen("tcp", hostAndPort)
-		Ω(err).ShouldNot(HaveOccurred())
-
-		server = httptest.NewUnstartedServer(handler)
-		server.Listener = listener
-		server.Start()
-		Eventually(isListeningChecker(hostAndPort)).Should(BeTrue())
+		server = httptest.NewServer(handler)
+		url = server.URL
 	})
 
 	AfterEach(func() {
 		server.Close()
-		Eventually(isListeningChecker(hostAndPort)).Should(BeFalse())
 	})
 
 	Describe("#Reset", func() {
@@ -69,7 +58,7 @@ var _ = Describe("RemoteAgentClient", func() {
 			})
 
 			It("makes a DELETE request to the rootURL", func() {
-				remoteAgentClient.Reset(rootURL)
+				remoteAgentClient.Reset(url)
 				Ω(agentCalled).Should(Equal(1))
 			})
 		})
@@ -80,7 +69,7 @@ var _ = Describe("RemoteAgentClient", func() {
 			})
 
 			It("returns the error", func() {
-				err := remoteAgentClient.Reset(rootURL)
+				err := remoteAgentClient.Reset(url)
 				Ω(err).To(MatchError("Agent error: 500"))
 			})
 		})
@@ -92,13 +81,13 @@ var _ = Describe("RemoteAgentClient", func() {
 		})
 
 		It("makes a GET request to the rootURL", func() {
-			remoteAgentClient.Credentials(rootURL)
+			remoteAgentClient.Credentials(url)
 			Ω(agentCalled).Should(Equal(1))
 		})
 
 		Context("When successful", func() {
 			It("returns the correct credentials", func() {
-				credentials, err := remoteAgentClient.Credentials(rootURL)
+				credentials, err := remoteAgentClient.Credentials(url)
 				Ω(err).ShouldNot(HaveOccurred())
 
 				Ω(credentials).Should(Equal(redis.Credentials{
@@ -111,7 +100,7 @@ var _ = Describe("RemoteAgentClient", func() {
 		Context("When unsuccessful", func() {
 			It("returns an error", func() {
 				status = http.StatusInternalServerError
-				_, err := remoteAgentClient.Credentials(rootURL)
+				_, err := remoteAgentClient.Credentials(url)
 				Ω(err).Should(HaveOccurred())
 				Ω(err.Error()).Should(Equal(`Agent error: 500, {"port": 12345, "password": "super-secret"}`))
 			})
