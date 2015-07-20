@@ -52,6 +52,10 @@ func (c *Client) InfoField(fieldName string) (string, error) {
 	return "", nil
 }
 
+func (c *Client) Info() (map[string]string, error) {
+	return map[string]string{}, nil
+}
+
 func (c *Client) GetConfig(key string) (string, error) {
 	return "", nil
 }

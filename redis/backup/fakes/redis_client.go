@@ -44,6 +44,13 @@ type FakeRedisClient struct {
 		result1 int64
 		result2 error
 	}
+	InfoStub        func() (map[string]string, error)
+	infoMutex       sync.RWMutex
+	infoArgsForCall []struct{}
+	infoReturns struct {
+		result1 map[string]string
+		result2 error
+	}
 	InfoFieldStub        func(fieldName string) (string, error)
 	infoFieldMutex       sync.RWMutex
 	infoFieldArgsForCall []struct {
@@ -210,6 +217,31 @@ func (fake *FakeRedisClient) LastRDBSaveTimeReturns(result1 int64, result2 error
 	fake.LastRDBSaveTimeStub = nil
 	fake.lastRDBSaveTimeReturns = struct {
 		result1 int64
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeRedisClient) Info() (map[string]string, error) {
+	fake.infoMutex.Lock()
+	fake.infoArgsForCall = append(fake.infoArgsForCall, struct{}{})
+	fake.infoMutex.Unlock()
+	if fake.InfoStub != nil {
+		return fake.InfoStub()
+	} else {
+		return fake.infoReturns.result1, fake.infoReturns.result2
+	}
+}
+
+func (fake *FakeRedisClient) InfoCallCount() int {
+	fake.infoMutex.RLock()
+	defer fake.infoMutex.RUnlock()
+	return len(fake.infoArgsForCall)
+}
+
+func (fake *FakeRedisClient) InfoReturns(result1 map[string]string, result2 error) {
+	fake.InfoStub = nil
+	fake.infoReturns = struct {
+		result1 map[string]string
 		result2 error
 	}{result1, result2}
 }

@@ -187,6 +187,34 @@ var _ = Describe("Client", func() {
 			})
 		})
 
+		Describe(".Info", func() {
+			var redis client.Client
+
+			BeforeEach(func() {
+				var err error
+				redis, err = client.Connect(
+					client.Host(host),
+					client.Port(port),
+				)
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("does not return an error", func() {
+				_, err := redis.Info()
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("returns a map with multiple entries", func() {
+				info, _ := redis.Info()
+				Expect(len(info)).To(BeNumerically(">", 1))
+			})
+
+			It("returns a map that contains expected entries", func() {
+				info, _ := redis.Info()
+				Expect(info["aof_enabled"]).To(Equal("0"))
+			})
+		})
+
 		Describe("querying info fields", func() {
 			Context("when the field exits", func() {
 				It("returns the value", func() {

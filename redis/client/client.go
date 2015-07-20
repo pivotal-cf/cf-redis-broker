@@ -100,6 +100,7 @@ type Client interface {
 	WaitUntilRedisNotLoading(timeoutMilliseconds int) error
 	EnableAOF() error
 	LastRDBSaveTime() (int64, error)
+	Info() (map[string]string, error)
 	InfoField(fieldName string) (string, error)
 	GetConfig(key string) (string, error)
 	RDBPath() (string, error)
@@ -192,7 +193,7 @@ func (client *client) LastRDBSaveTime() (int64, error) {
 }
 
 func (client *client) InfoField(fieldName string) (string, error) {
-	info, err := client.info()
+	info, err := client.Info()
 	if err != nil {
 		return "", fmt.Errorf("Error during redis info: %s" + err.Error())
 	}
@@ -265,7 +266,7 @@ func (client *client) setConfig(key string, value string) error {
 	return err
 }
 
-func (client *client) info() (map[string]string, error) {
+func (client *client) Info() (map[string]string, error) {
 	infoCommand := client.lookupAlias("INFO")
 
 	info := map[string]string{}
