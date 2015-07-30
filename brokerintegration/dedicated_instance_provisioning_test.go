@@ -9,15 +9,9 @@ import (
 var _ = Describe("Provision dedicated instance", func() {
 
 	var instanceID string
-	var httpInputs HTTPExampleInputs
 
 	BeforeEach(func() {
 		instanceID = uuid.NewRandom().String()
-		serviceInstanceURI := "http://localhost:3000/v2/service_instances/" + instanceID
-		httpInputs = HTTPExampleInputs{
-			Method: "PUT",
-			URI:    serviceInstanceURI,
-		}
 	})
 
 	Context("when instance is created successfully", func() {

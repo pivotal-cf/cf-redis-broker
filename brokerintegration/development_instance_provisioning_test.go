@@ -13,17 +13,11 @@ import (
 var _ = Describe("Provision shared instance", func() {
 
 	var instanceID string
-	var httpInputs HTTPExampleInputs
 	var initialRedisProcessCount int
 
 	BeforeEach(func() {
 		instanceID = uuid.NewRandom().String()
 		initialRedisProcessCount = getRedisProcessCount()
-		serviceInstanceURI := brokerClient.InstanceURI(instanceID)
-		httpInputs = HTTPExampleInputs{
-			Method: "PUT",
-			URI:    serviceInstanceURI,
-		}
 	})
 
 	AfterEach(func() {
