@@ -232,14 +232,14 @@ func (repo *RemoteRepository) BindingsForInstance(instanceID string) ([]string, 
 	return bindings, nil
 }
 
-type statefile struct {
+type Statefile struct {
 	AvailableInstances []*Instance         `json:"available_instances"`
 	AllocatedInstances []*Instance         `json:"allocated_instances"`
 	InstanceBindings   map[string][]string `json:"instance_bindings"`
 }
 
 func (repo *RemoteRepository) PersistStatefile() error {
-	statefileContents := statefile{
+	statefileContents := Statefile{
 		AvailableInstances: repo.availableInstances,
 		AllocatedInstances: repo.allocatedInstances,
 		InstanceBindings:   repo.instanceBindings,
@@ -263,7 +263,7 @@ func (repo *RemoteRepository) IDForHost(host string) string {
 }
 
 func (repo *RemoteRepository) loadStateFromFile() error {
-	statefileContents := statefile{}
+	statefileContents := Statefile{}
 
 	if _, err := os.Stat(repo.statefilePath); os.IsNotExist(err) {
 		return nil
