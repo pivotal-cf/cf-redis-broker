@@ -46,6 +46,20 @@ type FakeProviderFactory struct {
 	s3UploadTaskProviderReturns struct {
 		result1 task.Task
 	}
+	S3UploadVersionsFileTaskProviderStub        func(string, string, string, string, string, lager.Logger, ...task.S3UploadInjector) task.Task
+	s3UploadVersionsFileTaskProviderMutex       sync.RWMutex
+	s3UploadVersionsFileTaskProviderArgsForCall []struct {
+		arg1 string
+		arg2 string
+		arg3 string
+		arg4 string
+		arg5 string
+		arg6 lager.Logger
+		arg7 []task.S3UploadInjector
+	}
+	s3UploadVersionsFileTaskProviderReturns struct {
+		result1 task.Task
+	}
 	CleanupTaskProviderStub        func(string, string, lager.Logger, ...backup.CleanupInjector) task.Task
 	cleanupTaskProviderMutex       sync.RWMutex
 	cleanupTaskProviderArgsForCall []struct {
@@ -160,6 +174,44 @@ func (fake *FakeProviderFactory) S3UploadTaskProviderArgsForCall(i int) (string,
 func (fake *FakeProviderFactory) S3UploadTaskProviderReturns(result1 task.Task) {
 	fake.S3UploadTaskProviderStub = nil
 	fake.s3UploadTaskProviderReturns = struct {
+		result1 task.Task
+	}{result1}
+}
+
+func (fake *FakeProviderFactory) S3UploadVersionsFileTaskProvider(arg1 string, arg2 string, arg3 string, arg4 string, arg5 string, arg6 lager.Logger, arg7 ...task.S3UploadInjector) task.Task {
+	fake.s3UploadVersionsFileTaskProviderMutex.Lock()
+	fake.s3UploadVersionsFileTaskProviderArgsForCall = append(fake.s3UploadVersionsFileTaskProviderArgsForCall, struct {
+		arg1 string
+		arg2 string
+		arg3 string
+		arg4 string
+		arg5 string
+		arg6 lager.Logger
+		arg7 []task.S3UploadInjector
+	}{arg1, arg2, arg3, arg4, arg5, arg6, arg7})
+	fake.s3UploadVersionsFileTaskProviderMutex.Unlock()
+	if fake.S3UploadVersionsFileTaskProviderStub != nil {
+		return fake.S3UploadVersionsFileTaskProviderStub(arg1, arg2, arg3, arg4, arg5, arg6, arg7...)
+	} else {
+		return fake.s3UploadVersionsFileTaskProviderReturns.result1
+	}
+}
+
+func (fake *FakeProviderFactory) S3UploadVersionsFileTaskProviderCallCount() int {
+	fake.s3UploadVersionsFileTaskProviderMutex.RLock()
+	defer fake.s3UploadVersionsFileTaskProviderMutex.RUnlock()
+	return len(fake.s3UploadVersionsFileTaskProviderArgsForCall)
+}
+
+func (fake *FakeProviderFactory) S3UploadVersionsFileTaskProviderArgsForCall(i int) (string, string, string, string, string, lager.Logger, []task.S3UploadInjector) {
+	fake.s3UploadVersionsFileTaskProviderMutex.RLock()
+	defer fake.s3UploadVersionsFileTaskProviderMutex.RUnlock()
+	return fake.s3UploadVersionsFileTaskProviderArgsForCall[i].arg1, fake.s3UploadVersionsFileTaskProviderArgsForCall[i].arg2, fake.s3UploadVersionsFileTaskProviderArgsForCall[i].arg3, fake.s3UploadVersionsFileTaskProviderArgsForCall[i].arg4, fake.s3UploadVersionsFileTaskProviderArgsForCall[i].arg5, fake.s3UploadVersionsFileTaskProviderArgsForCall[i].arg6, fake.s3UploadVersionsFileTaskProviderArgsForCall[i].arg7
+}
+
+func (fake *FakeProviderFactory) S3UploadVersionsFileTaskProviderReturns(result1 task.Task) {
+	fake.S3UploadVersionsFileTaskProviderStub = nil
+	fake.s3UploadVersionsFileTaskProviderReturns = struct {
 		result1 task.Task
 	}{result1}
 }

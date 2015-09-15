@@ -88,6 +88,9 @@ func (b *s3Bucket) Upload(source, target string) error {
 
 	b.logInfo("s3bucket.upload", "creating-command", logData)
 
+	fmt.Println("*******************")
+	fmt.Println(source)
+
 	cmd := b.cmdFactory(
 		b.awsCliPath,
 		env,
@@ -102,6 +105,7 @@ func (b *s3Bucket) Upload(source, target string) error {
 	b.logInfo("s3bucket.upload", "shelling-out", logData)
 
 	if output, err := cmd.CombinedOutput(); err != nil {
+		fmt.Println(string(output))
 		logData["cli_output"] = string(output)
 		b.logError("s3bucket.upload", err, logData)
 		return err

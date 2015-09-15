@@ -18,24 +18,26 @@ import (
 var _ = Describe("RedisBackuper", func() {
 	Describe(".Backup", func() {
 		var (
-			backupErr       error
-			log             *gbytes.Buffer
-			logger          lager.Logger
-			providerFactory *fakes.FakeProviderFactory
-			snapshotter     *fakes.FakeSnapshotter
-			initialArtifact task.Artifact
-			renameTask      *fakes.FakeTask
-			s3UploadTask    *fakes.FakeTask
-			cleanupTask     *fakes.FakeTask
-			redisClient     *fakes.FakeRedisClient
-			backuper        backup.RedisBackuper
+			backupErr                   error
+			log                         *gbytes.Buffer
+			logger                      lager.Logger
+			providerFactory             *fakes.FakeProviderFactory
+			snapshotter                 *fakes.FakeSnapshotter
+			initialArtifact             task.Artifact
+			renameTask                  *fakes.FakeTask
+			s3UploadTask                *fakes.FakeTask
+			s3UploadTaskForVersionsFile *fakes.FakeTask
+			cleanupTask                 *fakes.FakeTask
+			redisClient                 *fakes.FakeRedisClient
+			backuper                    backup.RedisBackuper
 
-			expectedTimeout    = 123 * time.Second
-			expectedBucketName = "some-bucket-name"
-			expectedTargetPath = "some-target-path"
-			expectedEndpoint   = "some-endpoint"
-			expectedAccessKey  = "some-access-key"
-			expectedSecretKey  = "some-secret-key"
+			expectedTimeout          = 123 * time.Second
+			expectedBucketName       = "some-bucket-name"
+			expectedTargetPath       = "some-target-path"
+			expectedVersionsFilePath = "versions.yml"
+			expectedEndpoint         = "some-endpoint"
+			expectedAccessKey        = "some-access-key"
+			expectedSecretKey        = "some-secret-key"
 		)
 
 		BeforeEach(func() {
@@ -61,6 +63,11 @@ var _ = Describe("RedisBackuper", func() {
 			s3UploadTask.RunReturns(task.NewArtifact("s3upload"), nil)
 			providerFactory.S3UploadTaskProviderReturns(s3UploadTask)
 
+			s3UploadTaskForVersionsFile = new(fakes.FakeTask)
+			s3UploadTaskForVersionsFile.NameReturns("s3upload")
+			s3UploadTaskForVersionsFile.RunReturns(task.NewArtifact("versions.yml"), nil)
+			providerFactory.S3UploadVersionsFileTaskProviderReturns(s3UploadTaskForVersionsFile)
+
 			cleanupTask = new(fakes.FakeTask)
 			cleanupTask.NameReturns("cleaner")
 			cleanupTask.RunReturns(task.NewArtifact("cleanup"), nil)
@@ -80,6 +87,7 @@ var _ = Describe("RedisBackuper", func() {
 				backup.InjectRenameTaskProvider(providerFactory.RenameTaskProvider),
 				backup.InjectS3UploadTaskProvider(providerFactory.S3UploadTaskProvider),
 				backup.InjectCleanupTaskProvider(providerFactory.CleanupTaskProvider),
+				backup.InjectS3UploadVersionsFileTaskProvider(providerFactory.S3UploadVersionsFileTaskProvider),
 			)
 		})
 
@@ -156,6 +164,56 @@ var _ = Describe("RedisBackuper", func() {
 		It("does not inject anything into the s3 upload task", func() {
 			_, _, _, _, _, _, injectors := providerFactory.S3UploadTaskProviderArgsForCall(0)
 			Expect(injectors).To(BeEmpty())
+		})
+
+		FContext("versions.yml file is uploaded", func() {
+			It("configured with the correct path", func() {
+				actualBucketName, _, _, _, _, _, _ := providerFactory.S3UploadVersionsFileTaskProviderArgsForCall(0)
+				Expect(actualBucketName).To(Equal(expectedBucketName))
+			})
+
+			It("configured with the correct path", func() {
+				_, actualVersionsFilePath, _, _, _, _, _ := providerFactory.S3UploadVersionsFileTaskProviderArgsForCall(0)
+				Expect(actualVersionsFilePath).To(Equal(expectedVersionsFilePath))
+			})
+
+			It("configured with the s3 endpoint", func() {
+				_, _, actuals3Endpoint, _, _, _, _ := providerFactory.S3UploadVersionsFileTaskProviderArgsForCall(0)
+				Expect(actuals3Endpoint).To(Equal(expectedEndpoint))
+			})
+
+			It("configured with the s3 access key", func() {
+				_, _, _, actualAccessKey, _, _, _ := providerFactory.S3UploadVersionsFileTaskProviderArgsForCall(0)
+				Expect(actualAccessKey).To(Equal(expectedAccessKey))
+			})
+
+			It("configured with the s3 secret key", func() {
+				_, _, _, _, actualSecretKey, _, _ := providerFactory.S3UploadVersionsFileTaskProviderArgsForCall(0)
+				Expect(actualSecretKey).To(Equal(expectedSecretKey))
+			})
+
+			It("configured with the correct logger", func() {
+				_, _, _, _, _, actualLogger, _ := providerFactory.S3UploadTaskProviderArgsForCall(0)
+				Expect(actualLogger).To(Equal(logger))
+			})
+
+			It("uploads the file to s3", func() {
+				expectedArtifact := task.NewArtifact(expectedVersionsFilePath)
+				Expect(s3UploadTaskForVersionsFile.RunCallCount()).To(Equal(1))
+				Expect(s3UploadTaskForVersionsFile.RunArgsForCall(0)).To(Equal(expectedArtifact))
+			})
+
+			Context("versions.yml task fails", func() {
+				var expectedErr = errors.New("versions-upload-error")
+
+				BeforeEach(func() {
+					s3UploadTaskForVersionsFile.RunReturns(nil, expectedErr)
+				})
+
+				It("returns the error", func() {
+					Expect(backupErr).To(Equal(expectedErr))
+				})
+			})
 		})
 
 		It("creates the cleanup task with the correct original path", func() {

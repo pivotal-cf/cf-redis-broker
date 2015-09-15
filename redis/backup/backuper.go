@@ -2,6 +2,7 @@ package backup
 
 import (
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -16,6 +17,7 @@ type ProviderFactory interface {
 	SnapshotterProvider(redis.Client, time.Duration, lager.Logger) recovery.Snapshotter
 	RenameTaskProvider(string, lager.Logger) task.Task
 	S3UploadTaskProvider(string, string, string, string, string, lager.Logger, ...task.S3UploadInjector) task.Task
+	S3UploadVersionsFileTaskProvider(string, string, string, string, string, lager.Logger, ...task.S3UploadInjector) task.Task
 	CleanupTaskProvider(string, string, lager.Logger, ...CleanupInjector) task.Task
 }
 
@@ -50,10 +52,11 @@ type CleanupTaskProvider func(
 type BackupInjector func(*backuper)
 
 type backuper struct {
-	snapshotterProvider  RedisSnapshotterProvider
-	renameTaskProvider   RenameTaskProvider
-	s3UploadTaskProvider S3UploadTaskProvider
-	cleanupTaskProvider  CleanupTaskProvider
+	snapshotterProvider              RedisSnapshotterProvider
+	renameTaskProvider               RenameTaskProvider
+	s3UploadTaskProvider             S3UploadTaskProvider
+	s3UploadVersionsFileTaskProvider S3UploadTaskProvider
+	cleanupTaskProvider              CleanupTaskProvider
 
 	snapshotTimeout time.Duration
 	s3BucketName    string
@@ -77,16 +80,17 @@ func NewRedisBackuper(
 	injectors ...BackupInjector,
 ) RedisBackuper {
 	backuper := &backuper{
-		snapshotterProvider:  NewSnapshotter,
-		renameTaskProvider:   task.NewRename,
-		s3UploadTaskProvider: task.NewS3Upload,
-		cleanupTaskProvider:  NewCleanup,
-		snapshotTimeout:      snapshotTimeout,
-		s3BucketName:         s3BucketName,
-		s3Endpoint:           s3Endpoint,
-		awsAccessKey:         awsAccessKey,
-		awsSecretKey:         awsSecretKey,
-		logger:               logger,
+		snapshotterProvider:              NewSnapshotter,
+		renameTaskProvider:               task.NewRename,
+		s3UploadTaskProvider:             task.NewS3Upload,
+		s3UploadVersionsFileTaskProvider: task.NewS3Upload,
+		cleanupTaskProvider:              NewCleanup,
+		snapshotTimeout:                  snapshotTimeout,
+		s3BucketName:                     s3BucketName,
+		s3Endpoint:                       s3Endpoint,
+		awsAccessKey:                     awsAccessKey,
+		awsSecretKey:                     awsSecretKey,
+		logger:                           logger,
 	}
 
 	for _, injector := range injectors {
@@ -129,6 +133,22 @@ func (b *backuper) Backup(client redis.Client, s3TargetPath string) error {
 		b.awsSecretKey,
 		b.logger,
 	)
+
+	tmpVersionsFilePath := filepath.Join(tmpDir, "versions.yml")
+	ioutil.WriteFile(tmpVersionsFilePath, []byte{}, os.ModePerm)
+
+	_, err = b.s3UploadVersionsFileTaskProvider(
+		b.s3BucketName,
+		"versions.yml",
+		b.s3Endpoint,
+		b.awsAccessKey,
+		b.awsSecretKey,
+		b.logger,
+	).Run(task.NewArtifact(tmpVersionsFilePath))
+
+	if err != nil {
+		return err
+	}
 
 	cleanupTask := b.cleanupTaskProvider(
 		originalPath,
@@ -173,6 +193,12 @@ func InjectRenameTaskProvider(provider RenameTaskProvider) BackupInjector {
 func InjectS3UploadTaskProvider(provider S3UploadTaskProvider) BackupInjector {
 	return func(b *backuper) {
 		b.s3UploadTaskProvider = provider
+	}
+}
+
+func InjectS3UploadVersionsFileTaskProvider(provider S3UploadTaskProvider) BackupInjector {
+	return func(b *backuper) {
+		b.s3UploadVersionsFileTaskProvider = provider
 	}
 }
 

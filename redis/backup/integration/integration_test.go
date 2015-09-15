@@ -32,6 +32,7 @@ var (
 	backupErr        error
 	uploadedObject   []byte
 	localDumpRdbPath string
+	bucket           *goamz.Bucket
 )
 
 var _ = BeforeSuite(func() {
@@ -59,7 +60,7 @@ var _ = BeforeSuite(func() {
 	bucketName := "test-bucket"
 	targetPath := "target"
 
-	bucket := goamzBucket(bucketName, s3Server.URL())
+	bucket = goamzBucket(bucketName, s3Server.URL())
 	_, err = bucket.Get(targetPath)
 	Expect(err).To(HaveOccurred())
 
@@ -77,6 +78,8 @@ var _ = BeforeSuite(func() {
 		targetPath,
 	)
 
+	Expect(backupErr).ToNot(HaveOccurred())
+
 	uploadedObject, err = bucket.Get(targetPath)
 	Expect(err).ToNot(HaveOccurred())
 })
@@ -87,12 +90,19 @@ var _ = AfterSuite(func() {
 })
 
 var _ = Describe("backup.Backup", func() {
-	It("returns no error", func() {
+	FIt("returns no error", func() {
 		Expect(backupErr).ToNot(HaveOccurred())
 	})
 
 	It("uploads the artifact to s3", func() {
 		Expect(uploadedObject).ToNot(BeEmpty())
+	})
+
+	FIt("uploads a version file alongside the backup file", func() {
+		uploadedVersionfile, err := bucket.Get("versions.yml")
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(uploadedVersionfile).To(BeEmpty())
 	})
 
 	It("leaves us with a dump.rdb", func() {
