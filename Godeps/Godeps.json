@@ -62,10 +62,6 @@
 			"Rev": "766f4042b942146e90594d145c5071fa92c0aa9a"
 		},
 		{
-			"ImportPath": "github.com/pivotal-cf-experimental/goamz/s3",
-			"Rev": "a001f1bdaf569758f0029caeda00cbaf1315fa8f"
-		},
-		{
 			"ImportPath": "github.com/pivotal-cf/brokerapi",
 			"Rev": "15b0ee33a737ef05859cfaa916b04a3dff10d66e"
 		},
