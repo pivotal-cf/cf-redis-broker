@@ -6,7 +6,7 @@ echo "** TESTING Redis broker"
 
 docker logout
 
-docker run \
+docker run --rm \
   -e "GOPATH=/home/user/go" \
   -e "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}" \
   -e "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}" \
