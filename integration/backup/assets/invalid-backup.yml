@@ -8,4 +8,5 @@ s3:
 snapshot_timeout: 600s
 redis_data_root: "/tmp/redis-data-dir"
 log_file_path: /tmp/backup.log
-aws_cli_path: 
+aws_cli_path:
+backup_tmp_dir: /tmp

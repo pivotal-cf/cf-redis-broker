@@ -15,3 +15,4 @@ redis_config_root: /the/path/to/redis/config
 redis_config_filename: redis-config-filename
 log_file_path: /log/file/path
 aws_cli_path: /path/to/aws-cli
+backup_tmp_dir: /some/backup/dir

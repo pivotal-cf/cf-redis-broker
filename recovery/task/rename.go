@@ -1,7 +1,8 @@
 package task
 
 import (
-	"github.com/pivotal-cf/cf-redis-broker/utils"
+	"os"
+
 	"github.com/pivotal-golang/lager"
 )
 
@@ -20,7 +21,7 @@ func NewRename(target string, logger lager.Logger) Task {
 func (r *rename) Run(a Artifact) (Artifact, error) {
 	r.logInfo("starting", a.Path())
 
-	if err := utils.MoveFile(a.Path(), r.target); err != nil {
+	if err := os.Rename(a.Path(), r.target); err != nil {
 		r.logError(err, a.Path())
 		return nil, err
 	}

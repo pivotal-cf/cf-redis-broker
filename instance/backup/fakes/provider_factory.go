@@ -17,7 +17,7 @@ type FakeProviderFactory struct {
 	TimeProviderStub        func() time.Time
 	timeProviderMutex       sync.RWMutex
 	timeProviderArgsForCall []struct{}
-	timeProviderReturns struct {
+	timeProviderReturns     struct {
 		result1 time.Time
 	}
 	RedisClientProviderStub        func(options ...redis.Option) (redis.Client, error)
@@ -57,7 +57,7 @@ type FakeProviderFactory struct {
 	dedicatedInstanceIDLocatorProviderReturns struct {
 		result1 id.InstanceIDLocator
 	}
-	RedisBackuperProviderStub        func(time.Duration, string, string, string, string, lager.Logger, ...redisbackup.BackupInjector) redisbackup.RedisBackuper
+	RedisBackuperProviderStub        func(time.Duration, string, string, string, string, string, lager.Logger, ...redisbackup.BackupInjector) redisbackup.RedisBackuper
 	redisBackuperProviderMutex       sync.RWMutex
 	redisBackuperProviderArgsForCall []struct {
 		arg1 time.Duration
@@ -65,8 +65,9 @@ type FakeProviderFactory struct {
 		arg3 string
 		arg4 string
 		arg5 string
-		arg6 lager.Logger
-		arg7 []redisbackup.BackupInjector
+		arg6 string
+		arg7 lager.Logger
+		arg8 []redisbackup.BackupInjector
 	}
 	redisBackuperProviderReturns struct {
 		result1 redisbackup.RedisBackuper
@@ -230,7 +231,7 @@ func (fake *FakeProviderFactory) DedicatedInstanceIDLocatorProviderReturns(resul
 	}{result1}
 }
 
-func (fake *FakeProviderFactory) RedisBackuperProvider(arg1 time.Duration, arg2 string, arg3 string, arg4 string, arg5 string, arg6 lager.Logger, arg7 ...redisbackup.BackupInjector) redisbackup.RedisBackuper {
+func (fake *FakeProviderFactory) RedisBackuperProvider(arg1 time.Duration, arg2 string, arg3 string, arg4 string, arg5 string, arg6 string, arg7 lager.Logger, arg8 ...redisbackup.BackupInjector) redisbackup.RedisBackuper {
 	fake.redisBackuperProviderMutex.Lock()
 	fake.redisBackuperProviderArgsForCall = append(fake.redisBackuperProviderArgsForCall, struct {
 		arg1 time.Duration
@@ -238,12 +239,13 @@ func (fake *FakeProviderFactory) RedisBackuperProvider(arg1 time.Duration, arg2 
 		arg3 string
 		arg4 string
 		arg5 string
-		arg6 lager.Logger
-		arg7 []redisbackup.BackupInjector
-	}{arg1, arg2, arg3, arg4, arg5, arg6, arg7})
+		arg6 string
+		arg7 lager.Logger
+		arg8 []redisbackup.BackupInjector
+	}{arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8})
 	fake.redisBackuperProviderMutex.Unlock()
 	if fake.RedisBackuperProviderStub != nil {
-		return fake.RedisBackuperProviderStub(arg1, arg2, arg3, arg4, arg5, arg6, arg7...)
+		return fake.RedisBackuperProviderStub(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8...)
 	} else {
 		return fake.redisBackuperProviderReturns.result1
 	}
@@ -255,10 +257,10 @@ func (fake *FakeProviderFactory) RedisBackuperProviderCallCount() int {
 	return len(fake.redisBackuperProviderArgsForCall)
 }
 
-func (fake *FakeProviderFactory) RedisBackuperProviderArgsForCall(i int) (time.Duration, string, string, string, string, lager.Logger, []redisbackup.BackupInjector) {
+func (fake *FakeProviderFactory) RedisBackuperProviderArgsForCall(i int) (time.Duration, string, string, string, string, string, lager.Logger, []redisbackup.BackupInjector) {
 	fake.redisBackuperProviderMutex.RLock()
 	defer fake.redisBackuperProviderMutex.RUnlock()
-	return fake.redisBackuperProviderArgsForCall[i].arg1, fake.redisBackuperProviderArgsForCall[i].arg2, fake.redisBackuperProviderArgsForCall[i].arg3, fake.redisBackuperProviderArgsForCall[i].arg4, fake.redisBackuperProviderArgsForCall[i].arg5, fake.redisBackuperProviderArgsForCall[i].arg6, fake.redisBackuperProviderArgsForCall[i].arg7
+	return fake.redisBackuperProviderArgsForCall[i].arg1, fake.redisBackuperProviderArgsForCall[i].arg2, fake.redisBackuperProviderArgsForCall[i].arg3, fake.redisBackuperProviderArgsForCall[i].arg4, fake.redisBackuperProviderArgsForCall[i].arg5, fake.redisBackuperProviderArgsForCall[i].arg6, fake.redisBackuperProviderArgsForCall[i].arg7, fake.redisBackuperProviderArgsForCall[i].arg8
 }
 
 func (fake *FakeProviderFactory) RedisBackuperProviderReturns(result1 redisbackup.RedisBackuper) {

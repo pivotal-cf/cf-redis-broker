@@ -1,7 +1,6 @@
 package backup
 
 import (
-	"io/ioutil"
 	"path/filepath"
 	"time"
 
@@ -60,6 +59,7 @@ type backuper struct {
 	s3Endpoint      string
 	awsAccessKey    string
 	awsSecretKey    string
+	tmpDir          string
 	logger          lager.Logger
 }
 
@@ -73,6 +73,7 @@ func NewRedisBackuper(
 	s3Endpoint string,
 	awsAccessKey string,
 	awsSecretKey string,
+	tmpDir string,
 	logger lager.Logger,
 	injectors ...BackupInjector,
 ) RedisBackuper {
@@ -86,6 +87,7 @@ func NewRedisBackuper(
 		s3Endpoint:           s3Endpoint,
 		awsAccessKey:         awsAccessKey,
 		awsSecretKey:         awsSecretKey,
+		tmpDir:               tmpDir,
 		logger:               logger,
 	}
 
@@ -111,13 +113,8 @@ func (b *backuper) Backup(client redis.Client, s3TargetPath string) error {
 	}
 
 	originalPath := artifact.Path()
-	tmpDir, err := ioutil.TempDir("", "redis-backup")
-	if err != nil {
-		localLogger.Error("backup", err, lager.Data{"event": "failed"})
-		return err
-	}
 
-	tmpSnapshotPath := filepath.Join(tmpDir, uuid.New())
+	tmpSnapshotPath := filepath.Join(b.tmpDir, uuid.New())
 
 	renameTask := b.renameTaskProvider(tmpSnapshotPath, b.logger)
 

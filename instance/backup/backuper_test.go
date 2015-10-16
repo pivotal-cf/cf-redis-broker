@@ -582,37 +582,42 @@ var _ = Describe("Instance Backuper", func() {
 
 		It("creates the redis backuper with the right timeout", func() {
 			expectedTimeout := time.Duration(backupConfig.SnapshotTimeoutSeconds) * time.Second
-			actualTimeout, _, _, _, _, _, _ := providerFactory.RedisBackuperProviderArgsForCall(0)
+			actualTimeout, _, _, _, _, _, _, _ := providerFactory.RedisBackuperProviderArgsForCall(0)
 			Expect(actualTimeout).To(Equal(expectedTimeout))
 		})
 
 		It("creates the redis backuper with the right bucket name", func() {
-			_, actualBucketName, _, _, _, _, _ := providerFactory.RedisBackuperProviderArgsForCall(0)
+			_, actualBucketName, _, _, _, _, _, _ := providerFactory.RedisBackuperProviderArgsForCall(0)
 			Expect(actualBucketName).To(Equal(backupConfig.S3Config.BucketName))
 		})
 
 		It("creates the redis backuper with the right endpoint", func() {
-			_, _, actualEndpoint, _, _, _, _ := providerFactory.RedisBackuperProviderArgsForCall(0)
+			_, _, actualEndpoint, _, _, _, _, _ := providerFactory.RedisBackuperProviderArgsForCall(0)
 			Expect(actualEndpoint).To(Equal(backupConfig.S3Config.EndpointUrl))
 		})
 
 		It("creates the redis backuper with the right access key", func() {
-			_, _, _, actualAccessKey, _, _, _ := providerFactory.RedisBackuperProviderArgsForCall(0)
+			_, _, _, actualAccessKey, _, _, _, _ := providerFactory.RedisBackuperProviderArgsForCall(0)
 			Expect(actualAccessKey).To(Equal(backupConfig.S3Config.AccessKeyId))
 		})
 
 		It("creates the redis backuper with the right secret key", func() {
-			_, _, _, _, actualSecretKey, _, _ := providerFactory.RedisBackuperProviderArgsForCall(0)
+			_, _, _, _, actualSecretKey, _, _, _ := providerFactory.RedisBackuperProviderArgsForCall(0)
 			Expect(actualSecretKey).To(Equal(backupConfig.S3Config.SecretAccessKey))
 		})
 
 		It("creates the redis backuper with the right logger", func() {
-			_, _, _, _, _, actualLogger, _ := providerFactory.RedisBackuperProviderArgsForCall(0)
+			_, _, _, _, _, _, actualLogger, _ := providerFactory.RedisBackuperProviderArgsForCall(0)
 			Expect(actualLogger).To(Equal(logger))
 		})
 
+		It("creates the redis backuper with the right tmpdir", func() {
+			_, _, _, _, _, actualTmpDir, _, _ := providerFactory.RedisBackuperProviderArgsForCall(0)
+			Expect(actualTmpDir).To(Equal(backupConfig.BackupTmpDir))
+		})
+
 		It("does not inject anything into the redis backuper", func() {
-			_, _, _, _, _, _, injectors := providerFactory.RedisBackuperProviderArgsForCall(0)
+			_, _, _, _, _, _, _, injectors := providerFactory.RedisBackuperProviderArgsForCall(0)
 			Expect(injectors).To(BeEmpty())
 		})
 

@@ -2,6 +2,8 @@ package backup_test
 
 import (
 	"errors"
+	"io/ioutil"
+	"os"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -20,6 +22,7 @@ var _ = Describe("RedisBackuper", func() {
 		var (
 			backupErr       error
 			log             *gbytes.Buffer
+			tmpDir          string
 			logger          lager.Logger
 			providerFactory *fakes.FakeProviderFactory
 			snapshotter     *fakes.FakeSnapshotter
@@ -69,18 +72,27 @@ var _ = Describe("RedisBackuper", func() {
 			redisClient = new(fakes.FakeRedisClient)
 			redisClient.AddressReturns("test-host:1446")
 
+			var err error
+			tmpDir, err = ioutil.TempDir("", "redis-backups-test")
+			Expect(err).NotTo(HaveOccurred())
+
 			backuper = backup.NewRedisBackuper(
 				expectedTimeout,
 				expectedBucketName,
 				expectedEndpoint,
 				expectedAccessKey,
 				expectedSecretKey,
+				tmpDir,
 				logger,
 				backup.InjectSnapshotterProvider(providerFactory.SnapshotterProvider),
 				backup.InjectRenameTaskProvider(providerFactory.RenameTaskProvider),
 				backup.InjectS3UploadTaskProvider(providerFactory.S3UploadTaskProvider),
 				backup.InjectCleanupTaskProvider(providerFactory.CleanupTaskProvider),
 			)
+		})
+
+		AfterEach(func() {
+			Expect(os.RemoveAll(tmpDir)).To(Succeed())
 		})
 
 		JustBeforeEach(func() {

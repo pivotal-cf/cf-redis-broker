@@ -12,6 +12,7 @@ import (
 	"github.com/pivotal-golang/lager"
 )
 
+//go:generate counterfeiter -o fakes/provider_factory.go . ProviderFactory
 type ProviderFactory interface {
 	TimeProvider() time.Time
 	RedisClientProvider(options ...redis.Option) (redis.Client, error)
@@ -19,13 +20,13 @@ type ProviderFactory interface {
 	SharedInstanceIDLocatorProvider(lager.Logger) id.InstanceIDLocator
 	DedicatedInstanceIDLocatorProvider(string, string, string, lager.Logger) id.InstanceIDLocator
 	RedisBackuperProvider(
-		time.Duration, string, string, string, string,
+		time.Duration, string, string, string, string, string,
 		lager.Logger, ...redisbackup.BackupInjector,
 	) redisbackup.RedisBackuper
 }
 
 type RedisBackuperProvider func(
-	time.Duration, string, string, string, string,
+	time.Duration, string, string, string, string, string,
 	lager.Logger, ...redisbackup.BackupInjector,
 ) redisbackup.RedisBackuper
 
@@ -251,6 +252,7 @@ func (b *instanceBackuper) init() error {
 		b.backupConfig.S3Config.EndpointUrl,
 		b.backupConfig.S3Config.AccessKeyId,
 		b.backupConfig.S3Config.SecretAccessKey,
+		b.backupConfig.BackupTmpDir,
 		b.logger,
 	)
 

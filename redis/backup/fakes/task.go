@@ -11,7 +11,7 @@ type FakeTask struct {
 	NameStub        func() string
 	nameMutex       sync.RWMutex
 	nameArgsForCall []struct{}
-	nameReturns struct {
+	nameReturns     struct {
 		result1 string
 	}
 	RunStub        func(task.Artifact) (task.Artifact, error)

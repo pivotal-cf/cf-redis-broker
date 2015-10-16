@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -32,6 +33,7 @@ var (
 	backupErr        error
 	uploadedObject   []byte
 	localDumpRdbPath string
+	tmpDir           string
 )
 
 var _ = BeforeSuite(func() {
@@ -63,12 +65,16 @@ var _ = BeforeSuite(func() {
 	_, err = bucket.Get(targetPath)
 	Expect(err).To(HaveOccurred())
 
+	tmpDir, err = ioutil.TempDir("", "redis-backups-integration-tests")
+	Expect(err).NotTo(HaveOccurred())
+
 	backuper := backup.NewRedisBackuper(
 		10*time.Second,
 		bucketName,
 		s3Server.URL(),
 		"access-key",
 		"secret-key",
+		tmpDir,
 		logger,
 	)
 
@@ -84,6 +90,7 @@ var _ = BeforeSuite(func() {
 var _ = AfterSuite(func() {
 	redisRunner.Stop()
 	s3Server.Quit()
+	Expect(os.RemoveAll(tmpDir)).To(Succeed())
 })
 
 var _ = Describe("backup.Backup", func() {

@@ -12,7 +12,7 @@ type FakeRedisClient struct {
 	DisconnectStub        func() error
 	disconnectMutex       sync.RWMutex
 	disconnectArgsForCall []struct{}
-	disconnectReturns struct {
+	disconnectReturns     struct {
 		result1 error
 	}
 	CreateSnapshotStub        func(timeout time.Duration) error
@@ -34,20 +34,20 @@ type FakeRedisClient struct {
 	EnableAOFStub        func() error
 	enableAOFMutex       sync.RWMutex
 	enableAOFArgsForCall []struct{}
-	enableAOFReturns struct {
+	enableAOFReturns     struct {
 		result1 error
 	}
 	LastRDBSaveTimeStub        func() (int64, error)
 	lastRDBSaveTimeMutex       sync.RWMutex
 	lastRDBSaveTimeArgsForCall []struct{}
-	lastRDBSaveTimeReturns struct {
+	lastRDBSaveTimeReturns     struct {
 		result1 int64
 		result2 error
 	}
 	InfoStub        func() (map[string]string, error)
 	infoMutex       sync.RWMutex
 	infoArgsForCall []struct{}
-	infoReturns struct {
+	infoReturns     struct {
 		result1 map[string]string
 		result2 error
 	}
@@ -72,14 +72,14 @@ type FakeRedisClient struct {
 	RDBPathStub        func() (string, error)
 	rDBPathMutex       sync.RWMutex
 	rDBPathArgsForCall []struct{}
-	rDBPathReturns struct {
+	rDBPathReturns     struct {
 		result1 string
 		result2 error
 	}
 	AddressStub        func() string
 	addressMutex       sync.RWMutex
 	addressArgsForCall []struct{}
-	addressReturns struct {
+	addressReturns     struct {
 		result1 string
 	}
 }

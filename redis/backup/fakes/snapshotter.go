@@ -12,7 +12,7 @@ type FakeSnapshotter struct {
 	SnapshotStub        func() (task.Artifact, error)
 	snapshotMutex       sync.RWMutex
 	snapshotArgsForCall []struct{}
-	snapshotReturns struct {
+	snapshotReturns     struct {
 		result1 task.Artifact
 		result2 error
 	}

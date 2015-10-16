@@ -17,6 +17,7 @@ type BackupConfig struct {
 	BrokerAddress          string            `yaml:"broker_address"`
 	LogFilepath            string            `yaml:"log_file_path"`
 	AwsCLIPath             string            `yaml:"aws_cli_path"`
+	BackupTmpDir           string            `yaml:"backup_tmp_dir"`
 }
 
 type S3Configuration struct {

@@ -11,7 +11,7 @@ type FakeRedisConfigFinder struct {
 	FindStub        func() ([]instance.RedisConfig, error)
 	findMutex       sync.RWMutex
 	findArgsForCall []struct{}
-	findReturns struct {
+	findReturns     struct {
 		result1 []instance.RedisConfig
 		result2 error
 	}
