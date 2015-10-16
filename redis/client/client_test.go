@@ -251,6 +251,7 @@ var _ = Describe("Client", func() {
 		var redisClient client.Client
 
 		BeforeEach(func() {
+			redisRunner = &integration.RedisRunner{}
 			redisRunner.Start(redisArgs)
 			var err error
 			redisClient, err = client.Connect(client.Host(host), client.Port(port))
