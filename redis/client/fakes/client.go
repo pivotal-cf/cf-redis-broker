@@ -6,12 +6,15 @@ import (
 )
 
 type Client struct {
-	ExpectedCreateSnapshotErr error
-	InvokedCreateSnapshot     []time.Duration
-
 	ExpectedRDBPathErr error
 	ExpectedRDBPath    string
 	InvokedRDBPath     int
+
+	RunBGSaveCallCount   int
+	ExpectedRunGBSaveErr error
+
+	WaitForNewSaveSinceCallCount   int
+	ExpectedWaitForNewSaveSinceErr error
 
 	Host string
 	Port int
@@ -22,14 +25,6 @@ func (c *Client) Address() string {
 		return ""
 	}
 	return fmt.Sprintf("%s:%d", c.Host, c.Port)
-}
-
-func (c *Client) CreateSnapshot(timeout time.Duration) error {
-	if c.InvokedCreateSnapshot == nil {
-		c.InvokedCreateSnapshot = []time.Duration{}
-	}
-	c.InvokedCreateSnapshot = append(c.InvokedCreateSnapshot, timeout)
-	return c.ExpectedCreateSnapshotErr
 }
 
 func (c *Client) Disconnect() error {
@@ -63,4 +58,14 @@ func (c *Client) GetConfig(key string) (string, error) {
 func (c *Client) RDBPath() (string, error) {
 	c.InvokedRDBPath++
 	return c.ExpectedRDBPath, c.ExpectedRDBPathErr
+}
+
+func (c *Client) RunBGSave() error {
+	c.RunBGSaveCallCount++
+	return c.ExpectedRunGBSaveErr
+}
+
+func (c *Client) WaitForNewSaveSince(lastSaveTime int64, timeout time.Duration) error {
+	c.WaitForNewSaveSinceCallCount++
+	return c.ExpectedWaitForNewSaveSinceErr
 }

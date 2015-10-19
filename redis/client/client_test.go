@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -165,27 +164,6 @@ var _ = Describe("Client", func() {
 				Ω(err).ShouldNot(HaveOccurred())
 
 				Ω(response[1]).Should(Equal("yes"))
-			})
-		})
-
-		Describe("creating a snapshot", func() {
-			It("creates a snapshot", func() {
-				client, err := client.Connect(
-					client.Host(host),
-					client.Port(port),
-				)
-				Ω(err).ShouldNot(HaveOccurred())
-
-				beforeSnapshotLastSaveTime, err := client.LastRDBSaveTime()
-				Ω(err).ShouldNot(HaveOccurred())
-
-				err = client.CreateSnapshot(10 * time.Second)
-				Ω(err).ShouldNot(HaveOccurred())
-
-				afterSnapshotLastSaveTime, err := client.LastRDBSaveTime()
-				Ω(err).ShouldNot(HaveOccurred())
-
-				Ω(afterSnapshotLastSaveTime).Should(BeNumerically(">", beforeSnapshotLastSaveTime))
 			})
 		})
 

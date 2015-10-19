@@ -15,14 +15,6 @@ type FakeRedisClient struct {
 	disconnectReturns     struct {
 		result1 error
 	}
-	CreateSnapshotStub        func(timeout time.Duration) error
-	createSnapshotMutex       sync.RWMutex
-	createSnapshotArgsForCall []struct {
-		timeout time.Duration
-	}
-	createSnapshotReturns struct {
-		result1 error
-	}
 	WaitUntilRedisNotLoadingStub        func(timeoutMilliseconds int) error
 	waitUntilRedisNotLoadingMutex       sync.RWMutex
 	waitUntilRedisNotLoadingArgsForCall []struct {
@@ -82,6 +74,21 @@ type FakeRedisClient struct {
 	addressReturns     struct {
 		result1 string
 	}
+	WaitForNewSaveSinceStub        func(lastSaveTime int64, timeout time.Duration) error
+	waitForNewSaveSinceMutex       sync.RWMutex
+	waitForNewSaveSinceArgsForCall []struct {
+		lastSaveTime int64
+		timeout      time.Duration
+	}
+	waitForNewSaveSinceReturns struct {
+		result1 error
+	}
+	RunBGSaveStub        func() error
+	runBGSaveMutex       sync.RWMutex
+	runBGSaveArgsForCall []struct{}
+	runBGSaveReturns     struct {
+		result1 error
+	}
 }
 
 func (fake *FakeRedisClient) Disconnect() error {
@@ -104,38 +111,6 @@ func (fake *FakeRedisClient) DisconnectCallCount() int {
 func (fake *FakeRedisClient) DisconnectReturns(result1 error) {
 	fake.DisconnectStub = nil
 	fake.disconnectReturns = struct {
-		result1 error
-	}{result1}
-}
-
-func (fake *FakeRedisClient) CreateSnapshot(timeout time.Duration) error {
-	fake.createSnapshotMutex.Lock()
-	fake.createSnapshotArgsForCall = append(fake.createSnapshotArgsForCall, struct {
-		timeout time.Duration
-	}{timeout})
-	fake.createSnapshotMutex.Unlock()
-	if fake.CreateSnapshotStub != nil {
-		return fake.CreateSnapshotStub(timeout)
-	} else {
-		return fake.createSnapshotReturns.result1
-	}
-}
-
-func (fake *FakeRedisClient) CreateSnapshotCallCount() int {
-	fake.createSnapshotMutex.RLock()
-	defer fake.createSnapshotMutex.RUnlock()
-	return len(fake.createSnapshotArgsForCall)
-}
-
-func (fake *FakeRedisClient) CreateSnapshotArgsForCall(i int) time.Duration {
-	fake.createSnapshotMutex.RLock()
-	defer fake.createSnapshotMutex.RUnlock()
-	return fake.createSnapshotArgsForCall[i].timeout
-}
-
-func (fake *FakeRedisClient) CreateSnapshotReturns(result1 error) {
-	fake.CreateSnapshotStub = nil
-	fake.createSnapshotReturns = struct {
 		result1 error
 	}{result1}
 }
@@ -358,6 +333,63 @@ func (fake *FakeRedisClient) AddressReturns(result1 string) {
 	fake.AddressStub = nil
 	fake.addressReturns = struct {
 		result1 string
+	}{result1}
+}
+
+func (fake *FakeRedisClient) WaitForNewSaveSince(lastSaveTime int64, timeout time.Duration) error {
+	fake.waitForNewSaveSinceMutex.Lock()
+	fake.waitForNewSaveSinceArgsForCall = append(fake.waitForNewSaveSinceArgsForCall, struct {
+		lastSaveTime int64
+		timeout      time.Duration
+	}{lastSaveTime, timeout})
+	fake.waitForNewSaveSinceMutex.Unlock()
+	if fake.WaitForNewSaveSinceStub != nil {
+		return fake.WaitForNewSaveSinceStub(lastSaveTime, timeout)
+	} else {
+		return fake.waitForNewSaveSinceReturns.result1
+	}
+}
+
+func (fake *FakeRedisClient) WaitForNewSaveSinceCallCount() int {
+	fake.waitForNewSaveSinceMutex.RLock()
+	defer fake.waitForNewSaveSinceMutex.RUnlock()
+	return len(fake.waitForNewSaveSinceArgsForCall)
+}
+
+func (fake *FakeRedisClient) WaitForNewSaveSinceArgsForCall(i int) (int64, time.Duration) {
+	fake.waitForNewSaveSinceMutex.RLock()
+	defer fake.waitForNewSaveSinceMutex.RUnlock()
+	return fake.waitForNewSaveSinceArgsForCall[i].lastSaveTime, fake.waitForNewSaveSinceArgsForCall[i].timeout
+}
+
+func (fake *FakeRedisClient) WaitForNewSaveSinceReturns(result1 error) {
+	fake.WaitForNewSaveSinceStub = nil
+	fake.waitForNewSaveSinceReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeRedisClient) RunBGSave() error {
+	fake.runBGSaveMutex.Lock()
+	fake.runBGSaveArgsForCall = append(fake.runBGSaveArgsForCall, struct{}{})
+	fake.runBGSaveMutex.Unlock()
+	if fake.RunBGSaveStub != nil {
+		return fake.RunBGSaveStub()
+	} else {
+		return fake.runBGSaveReturns.result1
+	}
+}
+
+func (fake *FakeRedisClient) RunBGSaveCallCount() int {
+	fake.runBGSaveMutex.RLock()
+	defer fake.runBGSaveMutex.RUnlock()
+	return len(fake.runBGSaveArgsForCall)
+}
+
+func (fake *FakeRedisClient) RunBGSaveReturns(result1 error) {
+	fake.RunBGSaveStub = nil
+	fake.runBGSaveReturns = struct {
+		result1 error
 	}{result1}
 }
 

@@ -8,9 +8,7 @@ import (
 	"time"
 
 	redisclient "github.com/garyburd/redigo/redis"
-	"github.com/pivotal-cf/cf-redis-broker/log"
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
-	"github.com/pivotal-golang/lager"
 )
 
 type client struct {
@@ -96,7 +94,6 @@ func Connect(options ...Option) (Client, error) {
 
 type Client interface {
 	Disconnect() error
-	CreateSnapshot(timeout time.Duration) error
 	WaitUntilRedisNotLoading(timeoutMilliseconds int) error
 	EnableAOF() error
 	LastRDBSaveTime() (int64, error)
@@ -105,6 +102,8 @@ type Client interface {
 	GetConfig(key string) (string, error)
 	RDBPath() (string, error)
 	Address() string
+	WaitForNewSaveSince(lastSaveTime int64, timeout time.Duration) error
+	RunBGSave() error
 }
 
 func (client *client) Disconnect() error {
@@ -132,53 +131,11 @@ func (client *client) WaitUntilRedisNotLoading(timeoutMilliseconds int) error {
 	return nil
 }
 
-func (client *client) CreateSnapshot(timeout time.Duration) error {
-	log.Logger().Info("redis_client", lager.Data{
-		"event":   "creating_snapshot",
-		"timeout": timeout.String(),
-	})
-
-	lastSaveTime, err := client.LastRDBSaveTime()
-	if err != nil {
-		log.Logger().Error("redis_client", err, lager.Data{
-			"event": "last_rdb_save_time",
-		})
-		return err
-	}
-
-	// sleep for a second to ensure unique timestamp for bgsave
-	time.Sleep(time.Second)
-
-	err = client.runBGSave()
-	if err != nil {
-		log.Logger().Error("redis_client", err, lager.Data{
-			"event": "run_bg_save",
-		})
-		return err
-	}
-
-	err = client.waitForNewSaveSince(lastSaveTime, timeout)
-	if err != nil {
-		log.Logger().Error("redis_client", err, lager.Data{
-			"event":          "wait_for_new_save_since",
-			"last_time_save": lastSaveTime,
-			"timeout":        timeout.String(),
-		})
-		return err
-	}
-
-	log.Logger().Info("redis_client", lager.Data{
-		"event": "creating_snapshot_done",
-	})
-
-	return nil
-}
-
 func (client *client) EnableAOF() error {
 	return client.setConfig("appendonly", "yes")
 }
 
-func (client *client) runBGSave() error {
+func (client *client) RunBGSave() error {
 	_, err := client.connection.Do(client.lookupAlias("BGSAVE"))
 	return err
 }
@@ -206,7 +163,7 @@ func (client *client) InfoField(fieldName string) (string, error) {
 	return value, nil
 }
 
-func (client *client) waitForNewSaveSince(lastSaveTime int64, timeout time.Duration) error {
+func (client *client) WaitForNewSaveSince(lastSaveTime int64, timeout time.Duration) error {
 	timer := time.After(timeout)
 	for {
 		select {
