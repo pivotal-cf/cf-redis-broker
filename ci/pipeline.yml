@@ -1,0 +1,20 @@
+---
+resources:
+  - name: cf-redis-broker
+    type: git
+    source:
+      uri: https://github.com/pivotal-cf/cf-redis-broker
+      branch: master
+
+jobs:
+- name: tests
+  plan:
+  - get: cf-redis-broker
+    trigger: true
+  - task: test-redis-broker
+    file: cf-redis-broker/ci/test-redis-broker.yml
+    config:
+      params:
+        AWS_ACCESS_KEY_ID: {{aws-access-key-id}}
+        AWS_SECRET_ACCESS_KEY: {{aws-secret-access-key}}
+
