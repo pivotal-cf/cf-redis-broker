@@ -6,7 +6,7 @@ import (
 	"path"
 	"path/filepath"
 
-	"code.google.com/p/go-uuid/uuid"
+	"github.com/pborman/uuid/uuid"
 
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
 	"github.com/pivotal-cf/cf-redis-broker/redis"

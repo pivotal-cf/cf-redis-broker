@@ -3,7 +3,7 @@ package brokerintegration_test
 import (
 	"net/http"
 
-	"code.google.com/p/go-uuid/uuid"
+	"github.com/pborman/uuid/uuid"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

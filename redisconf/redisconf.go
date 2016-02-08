@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"code.google.com/p/go-uuid/uuid"
+	"github.com/pborman/uuid/uuid"
 
 	"github.com/cloudfoundry/gosigar"
 )

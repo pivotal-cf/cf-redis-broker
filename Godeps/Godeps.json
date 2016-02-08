@@ -6,11 +6,6 @@
 	],
 	"Deps": [
 		{
-			"ImportPath": "code.google.com/p/go-uuid/uuid",
-			"Comment": "null-10",
-			"Rev": "5fac954758f5aa282478dc07fbb8709fe9575184"
-		},
-		{
 			"ImportPath": "github.com/cloudfoundry-incubator/candiedyaml",
 			"Rev": "150e4e8f749b21a7f0de8e3cfd885143fcea6b32"
 		},
@@ -60,6 +55,10 @@
 			"ImportPath": "github.com/onsi/gomega",
 			"Comment": "v1.0-48-g766f404",
 			"Rev": "766f4042b942146e90594d145c5071fa92c0aa9a"
+		},
+		{
+			"ImportPath": "github.com/pborman/uuid/uuid",
+			"Rev": "0b37a597426901e8bec92cd0094bcce2b0a6471c"
 		},
 		{
 			"ImportPath": "github.com/pivotal-cf/brokerapi",
