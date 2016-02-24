@@ -6,14 +6,6 @@ redis:
   redis_conf_path: /path/to/redis/config.conf
   process_check_interval: 5
   service_instance_limit: 3
-  backup:
-    endpoint_url: http://s3url.com
-    bucket_name: redis-backups
-    access_key_id: ABCDEABCDEABCDEABCDE
-    secret_access_key: ABCDEABCDEABCDEABCDEABCDEABCDEABCDEABCDE
-    s3_region: france
-    path: /home
-    bg_save_timeout: 600
   dedicated:
     nodes:
       - 10.0.0.1

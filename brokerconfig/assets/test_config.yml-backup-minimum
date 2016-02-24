@@ -11,9 +11,6 @@ redis:
   process_check_interval: 5
   start_redis_timeout: 3
   service_instance_limit: 3
-  backup:
-    endpoint_url: http://s3url.com
-    bucket_name: redis-backups
   dedicated:
     nodes:
       - 10.0.0.1
