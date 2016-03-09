@@ -189,9 +189,86 @@ var _ = Describe("Client", func() {
 				Expect(len(info)).To(BeNumerically(">", 1))
 			})
 
-			It("returns a map that contains expected entries", func() {
+			It("returns a map that contains expected entries needed to emit as metrics", func() {
 				info, _ := redis.Info()
-				Expect(info["aof_enabled"]).To(Equal("0"))
+
+				expectedInfoKeys := []string{
+					"arch_bits",
+					"uptime_in_seconds",
+					"uptime_in_days",
+					"hz",
+					"lru_clock",
+					"connected_clients",
+					"client_longest_output_list",
+					"client_biggest_input_buf",
+					"blocked_clients",
+					"used_memory",
+					"used_memory_rss",
+					"used_memory_peak",
+					"used_memory_lua",
+					"mem_fragmentation_ratio",
+					"loading",
+					"rdb_changes_since_last_save",
+					"rdb_bgsave_in_progress",
+					"rdb_last_save_time",
+					"rdb_last_bgsave_time_sec",
+					"rdb_current_bgsave_time_sec",
+					"aof_rewrite_in_progress",
+					"aof_rewrite_scheduled",
+					"aof_last_rewrite_time_sec",
+					"aof_current_rewrite_time_sec",
+					"total_connections_received",
+					"total_commands_processed",
+					"instantaneous_ops_per_sec",
+					"total_net_input_bytes",
+					"total_net_output_bytes",
+					"instantaneous_input_kbps",
+					"instantaneous_output_kbps",
+					"rejected_connections",
+					"sync_full",
+					"sync_partial_ok",
+					"sync_partial_err",
+					"expired_keys",
+					"evicted_keys",
+					"keyspace_hits",
+					"keyspace_misses",
+					"pubsub_channels",
+					"pubsub_patterns",
+					"latest_fork_usec",
+					"migrate_cached_sockets",
+					"connected_slaves",
+					"master_repl_offset",
+					"repl_backlog_active",
+					"repl_backlog_size",
+					"repl_backlog_first_byte_offset",
+					"repl_backlog_histlen",
+					"used_cpu_sys",
+					"used_cpu_user",
+					"used_cpu_sys_children",
+					"used_cpu_user_children",
+					"cluster_enabled",
+				}
+
+				actualInfoKeys := []string{}
+
+				for key, _ := range info {
+					actualInfoKeys = append(actualInfoKeys, key)
+				}
+
+				for _, expectedInfoKey := range expectedInfoKeys {
+					Expect(actualInfoKeys).To(ContainElement(expectedInfoKey))
+				}
+			})
+
+			It("should return db info so that we can parse this as metrics further down the line", func() {
+				address := fmt.Sprintf("%v:%v", host, port)
+				connection, err := redisclient.Dial("tcp", address)
+				Expect(err).ToNot(HaveOccurred())
+				connection.Do("SET", "foo", "bar")
+
+				info, _ := redis.Info()
+
+				Expect(info["db0"]).To(Equal("keys=1,expires=0,avg_ttl=0"))
 			})
 		})
 
