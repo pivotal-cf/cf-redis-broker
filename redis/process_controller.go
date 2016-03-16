@@ -1,12 +1,15 @@
 package redis
 
 import (
+	"errors"
 	"fmt"
 	"net"
+	"os"
 	"time"
 
 	"github.com/pivotal-golang/lager"
 
+	"github.com/pivotal-cf/cf-redis-broker/availability"
 	"github.com/pivotal-cf/cf-redis-broker/system"
 )
 
@@ -57,6 +60,15 @@ func (controller *OSProcessController) StartAndWaitUntilReadyWithConfig(instance
 		return fmt.Errorf("redis failed to start: %s", err)
 	}
 
+	pidfilePath, err := getPidfileFrom(instanceCommandArgs)
+	if err != nil {
+		return err
+	}
+
+	if err = waitForPidfile(pidfilePath, timeout); err != nil {
+		return err
+	}
+
 	return controller.WaitUntilConnectableFunc(instance.Address(), timeout)
 }
 
@@ -100,4 +112,40 @@ func (controller *OSProcessController) EnsureRunning(instance *Instance, configP
 	)
 
 	return controller.StartAndWaitUntilReady(instance, configPath, instanceDataDir, pidfilePath, logfilePath, redisStartTimeout)
+}
+
+func waitForPidfile(pidfilePath string, timeout time.Duration) error {
+	action := func(successChan chan<- struct{}, terminate <-chan struct{}) {
+		for {
+			select {
+			case <-terminate:
+				return
+			case <-time.After(10 * time.Millisecond):
+				if pidfileExists(pidfilePath) {
+					close(successChan)
+					return
+				}
+			}
+		}
+	}
+	enforcer := availability.DeadlineEnforcer{
+		Action: action,
+	}
+	return enforcer.DoWithin(timeout)
+}
+
+func pidfileExists(pidfilePath string) bool {
+	_, err := os.Stat(pidfilePath)
+	return err == nil
+}
+
+func getPidfileFrom(instanceArgs []string) (string, error) {
+	for i, arg := range instanceArgs {
+		if arg == "--pidfile" {
+			pidfileArg := i + 1
+			return instanceArgs[pidfileArg], nil
+		}
+	}
+
+	return "", errors.New("Could not find PID file in args")
 }
