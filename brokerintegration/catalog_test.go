@@ -44,7 +44,7 @@ var _ = Describe("Catalog", func() {
 		})
 
 		It("displays the correct documentation URL", func() {
-			Ω(service.Metadata.DocumentationUrl).Should(Equal("http://docs.pivotal.io/p1-services/Redis.html"))
+			Ω(service.Metadata.DocumentationUrl).Should(Equal("http://docs.pivotal.io/redis/index.html"))
 		})
 
 		It("displays the correct support URL", func() {
