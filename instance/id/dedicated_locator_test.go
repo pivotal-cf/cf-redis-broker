@@ -107,6 +107,7 @@ var _ = Describe("InstanceIDLocator", func() {
 				It("returns an error", func() {
 					Expect(instanceIDErr).To(HaveOccurred())
 					Expect(instanceIDErr.Error()).To(ContainSubstring("404"))
+					Expect(instanceIDErr.Error()).To(ContainSubstring("check your Redis instance has been provisioned successfully"))
 				})
 
 				It("logs the error", func() {
