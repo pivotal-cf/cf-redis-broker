@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pborman/uuid/uuid"
+	"github.com/pborman/uuid"
 
 	"github.com/cloudfoundry/gosigar"
 )

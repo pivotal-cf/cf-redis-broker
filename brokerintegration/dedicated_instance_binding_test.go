@@ -3,9 +3,9 @@ package brokerintegration_test
 import (
 	"encoding/json"
 
-	"github.com/pborman/uuid/uuid"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/pborman/uuid"
 	"github.com/pivotal-cf/cf-redis-broker/debug"
 )
 

@@ -1,7 +1,7 @@
 package brokerintegration_test
 
 import (
-	"github.com/pborman/uuid/uuid"
+	"github.com/pborman/uuid"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
