@@ -3,7 +3,7 @@ package redis
 import (
 	"time"
 
-	"github.com/pborman/uuid/uuid"
+	"github.com/pborman/uuid"
 
 	"github.com/pivotal-cf/brokerapi"
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"

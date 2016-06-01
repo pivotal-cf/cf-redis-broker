@@ -57,8 +57,9 @@
 			"Rev": "766f4042b942146e90594d145c5071fa92c0aa9a"
 		},
 		{
-			"ImportPath": "github.com/pborman/uuid/uuid",
-			"Rev": "0b37a597426901e8bec92cd0094bcce2b0a6471c"
+			"ImportPath": "github.com/pborman/uuid",
+			"Comment": "v1.0-11-gc55201b",
+			"Rev": "c55201b036063326c5b1b89ccfe45a184973d073"
 		},
 		{
 			"ImportPath": "github.com/pivotal-cf/brokerapi",
