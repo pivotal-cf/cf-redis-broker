@@ -14,7 +14,7 @@ import (
 	redisclient "github.com/garyburd/redigo/redis"
 )
 
-var host = "localhost"
+var host = "127.0.0.1"
 var port = 6480
 var password = ""
 var pidFilePath string
