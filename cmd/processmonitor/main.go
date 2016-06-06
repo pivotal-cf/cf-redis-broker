@@ -1,9 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"os/signal"
 	"path/filepath"
+	"sort"
 	"syscall"
 	"time"
 
@@ -60,6 +62,19 @@ func main() {
 	instances, err := repo.AllInstances()
 	if err != nil {
 		logger.Error("error getting list of instances", err)
+	}
+
+	if len(instances) == 0 {
+		logger.Info("No Redis instances provisioned")
+	} else {
+		instanceUuids := []string{}
+
+		for _, instance := range instances {
+			instanceUuids = append(instanceUuids, instance.ID)
+		}
+
+		sort.Strings(instanceUuids)
+		logger.Info(fmt.Sprintf("Detected provisioned instances: %v", instanceUuids))
 	}
 
 	for _, instance := range instances {
