@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/pborman/uuid/uuid"
+	"github.com/pborman/uuid"
 	"github.com/pivotal-cf/cf-redis-broker/recovery"
 	"github.com/pivotal-cf/cf-redis-broker/recovery/task"
 	redis "github.com/pivotal-cf/cf-redis-broker/redis/client"
