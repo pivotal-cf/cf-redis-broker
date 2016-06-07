@@ -196,7 +196,7 @@ var _ = Describe("Local Repository", func() {
 					err := repo.EnsureDirectoriesExist(instance)
 					Ω(err).NotTo(HaveOccurred())
 
-					Ω(fileExists(repo.InstanceLogDir(instance.ID))).Should(BeTrue())
+					Expect(repo.InstanceLogDir(instance.ID)).To(BeAnExistingFile())
 				})
 			})
 		})
@@ -324,6 +324,113 @@ var _ = Describe("Local Repository", func() {
 			})
 		})
 	})
+
+})
+
+var _ = Describe("Setup", func() {
+	var repo *redis.LocalRepository
+	var instanceID string
+	var tmpRepoDir string = "/tmp/repotests"
+	var tmpInstanceDataDir string = tmpRepoDir + "/data"
+	var tmpInstanceLogDir string = tmpRepoDir + "/tmp/repotests/log"
+	var instance redis.Instance
+
+	BeforeEach(func() {
+		instanceID = uuid.NewRandom().String()
+
+		instance = redis.Instance{
+			ID: instanceID,
+		}
+
+		repo = &redis.LocalRepository{
+			RedisConf: brokerconfig.ServiceConfiguration{
+				Host:                  "127.0.0.1",
+				DefaultConfigPath:     "/tmp/default_config_path",
+				InstanceDataDirectory: tmpInstanceDataDir,
+				InstanceLogDirectory:  tmpInstanceLogDir,
+			},
+		}
+	})
+
+	AfterEach(func() {
+		err := os.RemoveAll(tmpInstanceDataDir)
+		Ω(err).ToNot(HaveOccurred())
+
+		err = os.RemoveAll(tmpInstanceLogDir)
+		Ω(err).ToNot(HaveOccurred())
+	})
+
+	Context("When setup is successful", func() {
+		It("creates the appropriate directories", func() {
+			Expect(tmpInstanceDataDir).NotTo(BeADirectory())
+			Expect(tmpInstanceLogDir).NotTo(BeADirectory())
+
+			err := repo.Setup(&instance)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(tmpInstanceDataDir).To(BeADirectory())
+			Expect(tmpInstanceLogDir).To(BeADirectory())
+		})
+
+		It("creates a lock file", func() {
+			err := repo.Setup(&instance)
+			Expect(err).NotTo(HaveOccurred())
+
+			lockFilePath := path.Join(tmpInstanceDataDir, instanceID, "lock")
+			Expect(lockFilePath).To(BeAnExistingFile())
+		})
+
+		It("writes the config file", func() {
+			err := repo.Setup(&instance)
+			Expect(err).NotTo(HaveOccurred())
+
+			configFilePath := path.Join(tmpInstanceDataDir, instanceID, "redis.conf")
+
+			configFileContent, err := ioutil.ReadFile(configFilePath)
+			Expect(err).NotTo(HaveOccurred())
+
+			redisServerName := "redis-server-" + instanceID
+			Expect(configFileContent).To(ContainSubstring(redisServerName))
+		})
+	})
+
+	Context("When setup is not successful", func() {
+		Context("the instance dir does not have write permissions", func() {
+			It("returns an error", func() {
+				err := os.Chmod(tmpRepoDir, 0400)
+				Expect(err).NotTo(HaveOccurred())
+
+				err = repo.Setup(&instance)
+				Expect(err).To(HaveOccurred())
+			})
+
+			AfterEach(func() {
+				os.Chmod(tmpRepoDir, 0700)
+			})
+		})
+
+		Context("the config file being written is invalid", func() {
+			var invalidConfigFilePath string
+
+			BeforeEach(func() {
+				invalidConfigFilePath = "/tmp/invalid_config_path"
+				invalidConfigFileContents := "notavalidconfig"
+
+				file, createFileErr := os.Create(invalidConfigFilePath)
+				Ω(createFileErr).ToNot(HaveOccurred())
+
+				_, fileWriteErr := file.WriteString(invalidConfigFileContents)
+				Ω(fileWriteErr).ToNot(HaveOccurred())
+
+				repo.RedisConf.DefaultConfigPath = invalidConfigFilePath
+			})
+
+			It("returns an error", func() {
+				err := repo.Setup(&instance)
+				Expect(err).To(HaveOccurred())
+			})
+		})
+	})
 })
 
 func newTestInstance(instanceID string, repo *redis.LocalRepository) *redis.Instance {
@@ -344,13 +451,4 @@ func writeInstance(instance *redis.Instance, repo *redis.LocalRepository) {
 	file, err := os.Create(filepath.Join(repo.InstanceBaseDir(instance.ID), "monitor"))
 	Ω(err).NotTo(HaveOccurred())
 	file.Close()
-}
-
-func fileExists(path string) bool {
-	if _, err := os.Stat(path); err != nil {
-		if os.IsNotExist(err) {
-			return false
-		}
-	}
-	return true
 }
