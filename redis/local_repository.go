@@ -52,20 +52,9 @@ func (repo *LocalRepository) InstanceExists(instanceID string) (bool, error) {
 // EnsureDirectoriesExist -> EnsureLogDirectoryExists
 
 func (repo *LocalRepository) Setup(instance *Instance) error {
-	err := repo.EnsureDirectoriesExist(instance)
-	if err != nil {
-		return err
-	}
-
-	err = repo.Lock(instance)
-	if err != nil {
-		return err
-	}
-
-	err = repo.WriteConfigFile(instance)
-	if err != nil {
-		return err
-	}
+	repo.EnsureDirectoriesExist(instance)
+	repo.Lock(instance)
+	repo.WriteConfigFile(instance)
 
 	return nil
 }

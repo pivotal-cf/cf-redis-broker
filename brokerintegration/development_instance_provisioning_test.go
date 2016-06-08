@@ -7,9 +7,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gbytes"
 	"github.com/pborman/uuid"
-	"github.com/pivotal-cf/cf-redis-broker/integration/helpers"
 )
 
 var _ = Describe("Provision shared instance", func() {
@@ -98,21 +96,6 @@ var _ = Describe("Provision shared instance", func() {
 			defer brokerClient.DeprovisionInstance("4")
 
 			Ω(string(body)).To(MatchJSON(`{"description":"instance limit for this service has been reached"}`))
-		})
-	})
-
-	Context("when there is an error in instance setup", func() {
-		It("logs the error", func() {
-			instanceID := "1"
-
-			err := os.Chmod(helpers.TestDataDir, 0400)
-			Expect(err).NotTo(HaveOccurred())
-			statusCode, _ := brokerClient.ProvisionInstance(instanceID, "shared")
-
-			Expect(statusCode).To(Equal(500))
-			Expect(brokerSession.Buffer()).To(gbytes.Say(
-				`"error":"mkdir ` + helpers.TestDataDir + `/` + instanceID + `: permission denied"`,
-			))
 		})
 	})
 
