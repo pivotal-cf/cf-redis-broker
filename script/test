@@ -7,6 +7,7 @@ set -o pipefail
 test_args=$@
 
 main() {
+  setup_go
   run_go_vet
   run_golint
   run_tests
@@ -46,6 +47,15 @@ run_tests() {
 
   GOPATH=$PWD/Godeps/_workspace:$GOPATH \
     ginkgo -r -race --keepGoing -randomizeAllSpecs -skipMeasurements -failOnPending -cover -noColor -v $test_args
+}
+
+setup_go() {
+  eval "$(gimme 1.6.2)"
+  go get github.com/onsi/ginkgo/ginkgo \
+  golang.org/x/tools/cmd/cover \
+  github.com/golang/lint/golint \
+  github.com/tools/godep \
+  github.com/progrium/basht
 }
 
 main
