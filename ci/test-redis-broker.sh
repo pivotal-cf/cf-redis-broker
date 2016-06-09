@@ -1,7 +1,7 @@
 #!/bin/bash
 
-export PATH=$GOPATH/bin:$PATH
 export GOPATH=$PWD:$GOPATH
+export RBENV_ROOT=/home/vcap/.rbenv
 
 cd src/github.com/pivotal-cf/cf-redis-broker
 
