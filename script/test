@@ -5,6 +5,7 @@ set -e
 set -o pipefail
 
 test_args=$@
+export PATH=$GOROOT/bin:$GOPATH/bin:$PATH
 
 main() {
   run_go_vet
