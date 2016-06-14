@@ -11,10 +11,19 @@ import (
 	"github.com/pivotal-cf/cf-redis-broker/broker"
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
+	"github.com/pivotal-golang/lager"
 )
 
 type LocalRepository struct {
 	RedisConf brokerconfig.ServiceConfiguration
+	Logger    lager.Logger
+}
+
+func NewLocalRepository(redisConf brokerconfig.ServiceConfiguration, logger lager.Logger) *LocalRepository {
+	return &LocalRepository{
+		RedisConf: redisConf,
+		Logger:    logger,
+	}
 }
 
 func (repo *LocalRepository) FindByID(instanceID string) (*Instance, error) {
@@ -54,16 +63,25 @@ func (repo *LocalRepository) InstanceExists(instanceID string) (bool, error) {
 func (repo *LocalRepository) Setup(instance *Instance) error {
 	err := repo.EnsureDirectoriesExist(instance)
 	if err != nil {
+		repo.Logger.Error("ensure-dirs-exist", err, lager.Data{
+			"instance_id": instance.ID,
+		})
 		return err
 	}
 
 	err = repo.Lock(instance)
 	if err != nil {
+		repo.Logger.Error("lock-shared-instance", err, lager.Data{
+			"instance_id": instance.ID,
+		})
 		return err
 	}
 
 	err = repo.WriteConfigFile(instance)
 	if err != nil {
+		repo.Logger.Error("write-config-file", err, lager.Data{
+			"instance_id": instance.ID,
+		})
 		return err
 	}
 

@@ -7,17 +7,20 @@ import (
 	"path/filepath"
 
 	"github.com/pborman/uuid"
+	"github.com/pivotal-golang/lager/lagertest"
 
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
 	"github.com/pivotal-cf/cf-redis-broker/redis"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
 )
 
 var _ = Describe("Local Repository", func() {
 	var instanceID string
 	var repo *redis.LocalRepository
+	var logger *lagertest.TestLogger
 	var tmpInstanceDataDir string = "/tmp/repotests/data"
 	var tmpInstanceLogDir string = "/tmp/repotests/log"
 	var defaultConfigFilePath string = "/tmp/default_config_path"
@@ -25,6 +28,7 @@ var _ = Describe("Local Repository", func() {
 
 	BeforeEach(func() {
 		instanceID = uuid.NewRandom().String()
+		logger = lagertest.NewTestLogger("local-repo")
 
 		// set up default conf file
 		file, createFileErr := os.Create(defaultConfigFilePath)
@@ -33,14 +37,14 @@ var _ = Describe("Local Repository", func() {
 		_, fileWriteErr := file.WriteString(defaultConfigFileContents)
 		Ω(fileWriteErr).ToNot(HaveOccurred())
 
-		repo = &redis.LocalRepository{
-			RedisConf: brokerconfig.ServiceConfiguration{
-				Host:                  "127.0.0.1",
-				DefaultConfigPath:     "/tmp/default_config_path",
-				InstanceDataDirectory: tmpInstanceDataDir,
-				InstanceLogDirectory:  tmpInstanceLogDir,
-			},
+		redisConf := brokerconfig.ServiceConfiguration{
+			Host:                  "127.0.0.1",
+			DefaultConfigPath:     "/tmp/default_config_path",
+			InstanceDataDirectory: tmpInstanceDataDir,
+			InstanceLogDirectory:  tmpInstanceLogDir,
 		}
+
+		repo = redis.NewLocalRepository(redisConf, logger)
 
 		err := os.MkdirAll(tmpInstanceDataDir, 0755)
 		Ω(err).ToNot(HaveOccurred())
@@ -330,6 +334,7 @@ var _ = Describe("Local Repository", func() {
 var _ = Describe("Setup", func() {
 	var repo *redis.LocalRepository
 	var instanceID string
+	var logger *lagertest.TestLogger
 	var tmpConfigFilePath string = "/tmp/default_config_path"
 	var tmpDataDir string = "/tmp/repotests/data"
 	var tmpLogDir string = "/tmp/repotests/log"
@@ -344,19 +349,20 @@ var _ = Describe("Setup", func() {
 		Expect(createFileErr).ToNot(HaveOccurred())
 
 		instanceID = uuid.NewRandom().String()
+		logger = lagertest.NewTestLogger("local-repo-setup")
 
 		instance = redis.Instance{
 			ID: instanceID,
 		}
 
-		repo = &redis.LocalRepository{
-			RedisConf: brokerconfig.ServiceConfiguration{
-				Host:                  "127.0.0.1",
-				DefaultConfigPath:     tmpConfigFilePath,
-				InstanceDataDirectory: tmpDataDir,
-				InstanceLogDirectory:  tmpLogDir,
-			},
+		redisConf := brokerconfig.ServiceConfiguration{
+			Host:                  "127.0.0.1",
+			DefaultConfigPath:     tmpConfigFilePath,
+			InstanceDataDirectory: tmpDataDir,
+			InstanceLogDirectory:  tmpLogDir,
 		}
+
+		repo = redis.NewLocalRepository(redisConf, logger)
 	})
 
 	AfterEach(func() {
@@ -405,14 +411,23 @@ var _ = Describe("Setup", func() {
 
 	Context("When setup is not successful", func() {
 		Context("the instance dir does not have write permissions", func() {
-			It("returns an error", func() {
+			BeforeEach(func() {
 				err := os.Chmod(tmpDataDir, 0400)
 				Expect(err).NotTo(HaveOccurred())
 				err = os.Chmod(tmpLogDir, 0400)
 				Expect(err).NotTo(HaveOccurred())
+			})
 
-				err = repo.Setup(&instance)
+			It("returns an error", func() {
+				err := repo.Setup(&instance)
 				Expect(err).To(HaveOccurred())
+			})
+
+			It("logs the error", func() {
+				_ = repo.Setup(&instance)
+
+				Expect(logger).To(gbytes.Say("local-repo-setup.ensure-dirs-exist"))
+				Expect(logger).To(gbytes.Say("permission denied"))
 			})
 
 			AfterEach(func() {

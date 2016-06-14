@@ -40,9 +40,7 @@ func main() {
 
 	logger.Info("Starting process monitor")
 
-	repo := &redis.LocalRepository{
-		RedisConf: config.RedisConfiguration,
-	}
+	repo := redis.NewLocalRepository(config.RedisConfiguration, logger)
 
 	commandRunner := system.OSCommandRunner{
 		Logger: logger,
