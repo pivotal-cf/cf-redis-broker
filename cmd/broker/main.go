@@ -38,9 +38,7 @@ func main() {
 		Logger: brokerLogger,
 	}
 
-	localRepo := &redis.LocalRepository{
-		RedisConf: config.RedisConfiguration,
-	}
+	localRepo := redis.NewLocalRepository(config.RedisConfiguration, brokerLogger)
 
 	processController := &redis.OSProcessController{
 		CommandRunner:            commandRunner,

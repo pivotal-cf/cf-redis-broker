@@ -115,6 +115,7 @@ var _ = Describe("Provision shared instance", func() {
 			statusCode, _ := brokerClient.ProvisionInstance(instanceID, "shared")
 
 			Expect(statusCode).To(Equal(500))
+			Expect(brokerSession.Buffer()).To(gbytes.Say(`"redis-broker.ensure-dirs-exist"`))
 			Expect(brokerSession.Buffer()).To(gbytes.Say(
 				`"error":"mkdir ` + helpers.TestDataDir + `/` + instanceID + `: permission denied"`,
 			))
