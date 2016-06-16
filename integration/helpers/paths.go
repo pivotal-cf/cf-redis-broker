@@ -12,11 +12,13 @@ import (
 const TestDataDir = "/tmp/redis-data-dir"
 const TestLogDir = "/tmp/redis-log-dir"
 const TestConfigDir = "/tmp/redis-config-dir"
+const TestPidfileDir = "/tmp/pidfiles"
 
 func ResetTestDirs() {
 	removeAndRecreateDir(TestDataDir)
 	removeAndRecreateDir(TestLogDir)
 	removeAndRecreateDir(TestConfigDir)
+	removeAndRecreateDir(TestPidfileDir)
 }
 
 func CreateTestDirs() (string, string, string) {

@@ -6,6 +6,7 @@ redis:
   shared_vm_plan_id: id-for-shared-vm-plan
   host: example.com
   data_directory: /tmp/redis/data/directory
+  pidfile_directory: /tmp/redis/pidfiles
   log_directory: /tmp/redis/log/directory
   redis_conf_path: /tmp/to/redis/config.conf
   process_check_interval: 5
