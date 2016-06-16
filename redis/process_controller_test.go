@@ -3,15 +3,19 @@ package redis_test
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net"
+	"os"
 	"time"
 
 	"github.com/pivotal-cf/cf-redis-broker/redis"
 	"github.com/pivotal-cf/cf-redis-broker/system"
+	"github.com/pivotal-golang/lager"
 	"github.com/pivotal-golang/lager/lagertest"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gbytes"
 )
 
 type fakeProcessChecker struct {
@@ -157,16 +161,149 @@ var _ = Describe("Redis Process Controller", func() {
 
 	Describe("EnsureRunning", func() {
 		Context("if the process is already running", func() {
-			BeforeEach(func() {
-				fakeProcessChecker.alive = true
+			var controller *redis.OSProcessController
+			var runner *system.FakeCommandRunner
+			var log *gbytes.Buffer
+
+			JustBeforeEach(func() {
+				controller = newController(runner)
+				log = gbytes.NewBuffer()
+				controller.Logger.RegisterSink(lager.NewWriterSink(log, lager.DEBUG))
 			})
 
-			It("does not raise an error", func() {
-				err := processController.EnsureRunning(instance, "", "", "", "")
-				Ω(err).NotTo(HaveOccurred())
+			Context("and ps fails", func() {
+				var err error
 
-				Ω(err).ShouldNot(HaveOccurred())
-				Ω(fakeProcessChecker.lastCheckedPid).Should(Equal(123))
+				BeforeEach(func() {
+					runner = new(system.FakeCommandRunner)
+					runner.CombinedOutputError = errors.New("I failed - soz")
+				})
+
+				JustBeforeEach(func() {
+					err = controller.EnsureRunning(instance, "", "", "", "")
+				})
+
+				It("returns an error", func() {
+					Expect(err).To(HaveOccurred())
+				})
+
+				It("logs the error", func() {
+					Eventually(log).Should(gbytes.Say("ps failed for pid"))
+				})
+			})
+
+			Context("and is a redis server", func() {
+				Context("and is the correct redis instance", func() {
+					var err error
+
+					BeforeEach(func() {
+						runner = new(system.FakeCommandRunner)
+						runner.CombinedOutputReturns = []byte("vcap             5366   0.0  0.0  2516832   4448   ??  Ss    3:35PM   0:00.08 redis-server *:1337")
+					})
+
+					JustBeforeEach(func() {
+						err = controller.EnsureRunning(&redis.Instance{Port: 1337}, "", "", "", "")
+					})
+
+					It("does not return an error", func() {
+						Expect(err).NotTo(HaveOccurred())
+					})
+
+					It("logs success", func() {
+						Eventually(log).Should(gbytes.Say("redis instance already running"))
+					})
+				})
+
+				Context("and is not the correct redis instance", func() {
+					var err error
+					var file *os.File
+
+					BeforeEach(func() {
+						var statErr error
+
+						runner = new(system.FakeCommandRunner)
+						runner.CombinedOutputReturns = []byte("vcap             5366   0.0  0.0  2516832   4448   ??  Ss    3:35PM   0:00.08 redis-server *:6379")
+
+						file, statErr = ioutil.TempFile("/tmp", "brokerTest")
+						Expect(statErr).NotTo(HaveOccurred())
+					})
+
+					JustBeforeEach(func() {
+						err = controller.EnsureRunning(&redis.Instance{Port: 1337}, "", "", file.Name(), "")
+					})
+
+					It("does not return an error", func() {
+						Expect(err).NotTo(HaveOccurred())
+					})
+
+					It("deletes the pid file", func() {
+						_, statErr := os.Stat(file.Name())
+						Expect(statErr).To(HaveOccurred())
+					})
+
+					It("logs the pidfile deletion", func() {
+						Eventually(log).Should(gbytes.Say("removed stale pidfile"))
+					})
+
+					Context("and failed to delete pidfile", func() {
+						JustBeforeEach(func() {
+							err = controller.EnsureRunning(&redis.Instance{Port: 1337}, "", "", "Pikachu", "")
+						})
+
+						It("returns an error", func() {
+							Expect(err).To(HaveOccurred())
+						})
+
+						It("logs the error", func() {
+							Eventually(log).Should(gbytes.Say("failed to delete stale pidfile"))
+						})
+					})
+				})
+			})
+
+			Context("and is not a redis server", func() {
+				var err error
+				var file *os.File
+
+				BeforeEach(func() {
+					var statErr error
+
+					runner = new(system.FakeCommandRunner)
+					runner.CombinedOutputReturns = []byte("16832   4448   ??  Ss     *:1337")
+					file, statErr = ioutil.TempFile("/tmp", "brokerTest")
+					Expect(statErr).NotTo(HaveOccurred())
+				})
+
+				JustBeforeEach(func() {
+					err = controller.EnsureRunning(&redis.Instance{Port: 1337}, "", "", file.Name(), "")
+				})
+
+				It("deletes the pidfile", func() {
+					_, statErr := os.Stat(file.Name())
+					Expect(statErr).To(HaveOccurred())
+				})
+
+				It("does not return an error", func() {
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				It("logs the pidfile deletion", func() {
+					Eventually(log).Should(gbytes.Say("removed stale pidfile"))
+				})
+
+				Context("and failed to delete pidfile", func() {
+					JustBeforeEach(func() {
+						err = controller.EnsureRunning(&redis.Instance{Port: 1337}, "", "", "Pikachu", "")
+					})
+
+					It("returns an error", func() {
+						Expect(err).To(HaveOccurred())
+					})
+
+					It("logs the error", func() {
+						Eventually(log).Should(gbytes.Say("failed to delete stale pidfile"))
+					})
+				})
 			})
 		})
 
@@ -195,3 +332,16 @@ var _ = Describe("Redis Process Controller", func() {
 		})
 	})
 })
+
+func newController(runner *system.FakeCommandRunner) *redis.OSProcessController {
+	return &redis.OSProcessController{
+		Logger:           lagertest.NewTestLogger("process-controller"),
+		InstanceInformer: new(fakeInstanceInformer),
+		CommandRunner:    runner,
+		ProcessChecker:   &fakeProcessChecker{alive: true},
+		ProcessKiller:    new(fakeProcessKiller),
+		WaitUntilConnectableFunc: func(*net.TCPAddr, time.Duration) error {
+			return nil
+		},
+	}
+}
