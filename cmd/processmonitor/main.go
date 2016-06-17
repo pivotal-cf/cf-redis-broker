@@ -52,6 +52,7 @@ func main() {
 		CommandRunner:            commandRunner,
 		ProcessChecker:           &process.ProcessChecker{},
 		ProcessKiller:            &process.ProcessKiller{},
+		ProcessInfo:              &system.OSProcessInfo{},
 		WaitUntilConnectableFunc: availability.Check,
 	}
 

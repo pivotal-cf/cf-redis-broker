@@ -1,13 +1,13 @@
 package redis
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"net"
 	"os"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pivotal-golang/lager"
@@ -35,6 +35,7 @@ type OSProcessController struct {
 	CommandRunner             system.CommandRunner
 	ProcessChecker            ProcessChecker
 	ProcessKiller             ProcessKiller
+	ProcessInfo               system.ProcessInfo
 	WaitUntilConnectableFunc  WaitUntilConnectableFunc
 	RedisServerExecutablePath string
 }
@@ -78,14 +79,24 @@ func (controller *OSProcessController) EnsureRunning(instance *Instance, configP
 	pid, err := controller.InstanceInformer.InstancePid(instance.ID)
 
 	if err == nil && controller.ProcessChecker.Alive(pid) {
-		output, psErr := psPID(controller, instance.ID)
-		if psErr != nil {
-			return psErr
+		name, processErr := controller.ProcessInfo.Name(pid)
+		if processErr != nil {
+			controller.Logger.Error(
+				"failed to get process name",
+				err,
+				lager.Data{"instance": instance.ID, "pid": pid},
+			)
+			return processErr
 		}
 
-		if bytes.Contains(output, []byte("redis-server")) {
-			port, portErr := getPortFromPS(controller, output)
+		if strings.Contains(name, "redis-server") {
+			port, portErr := getRedisPort(name)
 			if portErr != nil {
+				controller.Logger.Error(
+					"failed to get redis's port",
+					err,
+					lager.Data{"instance": instance.ID},
+				)
 				return portErr
 			}
 
@@ -136,35 +147,14 @@ func (controller *OSProcessController) EnsureRunning(instance *Instance, configP
 	return controller.StartAndWaitUntilReady(instance, configPath, instanceDataDir, pidfilePath, logfilePath, redisStartTimeout)
 }
 
-func psPID(controller *OSProcessController, pid string) ([]byte, error) {
-	output, err := controller.CommandRunner.CombinedOutput(
-		"ps",
-		"aux",
-		"|",
-		"grep",
-		fmt.Sprintf(`"vcap\\s*%s"`, pid),
-	)
-
-	if err != nil {
-		controller.Logger.Error(
-			"ps failed for pid",
-			err,
-			lager.Data{"pid": pid},
-		)
-		return []byte{}, err
-	}
-
-	return output, err
-}
-
-func getPortFromPS(controller *OSProcessController, output []byte) (int, error) {
+func getRedisPort(name string) (int, error) {
 	regex, err := regexp.Compile("\\d+$")
 	if err != nil {
 		return 0, err
 	}
 
-	portStr := regex.Find(output)
-	if portStr == nil {
+	portStr := regex.FindString(name)
+	if portStr == "" {
 		return 0, errors.New("failed to get port")
 	}
 
