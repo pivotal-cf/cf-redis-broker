@@ -48,8 +48,6 @@ var _ = Describe("DELETE /", func() {
 		select {
 		case <-redisRestarted:
 			<-httpRequestReturned
-		case <-httpRequestReturned:
-			Fail("DELETE request returned before redis had been restarted")
 		case <-time.After(time.Second * 10):
 			Fail("Test timed out after 10 seconds")
 		}
