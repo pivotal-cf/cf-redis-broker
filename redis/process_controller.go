@@ -35,12 +35,12 @@ type OSProcessController struct {
 	CommandRunner             system.CommandRunner
 	ProcessChecker            ProcessChecker
 	ProcessKiller             ProcessKiller
-	RedisPingFunc             PingRedisServerFunc
+	PingFunc                  PingServerFunc
 	WaitUntilConnectableFunc  WaitUntilConnectableFunc
 	RedisServerExecutablePath string
 }
 
-func PingRedisServer(instance *Instance) error {
+func PingServer(instance *Instance) error {
 	client, err := client.Connect(
 		client.Host(instance.Host),
 		client.Port(instance.Port),
@@ -53,7 +53,7 @@ func PingRedisServer(instance *Instance) error {
 	return client.Ping()
 }
 
-type PingRedisServerFunc func(instance *Instance) error
+type PingServerFunc func(instance *Instance) error
 type WaitUntilConnectableFunc func(address *net.TCPAddr, timeout time.Duration) error
 
 func (controller *OSProcessController) StartAndWaitUntilReady(instance *Instance, configPath, instanceDataDir, pidfilePath, logfilePath string, timeout time.Duration) error {
@@ -93,7 +93,7 @@ func (controller *OSProcessController) EnsureRunning(instance *Instance, configP
 	pid, err := controller.InstanceInformer.InstancePid(instance.ID)
 
 	if err == nil && controller.ProcessChecker.Alive(pid) {
-		pingErr := controller.RedisPingFunc(instance)
+		pingErr := controller.PingFunc(instance)
 		if pingErr == nil {
 			controller.Logger.Info(
 				"redis instance already running",

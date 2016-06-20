@@ -70,7 +70,7 @@ var _ = Describe("Redis Process Controller", func() {
 			CommandRunner:    commandRunner,
 			ProcessChecker:   fakeProcessChecker,
 			ProcessKiller:    fakeProcessKiller,
-			RedisPingFunc: func(instance *redis.Instance) error {
+			PingFunc: func(instance *redis.Instance) error {
 				return errors.New("what")
 			},
 			WaitUntilConnectableFunc: func(*net.TCPAddr, time.Duration) error {
@@ -183,7 +183,7 @@ var _ = Describe("Redis Process Controller", func() {
 					var err error
 
 					JustBeforeEach(func() {
-						processController.RedisPingFunc = func(instance *redis.Instance) error {
+						processController.PingFunc = func(instance *redis.Instance) error {
 							return nil
 						}
 						err = controller.EnsureRunning(instance, "", "", "", "")

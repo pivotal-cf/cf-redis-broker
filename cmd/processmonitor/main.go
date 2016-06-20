@@ -52,7 +52,7 @@ func main() {
 		CommandRunner:            commandRunner,
 		ProcessChecker:           &process.ProcessChecker{},
 		ProcessKiller:            &process.ProcessKiller{},
-		RedisPingFunc:            redis.PingRedisServer,
+		PingFunc:                 redis.PingServer,
 		WaitUntilConnectableFunc: availability.Check,
 	}
 
