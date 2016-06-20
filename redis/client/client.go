@@ -104,6 +104,7 @@ type Client interface {
 	Address() string
 	WaitForNewSaveSince(lastSaveTime int64, timeout time.Duration) error
 	RunBGSave() error
+	Ping() error
 }
 
 func (client *client) Disconnect() error {
@@ -244,4 +245,19 @@ func (client *client) Info() (map[string]string, error) {
 	}
 
 	return info, nil
+}
+
+func (client *client) Ping() error {
+	pingCommand := client.lookupAlias("PING")
+
+	response, err := redisclient.String(client.connection.Do(pingCommand))
+	if err != nil {
+		return err
+	}
+
+	if strings.TrimSpace(response) != "PONG" {
+		return fmt.Errorf("ping resonded with `%s`", response)
+	}
+
+	return nil
 }

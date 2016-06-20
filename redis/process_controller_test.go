@@ -53,7 +53,6 @@ var _ = Describe("Redis Process Controller", func() {
 	var logger *lagertest.TestLogger
 	var fakeProcessChecker *fakeProcessChecker = &fakeProcessChecker{}
 	var fakeProcessKiller *fakeProcessKiller = &fakeProcessKiller{}
-	var fakeProcessInfo *system.FakeOSProcessInfo = new(system.FakeOSProcessInfo)
 	var commandRunner *system.FakeCommandRunner
 	var connectionTimeoutErr error
 
@@ -71,7 +70,9 @@ var _ = Describe("Redis Process Controller", func() {
 			CommandRunner:    commandRunner,
 			ProcessChecker:   fakeProcessChecker,
 			ProcessKiller:    fakeProcessKiller,
-			ProcessInfo:      fakeProcessInfo,
+			RedisPingFunc: func(instance *redis.Instance) error {
+				return errors.New("what")
+			},
 			WaitUntilConnectableFunc: func(*net.TCPAddr, time.Duration) error {
 				return connectionTimeoutErr
 			},
@@ -177,50 +178,15 @@ var _ = Describe("Redis Process Controller", func() {
 				controller.Logger.RegisterSink(lager.NewWriterSink(log, lager.DEBUG))
 			})
 
-			Context("and getting the process name fails", func() {
-				var err error
-
-				JustBeforeEach(func() {
-					processInfo := &system.FakeOSProcessInfo{NameErr: errors.New("I failed")}
-					controller.ProcessInfo = processInfo
-					err = controller.EnsureRunning(instance, "", "", "", "")
-				})
-
-				It("returns an error", func() {
-					Expect(err).To(HaveOccurred())
-				})
-
-				It("logs the error", func() {
-					Eventually(log).Should(gbytes.Say("failed to get process name"))
-				})
-			})
-
 			Context("and is a redis server", func() {
-				var err error
-
-				JustBeforeEach(func() {
-					processInfo := &system.FakeOSProcessInfo{NameReturns: "redis-server *:blah"}
-					controller.ProcessInfo = processInfo
-					err = controller.EnsureRunning(instance, "", "", "", "")
-				})
-
-				Context("and getting the redis port fails", func() {
-					It("returns an error", func() {
-						Expect(err).To(HaveOccurred())
-					})
-
-					It("logs the error", func() {
-						Eventually(log).Should(gbytes.Say("failed to get redis's port"))
-					})
-				})
-
 				Context("and is the correct redis instance", func() {
 					var err error
 
 					JustBeforeEach(func() {
-						processInfo := &system.FakeOSProcessInfo{NameReturns: "redis-server *:1337"}
-						controller.ProcessInfo = processInfo
-						err = controller.EnsureRunning(&redis.Instance{Port: 1337}, "", "", "", "")
+						processController.RedisPingFunc = func(instance *redis.Instance) error {
+							return nil
+						}
+						err = controller.EnsureRunning(instance, "", "", "", "")
 					})
 
 					It("does not return an error", func() {
@@ -244,9 +210,7 @@ var _ = Describe("Redis Process Controller", func() {
 					})
 
 					JustBeforeEach(func() {
-						processInfo := &system.FakeOSProcessInfo{NameReturns: "redis-server *:1337"}
-						controller.ProcessInfo = processInfo
-						err = controller.EnsureRunning(&redis.Instance{Port: 4567}, "/my/lovely/config", "", file.Name(), "")
+						err = controller.EnsureRunning(instance, "/my/lovely/config", "", file.Name(), "")
 					})
 
 					It("does not return an error", func() {
@@ -275,7 +239,7 @@ var _ = Describe("Redis Process Controller", func() {
 
 					Context("and failed to delete pidfile", func() {
 						JustBeforeEach(func() {
-							err = controller.EnsureRunning(&redis.Instance{Port: 4567}, "", "", "Pikachu", "")
+							err = controller.EnsureRunning(instance, "", "", "Pikachu", "")
 						})
 
 						It("returns an error", func() {
@@ -301,8 +265,6 @@ var _ = Describe("Redis Process Controller", func() {
 				})
 
 				JustBeforeEach(func() {
-					processInfo := &system.FakeOSProcessInfo{NameReturns: "foo"}
-					controller.ProcessInfo = processInfo
 					err = controller.EnsureRunning(instance, "/my/config", "", file.Name(), "")
 				})
 
@@ -332,7 +294,7 @@ var _ = Describe("Redis Process Controller", func() {
 
 				Context("and failed to delete pidfile", func() {
 					JustBeforeEach(func() {
-						err = controller.EnsureRunning(&redis.Instance{Port: 1337}, "", "", "Pikachu", "")
+						err = controller.EnsureRunning(instance, "", "", "Pikachu", "")
 					})
 
 					It("returns an error", func() {

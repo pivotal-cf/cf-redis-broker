@@ -15,6 +15,7 @@ type Client struct {
 
 	WaitForNewSaveSinceCallCount   int
 	ExpectedWaitForNewSaveSinceErr error
+	PingReturns                    error
 
 	Host string
 	Port int
@@ -68,4 +69,8 @@ func (c *Client) RunBGSave() error {
 func (c *Client) WaitForNewSaveSince(lastSaveTime int64, timeout time.Duration) error {
 	c.WaitForNewSaveSinceCallCount++
 	return c.ExpectedWaitForNewSaveSinceErr
+}
+
+func (c *Client) Ping() error {
+	return c.PingReturns
 }

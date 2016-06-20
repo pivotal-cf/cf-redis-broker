@@ -46,7 +46,7 @@ func main() {
 		Logger:                   brokerLogger,
 		ProcessChecker:           &process.ProcessChecker{},
 		ProcessKiller:            &process.ProcessKiller{},
-		ProcessInfo:              &system.OSProcessInfo{},
+		RedisPingFunc:            redis.PingRedisServer,
 		WaitUntilConnectableFunc: availability.Check,
 	}
 

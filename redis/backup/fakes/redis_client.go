@@ -89,6 +89,7 @@ type FakeRedisClient struct {
 	runBGSaveReturns     struct {
 		result1 error
 	}
+	PingReturns error
 }
 
 func (fake *FakeRedisClient) Disconnect() error {
@@ -391,6 +392,10 @@ func (fake *FakeRedisClient) RunBGSaveReturns(result1 error) {
 	fake.runBGSaveReturns = struct {
 		result1 error
 	}{result1}
+}
+
+func (fake *FakeRedisClient) Ping() error {
+	return fake.PingReturns
 }
 
 var _ client.Client = new(FakeRedisClient)

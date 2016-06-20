@@ -7,9 +7,9 @@ import (
 	"os"
 	"regexp"
 	"strconv"
-	"strings"
 	"time"
 
+	"github.com/pivotal-cf/cf-redis-broker/redis/client"
 	"github.com/pivotal-golang/lager"
 
 	"github.com/pivotal-cf/cf-redis-broker/system"
@@ -35,11 +35,25 @@ type OSProcessController struct {
 	CommandRunner             system.CommandRunner
 	ProcessChecker            ProcessChecker
 	ProcessKiller             ProcessKiller
-	ProcessInfo               system.ProcessInfo
+	RedisPingFunc             PingRedisServerFunc
 	WaitUntilConnectableFunc  WaitUntilConnectableFunc
 	RedisServerExecutablePath string
 }
 
+func PingRedisServer(instance *Instance) error {
+	client, err := client.Connect(
+		client.Host(instance.Host),
+		client.Port(instance.Port),
+		client.Password(instance.Password),
+	)
+	if err != nil {
+		return err
+	}
+
+	return client.Ping()
+}
+
+type PingRedisServerFunc func(instance *Instance) error
 type WaitUntilConnectableFunc func(address *net.TCPAddr, timeout time.Duration) error
 
 func (controller *OSProcessController) StartAndWaitUntilReady(instance *Instance, configPath, instanceDataDir, pidfilePath, logfilePath string, timeout time.Duration) error {
@@ -79,35 +93,20 @@ func (controller *OSProcessController) EnsureRunning(instance *Instance, configP
 	pid, err := controller.InstanceInformer.InstancePid(instance.ID)
 
 	if err == nil && controller.ProcessChecker.Alive(pid) {
-		name, processErr := controller.ProcessInfo.Name(pid)
-		if processErr != nil {
-			controller.Logger.Error(
-				"failed to get process name",
-				err,
-				lager.Data{"instance": instance.ID, "pid": pid},
+		pingErr := controller.RedisPingFunc(instance)
+		if pingErr == nil {
+			controller.Logger.Info(
+				"redis instance already running",
+				lager.Data{"instance": instance.ID},
 			)
-			return processErr
+			return nil
 		}
 
-		if strings.Contains(name, "redis-server") {
-			port, portErr := getRedisPort(name)
-			if portErr != nil {
-				controller.Logger.Error(
-					"failed to get redis's port",
-					err,
-					lager.Data{"instance": instance.ID},
-				)
-				return portErr
-			}
-
-			if port == instance.Port {
-				controller.Logger.Debug(
-					"redis instance already running",
-					lager.Data{"instance": instance.ID},
-				)
-				return nil
-			}
-		}
+		controller.Logger.Error(
+			"Failed to PING redis-server",
+			err,
+			lager.Data{"instance": instance.ID},
+		)
 
 		deleteErr := os.Remove(pidfilePath)
 		if deleteErr != nil {
