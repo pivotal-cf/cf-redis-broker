@@ -1,13 +1,27 @@
 package brokerintegration_test
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/http"
+	"regexp"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pivotal-cf/cf-redis-broker/integration"
 )
+
+var regex *regexp.Regexp
+
+func init() {
+	var err error
+	regex, err = regexp.Compile(`dial tcp: lookup server[1-3]\.127\.0\.0\.1\.xip\.io: no such host`)
+
+	if err != nil {
+		panic(err.Error())
+	}
+}
 
 var _ = Describe("Debug", func() {
 	Context("when basic auth credentials are correct", func() {
@@ -94,7 +108,7 @@ var _ = Describe("Debug", func() {
 				Expect(len(debugInfo.Allocated.Clusters)).To(Equal(1))
 
 				host := debugInfo.Allocated.Clusters[0].Hosts[0]
-				Expect(host).To(MatchRegexp("server[1-3]\\.127\\.0\\.0\\.1\\.xip\\.io"))
+				Expect(host).To(MatchRegexp(`server[1-3]\.127\.0\.0\.1\.xip\.io`))
 
 				Expect(debugInfo.Pool.Clusters).NotTo(ContainElement([]string{host}))
 			})
@@ -171,16 +185,50 @@ var _ = Describe("Debug", func() {
 })
 
 func provisionAndCheck(instanceID, planName string) {
-	status, _ := brokerClient.ProvisionInstance(instanceID, planName)
+	var status int
+	var response []byte
+
+	for i := 0; i <= 3; i++ {
+		status, response = brokerClient.ProvisionInstance(instanceID, planName)
+
+		if status == http.StatusCreated {
+			break
+		}
+
+		if !regex.Match(response) {
+			break
+		}
+
+		fmt.Println("Retrying...")
+		time.Sleep(time.Second)
+	}
+
 	Expect(status).To(Equal(http.StatusCreated))
 }
 
 func deprovisionAndCheck(instanceID string) {
-	status, _ := brokerClient.DeprovisionInstance(instanceID)
+	var status int
+	var response []byte
+
+	for i := 0; i <= 3; i++ {
+		status, response = brokerClient.DeprovisionInstance(instanceID)
+
+		if status == http.StatusOK {
+			break
+		}
+
+		if !regex.Match(response) {
+			break
+		}
+
+		fmt.Println("Retrying...")
+		time.Sleep(time.Second)
+	}
+
 	Expect(status).To(Equal(http.StatusOK))
 }
 
-func executeHTTPRequest(method string, uri string) (int, []byte) {
+func executeHTTPRequest(method, uri string) (int, []byte) {
 	client := new(http.Client)
 	req, err := http.NewRequest(method, uri, nil)
 	Expect(err).NotTo(HaveOccurred())
