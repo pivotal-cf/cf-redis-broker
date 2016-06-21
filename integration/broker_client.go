@@ -54,8 +54,8 @@ func (brokerClient *BrokerClient) ProvisionInstance(instanceID string, plan stri
 			break // Fail
 		}
 
-		fmt.Println("xip.io unavailable; retrying provision")
-		time.Sleep(time.Second)
+		fmt.Println("xip.io unavailable; retrying provision in 10 seconds")
+		time.Sleep(time.Second * 10)
 	}
 
 	return status, response
@@ -88,8 +88,8 @@ func (brokerClient *BrokerClient) DeprovisionInstance(instanceID string) (int, [
 			break // Fail
 		}
 
-		fmt.Println("xip.io unavailable; retrying provision")
-		time.Sleep(time.Second)
+		fmt.Println("xip.io unavailable; retrying provision in 10 seconds")
+		time.Sleep(time.Second * 10)
 	}
 
 	return status, response
