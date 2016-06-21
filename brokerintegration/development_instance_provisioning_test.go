@@ -4,6 +4,8 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -54,17 +56,24 @@ var _ = Describe("Provision shared instance", func() {
 		})
 
 		It("the redis instance logs to the right file", func() {
+			var logContents string
+
 			brokerClient.ProvisionInstance(instanceID, "shared")
-
 			logFilePath := filepath.Join(brokerConfig.RedisConfiguration.InstanceLogDirectory, instanceID, "redis-server.log")
-			_, err := os.Stat(logFilePath)
-			Ω(err).NotTo(HaveOccurred())
 
-			logBytes, err := ioutil.ReadFile(logFilePath)
-			Ω(err).NotTo(HaveOccurred())
+			for i := 0; i < 3; i++ {
+				logBytes, err := ioutil.ReadFile(logFilePath)
+				Expect(err).NotTo(HaveOccurred())
+				logContents = string(logBytes)
 
-			logFile := string(logBytes)
-			Ω(logFile).Should(ContainSubstring("Server started"))
+				if strings.Contains(logContents, "Server started") {
+					break
+				}
+
+				time.Sleep(time.Second)
+			}
+
+			Expect(logContents).To(ContainSubstring("Server started"))
 		})
 	})
 
