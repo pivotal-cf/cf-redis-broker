@@ -1,8 +1,11 @@
 package integration
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"time"
 
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
 )
@@ -12,6 +15,9 @@ type BrokerClient struct {
 }
 
 func (brokerClient *BrokerClient) ProvisionInstance(instanceID string, plan string) (int, []byte) {
+	var status int
+	var response []byte
+
 	planID, found := map[string]string{
 		"shared":    "C210CA06-E7E5-4F5D-A5AA-7A2C51CC290E",
 		"dedicated": "74E8984C-5F8C-11E4-86BE-07807B3B2589",
@@ -32,11 +38,27 @@ func (brokerClient *BrokerClient) ProvisionInstance(instanceID string, plan stri
 		panic("unable to marshal the payload to provision instance")
 	}
 
-	return ExecuteAuthenticatedHTTPRequestWithBody("PUT",
-		brokerClient.InstanceURI(instanceID),
-		brokerClient.Config.AuthConfiguration.Username,
-		brokerClient.Config.AuthConfiguration.Password,
-		payloadBytes)
+	for i := 0; i <= 3; i++ {
+		status, response = ExecuteAuthenticatedHTTPRequestWithBody("PUT",
+			brokerClient.InstanceURI(instanceID),
+			brokerClient.Config.AuthConfiguration.Username,
+			brokerClient.Config.AuthConfiguration.Password,
+			payloadBytes,
+		)
+
+		if status == http.StatusCreated {
+			break // Pass
+		}
+
+		if isNotXIPIOHostErr(response) {
+			break // Fail
+		}
+
+		fmt.Println("xip.io unavailable; retrying provision")
+		time.Sleep(time.Second)
+	}
+
+	return status, response
 }
 
 func (brokerClient *BrokerClient) MakeCatalogRequest() (int, []byte) {
@@ -52,7 +74,25 @@ func (brokerClient *BrokerClient) UnbindInstance(instanceID, bindingID string) (
 }
 
 func (brokerClient *BrokerClient) DeprovisionInstance(instanceID string) (int, []byte) {
-	return brokerClient.executeAuthenticatedRequest("DELETE", brokerClient.InstanceURI(instanceID))
+	var status int
+	var response []byte
+
+	for i := 0; i <= 3; i++ {
+		status, response = brokerClient.executeAuthenticatedRequest("DELETE", brokerClient.InstanceURI(instanceID))
+
+		if status == http.StatusOK {
+			break // Pass
+		}
+
+		if isNotXIPIOHostErr(response) {
+			break // Fail
+		}
+
+		fmt.Println("xip.io unavailable; retrying provision")
+		time.Sleep(time.Second)
+	}
+
+	return status, response
 }
 
 func (brokerClient *BrokerClient) executeAuthenticatedRequest(httpMethod, url string) (int, []byte) {
@@ -73,4 +113,12 @@ func (brokerClient *BrokerClient) InstanceIDFromHost(host string) (int, []byte) 
 
 func (brokerClient *BrokerClient) instanceIDFromHostURI(host string) string {
 	return fmt.Sprintf("http://localhost:3000/instance?host=%s", host)
+}
+
+func isNotXIPIOHostErr(response []byte) bool {
+	if !bytes.Contains(response, []byte("no such host")) {
+		return true
+	}
+
+	return !bytes.Contains(response, []byte("xip.io"))
 }

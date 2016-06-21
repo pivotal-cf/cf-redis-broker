@@ -1,11 +1,8 @@
 package brokerintegration_test
 
 import (
-	"bytes"
-	"fmt"
 	"io/ioutil"
 	"net/http"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -33,9 +30,12 @@ var _ = Describe("Debug", func() {
 			var host string
 
 			BeforeEach(func() {
-				provisionAndCheck("INSTANCE-1", "dedicated")
-				provisionAndCheck("INSTANCE-2", "dedicated")
-				provisionAndCheck("INSTANCE-3", "dedicated")
+				status, _ := brokerClient.ProvisionInstance("INSTANCE-1", "dedicated")
+				Expect(status).To(Equal(http.StatusCreated))
+				status, _ = brokerClient.ProvisionInstance("INSTANCE-2", "dedicated")
+				Expect(status).To(Equal(http.StatusCreated))
+				status, _ = brokerClient.ProvisionInstance("INSTANCE-3", "dedicated")
+				Expect(status).To(Equal(http.StatusCreated))
 
 				for _, cluster := range getDebugInfo().Allocated.Clusters {
 					if cluster.ID == "INSTANCE-3" {
@@ -43,15 +43,20 @@ var _ = Describe("Debug", func() {
 					}
 				}
 
-				deprovisionAndCheck("INSTANCE-3")
+				status, _ = brokerClient.DeprovisionInstance("INSTANCE-3")
+				Expect(status).To(Equal(http.StatusOK))
 
-				provisionAndCheck("NEW-INSTANCE", "dedicated")
+				status, _ = brokerClient.ProvisionInstance("NEW-INSTANCE", "dedicated")
+				Expect(status).To(Equal(http.StatusCreated))
 			})
 
 			AfterEach(func() {
-				deprovisionAndCheck("NEW-INSTANCE")
-				deprovisionAndCheck("INSTANCE-2")
-				deprovisionAndCheck("INSTANCE-1")
+				status, _ := brokerClient.DeprovisionInstance("NEW-INSTANCE")
+				Expect(status).To(Equal(http.StatusOK))
+				status, _ = brokerClient.DeprovisionInstance("INSTANCE-2")
+				Expect(status).To(Equal(http.StatusOK))
+				status, _ = brokerClient.DeprovisionInstance("INSTANCE-1")
+				Expect(status).To(Equal(http.StatusOK))
 			})
 
 			It("reuses deprovisioned instance", func() {
@@ -76,11 +81,13 @@ var _ = Describe("Debug", func() {
 
 		Context("when an instance is provisioned", func() {
 			BeforeEach(func() {
-				provisionAndCheck("SOME-GUID", "dedicated")
+				status, _ := brokerClient.ProvisionInstance("SOME-GUID", "dedicated")
+				Expect(status).To(Equal(http.StatusCreated))
 			})
 
 			AfterEach(func() {
-				deprovisionAndCheck("SOME-GUID")
+				status, _ := brokerClient.DeprovisionInstance("SOME-GUID")
+				Expect(status).To(Equal(http.StatusOK))
 			})
 
 			It("removes a cluster from the Pool", func() {
@@ -103,11 +110,13 @@ var _ = Describe("Debug", func() {
 
 			Context("then deprovisioned", func() {
 				BeforeEach(func() {
-					deprovisionAndCheck("SOME-GUID")
+					status, _ := brokerClient.DeprovisionInstance("SOME-GUID")
+					Expect(status).To(Equal(http.StatusOK))
 				})
 
 				AfterEach(func() {
-					provisionAndCheck("SOME-GUID", "dedicated")
+					status, _ := brokerClient.ProvisionInstance("SOME-GUID", "dedicated")
+					Expect(status).To(Equal(http.StatusCreated))
 				})
 
 				It("adds the cluster back to the Pool", func() {
@@ -170,58 +179,6 @@ var _ = Describe("Debug", func() {
 		})
 	})
 })
-
-func provisionAndCheck(instanceID, planName string) {
-	var status int
-	var response []byte
-
-	for i := 0; i <= 3; i++ {
-		status, response = brokerClient.ProvisionInstance(instanceID, planName)
-
-		if status == http.StatusCreated {
-			break // Pass
-		}
-
-		if isNotXIPIOHostErr(response) {
-			break // Fail
-		}
-
-		fmt.Println("xip.io unavailable; retrying provision")
-		time.Sleep(time.Second)
-	}
-
-	Expect(status).To(Equal(http.StatusCreated))
-}
-
-func deprovisionAndCheck(instanceID string) {
-	var status int
-	var response []byte
-
-	for i := 0; i <= 3; i++ {
-		status, response = brokerClient.DeprovisionInstance(instanceID)
-
-		if status == http.StatusOK {
-			break // Pass
-		}
-
-		if isNotXIPIOHostErr(response) {
-			break // Fail
-		}
-
-		fmt.Println("xip.io unavailable; retrying deprovision")
-		time.Sleep(time.Second)
-	}
-
-	Expect(status).To(Equal(http.StatusOK))
-}
-
-func isNotXIPIOHostErr(response []byte) bool {
-	if !bytes.Contains(response, []byte("no such host")) {
-		return true
-	}
-
-	return !bytes.Contains(response, []byte("xip.io"))
-}
 
 func executeHTTPRequest(method, uri string) (int, []byte) {
 	client := new(http.Client)
