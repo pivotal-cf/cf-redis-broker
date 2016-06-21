@@ -1,27 +1,16 @@
 package brokerintegration_test
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"regexp"
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pivotal-cf/cf-redis-broker/integration"
 )
-
-var regex *regexp.Regexp
-
-func init() {
-	var err error
-	regex, err = regexp.Compile(`dial tcp: lookup server[1-3]\.127\.0\.0\.1\.xip\.io: no such host`)
-
-	if err != nil {
-		panic(err.Error())
-	}
-}
 
 var _ = Describe("Debug", func() {
 	Context("when basic auth credentials are correct", func() {
@@ -87,12 +76,11 @@ var _ = Describe("Debug", func() {
 
 		Context("when an instance is provisioned", func() {
 			BeforeEach(func() {
-				brokerClient.ProvisionInstance("SOME-GUID", "dedicated")
+				provisionAndCheck("SOME-GUID", "dedicated")
 			})
 
 			AfterEach(func() {
-				status, _ := brokerClient.DeprovisionInstance("SOME-GUID")
-				Expect(status).To(Equal(http.StatusOK))
+				deprovisionAndCheck("SOME-GUID")
 			})
 
 			It("removes a cluster from the Pool", func() {
@@ -115,12 +103,11 @@ var _ = Describe("Debug", func() {
 
 			Context("then deprovisioned", func() {
 				BeforeEach(func() {
-					status, _ := brokerClient.DeprovisionInstance("SOME-GUID")
-					Expect(status).To(Equal(http.StatusOK))
+					deprovisionAndCheck("SOME-GUID")
 				})
 
 				AfterEach(func() {
-					brokerClient.ProvisionInstance("SOME-GUID", "dedicated")
+					provisionAndCheck("SOME-GUID", "dedicated")
 				})
 
 				It("adds the cluster back to the Pool", func() {
@@ -192,11 +179,11 @@ func provisionAndCheck(instanceID, planName string) {
 		status, response = brokerClient.ProvisionInstance(instanceID, planName)
 
 		if status == http.StatusCreated {
-			break
+			break // Pass
 		}
 
-		if !regex.Match(response) {
-			break
+		if isNotXIPIOHostErr(response) {
+			break // Fail
 		}
 
 		fmt.Println("xip.io unavailable; retrying provision")
@@ -214,11 +201,11 @@ func deprovisionAndCheck(instanceID string) {
 		status, response = brokerClient.DeprovisionInstance(instanceID)
 
 		if status == http.StatusOK {
-			break
+			break // Pass
 		}
 
-		if !regex.Match(response) {
-			break
+		if isNotXIPIOHostErr(response) {
+			break // Fail
 		}
 
 		fmt.Println("xip.io unavailable; retrying deprovision")
@@ -226,6 +213,14 @@ func deprovisionAndCheck(instanceID string) {
 	}
 
 	Expect(status).To(Equal(http.StatusOK))
+}
+
+func isNotXIPIOHostErr(response []byte) bool {
+	if !bytes.Contains(response, []byte("no such host")) {
+		return true
+	}
+
+	return !bytes.Contains(response, []byte("xip.io"))
 }
 
 func executeHTTPRequest(method, uri string) (int, []byte) {
