@@ -199,7 +199,7 @@ func provisionAndCheck(instanceID, planName string) {
 			break
 		}
 
-		fmt.Println("Retrying...")
+		fmt.Println("xip.io unavailable; retrying provision")
 		time.Sleep(time.Second)
 	}
 
@@ -221,7 +221,7 @@ func deprovisionAndCheck(instanceID string) {
 			break
 		}
 
-		fmt.Println("Retrying...")
+		fmt.Println("xip.io unavailable; retrying deprovision")
 		time.Sleep(time.Second)
 	}
 
