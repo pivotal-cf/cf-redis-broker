@@ -47,7 +47,7 @@ run_tests() {
   __message "Running tests"
 
   GOPATH=$PWD/Godeps/_workspace:$GOPATH \
-    ginkgo -r -v -race --keepGoing -randomizeAllSpecs -skipMeasurements -failOnPending -cover -noColor $test_args
+    ginkgo -r -v -race --keepGoing -randomizeAllSpecs -skipMeasurements -failOnPending -cover $test_args
 }
 
 setup_go() {
