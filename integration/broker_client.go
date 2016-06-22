@@ -38,7 +38,9 @@ func (brokerClient *BrokerClient) ProvisionInstance(instanceID string, plan stri
 		panic("unable to marshal the payload to provision instance")
 	}
 
-	for i := 0; i <= 3; i++ {
+	backoff := []int{10, 30, 60, 0}
+
+	for i := range backoff {
 		status, response = ExecuteAuthenticatedHTTPRequestWithBody("PUT",
 			brokerClient.InstanceURI(instanceID),
 			brokerClient.Config.AuthConfiguration.Username,
@@ -54,8 +56,10 @@ func (brokerClient *BrokerClient) ProvisionInstance(instanceID string, plan stri
 			break // Fail
 		}
 
-		fmt.Println("xip.io unavailable; retrying provision in 10 seconds")
-		time.Sleep(time.Second * 10)
+		if i != 0 {
+			fmt.Printf("xip.io unavailable; retrying provision in %d seconds\n", i)
+			time.Sleep(time.Second * time.Duration(i))
+		}
 	}
 
 	return status, response
@@ -77,7 +81,9 @@ func (brokerClient *BrokerClient) DeprovisionInstance(instanceID string) (int, [
 	var status int
 	var response []byte
 
-	for i := 0; i <= 3; i++ {
+	backoff := []int{10, 30, 60, 0}
+
+	for i := range backoff {
 		status, response = brokerClient.executeAuthenticatedRequest("DELETE", brokerClient.InstanceURI(instanceID))
 
 		if status == http.StatusOK {
@@ -88,8 +94,10 @@ func (brokerClient *BrokerClient) DeprovisionInstance(instanceID string) (int, [
 			break // Fail
 		}
 
-		fmt.Println("xip.io unavailable; retrying provision in 10 seconds")
-		time.Sleep(time.Second * 10)
+		if i != 0 {
+			fmt.Printf("xip.io unavailable; retrying deprovision in %d seconds\n", i)
+			time.Sleep(time.Second * time.Duration(i))
+		}
 	}
 
 	return status, response
