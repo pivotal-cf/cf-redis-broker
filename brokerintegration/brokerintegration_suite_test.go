@@ -25,6 +25,7 @@ var brokerPort uint = 3000
 var brokerSession *gexec.Session
 var monitorSession *gexec.Session
 var brokerExecutablePath string
+var backupExecutablePath string
 var brokerConfig brokerconfig.Config
 var brokerClient *integration.BrokerClient
 var agentRequests []*http.Request

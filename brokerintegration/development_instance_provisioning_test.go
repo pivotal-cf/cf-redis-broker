@@ -2,8 +2,12 @@ package brokerintegration_test
 
 import (
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -13,7 +17,6 @@ import (
 )
 
 var _ = Describe("Provision shared instance", func() {
-
 	var instanceID string
 	var initialRedisProcessCount int
 
@@ -23,17 +26,18 @@ var _ = Describe("Provision shared instance", func() {
 	})
 
 	AfterEach(func() {
-		Ω(getRedisProcessCount()).To(Equal(initialRedisProcessCount))
+		Expect(getRedisProcessCount()).To(Equal(initialRedisProcessCount))
 	})
 
 	Context("when instance is created successfully", func() {
 		AfterEach(func() {
-			brokerClient.DeprovisionInstance(instanceID)
+			status, _ := brokerClient.DeprovisionInstance(instanceID)
+			Expect(status).To(Equal(http.StatusOK))
 		})
 
 		It("returns 201", func() {
 			status, _ := brokerClient.ProvisionInstance(instanceID, "shared")
-			Expect(status).To(Equal(201))
+			Expect(status).To(Equal(http.StatusCreated))
 		})
 
 		It("returns empty JSON", func() {
@@ -42,62 +46,75 @@ var _ = Describe("Provision shared instance", func() {
 		})
 
 		It("starts a Redis instance", func() {
-			brokerClient.ProvisionInstance(instanceID, "shared")
-			Ω(getRedisProcessCount()).To(Equal(initialRedisProcessCount + 1))
+			status, _ := brokerClient.ProvisionInstance(instanceID, "shared")
+			Expect(status).To(Equal(http.StatusCreated))
+			Expect(getRedisProcessCount()).To(Equal(initialRedisProcessCount + 1))
 		})
 
 		It("writes a Redis config to the instance directory", func() {
 			brokerClient.ProvisionInstance(instanceID, "shared")
 			configPath := filepath.Join(brokerConfig.RedisConfiguration.InstanceDataDirectory, instanceID, "redis.conf")
 			_, err := os.Stat(configPath)
-			Ω(err).NotTo(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("the redis instance logs to the right file", func() {
-			brokerClient.ProvisionInstance(instanceID, "shared")
+			var logContents string
+
+			status, _ := brokerClient.ProvisionInstance(instanceID, "shared")
+			Expect(status).To(Equal(http.StatusCreated))
 
 			logFilePath := filepath.Join(brokerConfig.RedisConfiguration.InstanceLogDirectory, instanceID, "redis-server.log")
-			_, err := os.Stat(logFilePath)
-			Ω(err).NotTo(HaveOccurred())
 
-			logBytes, err := ioutil.ReadFile(logFilePath)
-			Ω(err).NotTo(HaveOccurred())
+			for i := 0; i < 3; i++ {
+				logBytes, err := ioutil.ReadFile(logFilePath)
+				Expect(err).NotTo(HaveOccurred())
+				logContents = string(logBytes)
 
-			logFile := string(logBytes)
-			Ω(logFile).Should(ContainSubstring("Server started"))
+				if strings.Contains(logContents, "Server started") {
+					break
+				}
+
+				time.Sleep(time.Second)
+			}
+
+			Expect(logContents).To(ContainSubstring("Server started"))
 		})
 	})
 
 	Context("when the service instance limit has been met", func() {
 		BeforeEach(func() {
-			brokerClient.ProvisionInstance("1", "shared")
-			brokerClient.ProvisionInstance("2", "shared")
-			brokerClient.ProvisionInstance("3", "shared")
+			for i := 1; i < 4; i++ {
+				status, _ := brokerClient.ProvisionInstance(strconv.Itoa(i), "shared")
+				Expect(status).To(Equal(http.StatusCreated))
+			}
 		})
 
 		AfterEach(func() {
-			brokerClient.DeprovisionInstance("1")
-			brokerClient.DeprovisionInstance("2")
-			brokerClient.DeprovisionInstance("3")
+			for i := 1; i < 4; i++ {
+				status, _ := brokerClient.DeprovisionInstance(strconv.Itoa(i))
+				Expect(status).To(Equal(http.StatusOK))
+			}
 		})
 
 		It("does not start a Redis instance", func() {
 			brokerClient.ProvisionInstance("4", "shared")
 			defer brokerClient.DeprovisionInstance("4")
-			Ω(getRedisProcessCount()).To(Equal(initialRedisProcessCount + 3))
+			Expect(getRedisProcessCount()).To(Equal(initialRedisProcessCount + 3))
 		})
 
 		It("returns a 500", func() {
-			statusCode, _ := brokerClient.ProvisionInstance("4", "shared")
+			status, _ := brokerClient.ProvisionInstance("4", "shared")
 			defer brokerClient.DeprovisionInstance("4")
-			Ω(statusCode).To(Equal(500))
+			Expect(status).To(Equal(http.StatusInternalServerError))
 		})
 
 		It("returns a useful error message in the correct JSON format", func() {
 			_, body := brokerClient.ProvisionInstance("4", "shared")
 			defer brokerClient.DeprovisionInstance("4")
 
-			Ω(string(body)).To(MatchJSON(`{"description":"instance limit for this service has been reached"}`))
+			expected := `{"description":"instance limit for this service has been reached"}`
+			Expect(string(body)).To(MatchJSON(expected))
 		})
 	})
 
@@ -112,9 +129,9 @@ var _ = Describe("Provision shared instance", func() {
 
 			err := os.Chmod(helpers.TestDataDir, 0400)
 			Expect(err).NotTo(HaveOccurred())
-			statusCode, _ := brokerClient.ProvisionInstance(instanceID, "shared")
+			status, _ := brokerClient.ProvisionInstance(instanceID, "shared")
 
-			Expect(statusCode).To(Equal(500))
+			Expect(status).To(Equal(http.StatusInternalServerError))
 			Expect(brokerSession.Buffer()).To(gbytes.Say(`"redis-broker.ensure-dirs-exist"`))
 			Expect(brokerSession.Buffer()).To(gbytes.Say(
 				`"error":"mkdir ` + helpers.TestDataDir + `/` + instanceID + `: permission denied"`,
@@ -124,21 +141,22 @@ var _ = Describe("Provision shared instance", func() {
 
 	Context("when the service instance already exists", func() {
 		BeforeEach(func() {
-			brokerClient.ProvisionInstance(instanceID, "shared")
+			status, _ := brokerClient.ProvisionInstance(instanceID, "shared")
+			Expect(status).To(Equal(http.StatusCreated))
 		})
 
 		AfterEach(func() {
-			brokerClient.DeprovisionInstance(instanceID)
+			status, _ := brokerClient.DeprovisionInstance(instanceID)
+			Expect(status).To(Equal(http.StatusOK))
 		})
 
 		It("should fail if we try to provision a second instance with the same ID", func() {
 			numRedisProcessesBeforeExec := getRedisProcessCount()
-			statusCode, body := brokerClient.ProvisionInstance(instanceID, "shared")
-			Ω(statusCode).To(Equal(409))
+			status, body := brokerClient.ProvisionInstance(instanceID, "shared")
+			Expect(status).To(Equal(http.StatusConflict))
 
-			Ω(string(body)).To(MatchJSON(`{}`))
-			Ω(getRedisProcessCount()).To(Equal(numRedisProcessesBeforeExec))
+			Expect(string(body)).To(MatchJSON(`{}`))
+			Expect(getRedisProcessCount()).To(Equal(numRedisProcessesBeforeExec))
 		})
 	})
-
 })

@@ -48,19 +48,12 @@ var _ = Describe("DELETE /", func() {
 		select {
 		case <-redisRestarted:
 			<-httpRequestReturned
-		case <-httpRequestReturned:
-			Fail("DELETE request returned before redis had been restarted")
 		case <-time.After(time.Second * 10):
 			Fail("Test timed out after 10 seconds")
 		}
 
 		conf, err := redisconf.Load(redisConfPath)
 		Ω(err).ShouldNot(HaveOccurred())
-
-		port, err := strconv.Atoi(conf.Get("port"))
-		Ω(err).ShouldNot(HaveOccurred())
-
-		Expect(helpers.ServiceAvailable(uint(port))).To(BeTrue())
 
 		redisConn = helpers.BuildRedisClientFromConf(conf)
 	})
@@ -152,6 +145,14 @@ func checkRedisStopAndStart(c chan<- bool) {
 	var err error
 	redisSession, err = gexec.Start(exec.Command("redis-server", redisConfPath), GinkgoWriter, GinkgoWriter)
 	Ω(err).ShouldNot(HaveOccurred())
+
+	conf, err := redisconf.Load(redisConfPath)
+	Ω(err).ShouldNot(HaveOccurred())
+
+	port, err := strconv.Atoi(conf.Get("port"))
+	Ω(err).ShouldNot(HaveOccurred())
+
+	Expect(helpers.ServiceAvailable(uint(port))).To(BeTrue())
 
 	c <- true
 }

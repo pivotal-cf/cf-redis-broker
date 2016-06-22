@@ -33,6 +33,7 @@ type ServiceConfiguration struct {
 	ProcessCheckIntervalSeconds int       `yaml:"process_check_interval"`
 	StartRedisTimeoutSeconds    int       `yaml:"start_redis_timeout"`
 	InstanceDataDirectory       string    `yaml:"data_directory"`
+	PidfileDirectory            string    `yaml:"pidfile_directory"`
 	InstanceLogDirectory        string    `yaml:"log_directory"`
 	ServiceInstanceLimit        int       `yaml:"service_instance_limit"`
 	Dedicated                   Dedicated `yaml:"dedicated"`

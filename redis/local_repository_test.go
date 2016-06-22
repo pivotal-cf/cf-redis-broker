@@ -23,6 +23,7 @@ var _ = Describe("Local Repository", func() {
 	var logger *lagertest.TestLogger
 	var tmpInstanceDataDir string = "/tmp/repotests/data"
 	var tmpInstanceLogDir string = "/tmp/repotests/log"
+	var tmpPidFileDir string = "/tmp/pidfiles"
 	var defaultConfigFilePath string = "/tmp/default_config_path"
 	var defaultConfigFileContents string = "daemonize yes"
 
@@ -41,6 +42,7 @@ var _ = Describe("Local Repository", func() {
 			Host:                  "127.0.0.1",
 			DefaultConfigPath:     "/tmp/default_config_path",
 			InstanceDataDirectory: tmpInstanceDataDir,
+			PidfileDirectory:      tmpPidFileDir,
 			InstanceLogDirectory:  tmpInstanceLogDir,
 		}
 
@@ -49,12 +51,18 @@ var _ = Describe("Local Repository", func() {
 		err := os.MkdirAll(tmpInstanceDataDir, 0755)
 		Ω(err).ToNot(HaveOccurred())
 
+		err = os.MkdirAll(tmpPidFileDir, 0755)
+		Ω(err).ToNot(HaveOccurred())
+
 		err = os.MkdirAll(tmpInstanceLogDir, 0755)
 		Ω(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
 		err := os.RemoveAll(tmpInstanceDataDir)
+		Ω(err).ToNot(HaveOccurred())
+
+		err = os.RemoveAll(tmpPidFileDir)
 		Ω(err).ToNot(HaveOccurred())
 
 		err = os.RemoveAll(tmpInstanceLogDir)
@@ -72,11 +80,7 @@ var _ = Describe("Local Repository", func() {
 
 			BeforeEach(func() {
 				pid := "1234"
-				basepath := tmpInstanceDataDir
-				instanceDir := path.Join(basepath, instanceID)
-				mkdirErr := os.MkdirAll(instanceDir, 0755)
-				Ω(mkdirErr).ToNot(HaveOccurred())
-				pidFilePath := instanceDir + "/redis-server.pid"
+				pidFilePath := tmpPidFileDir + "/" + instanceID + ".pid"
 				ioutil.WriteFile(pidFilePath, []byte(pid), 0644)
 			})
 
@@ -249,6 +253,12 @@ var _ = Describe("Local Repository", func() {
 				Ω(err).To(HaveOccurred())
 			})
 
+			It("deletes the instance pid file", func() {
+				repo.Delete(instanceID)
+				_, err := os.Stat(path.Join(tmpPidFileDir, instanceID+".pid"))
+				Ω(err).To(HaveOccurred())
+			})
+
 			It("deletes the instance log directory", func() {
 				repo.Delete(instanceID)
 				_, err := os.Stat(path.Join(tmpInstanceLogDir, instanceID))
@@ -337,11 +347,14 @@ var _ = Describe("Setup", func() {
 	var logger *lagertest.TestLogger
 	var tmpConfigFilePath string = "/tmp/default_config_path"
 	var tmpDataDir string = "/tmp/repotests/data"
+	var tmpPidfileDir string = "/tmp/repotests/pids"
 	var tmpLogDir string = "/tmp/repotests/log"
 	var instance redis.Instance
 
 	BeforeEach(func() {
 		err := os.MkdirAll(tmpDataDir, 0755)
+		Expect(err).ToNot(HaveOccurred())
+		err = os.MkdirAll(tmpPidfileDir, 0755)
 		Expect(err).ToNot(HaveOccurred())
 		err = os.MkdirAll(tmpLogDir, 0755)
 		Expect(err).ToNot(HaveOccurred())
@@ -359,6 +372,7 @@ var _ = Describe("Setup", func() {
 			Host:                  "127.0.0.1",
 			DefaultConfigPath:     tmpConfigFilePath,
 			InstanceDataDirectory: tmpDataDir,
+			PidfileDirectory:      tmpPidfileDir,
 			InstanceLogDirectory:  tmpLogDir,
 		}
 
@@ -367,6 +381,9 @@ var _ = Describe("Setup", func() {
 
 	AfterEach(func() {
 		err := os.RemoveAll(tmpDataDir)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = os.RemoveAll(tmpPidfileDir)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = os.RemoveAll(tmpLogDir)
@@ -478,6 +495,9 @@ func writeInstance(instance *redis.Instance, repo *redis.LocalRepository) {
 	err = repo.WriteConfigFile(instance)
 	Ω(err).NotTo(HaveOccurred())
 	file, err := os.Create(filepath.Join(repo.InstanceBaseDir(instance.ID), "monitor"))
+	Ω(err).NotTo(HaveOccurred())
+	pid := []byte("1234")
+	err = ioutil.WriteFile(repo.InstancePidFilePath(instance.ID), pid, 0644)
 	Ω(err).NotTo(HaveOccurred())
 	file.Close()
 }

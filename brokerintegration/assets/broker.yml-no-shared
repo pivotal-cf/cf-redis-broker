@@ -6,6 +6,7 @@
   "process_check_interval": 1
   "start_redis_timeout": 3
   "data_directory": "/tmp/redis-data-dir"
+  pidfile_directory: /tmp/pidfiles
   "log_directory": "/tmp/redis-log-dir"
   "service_instance_limit": 0
   "dedicated":

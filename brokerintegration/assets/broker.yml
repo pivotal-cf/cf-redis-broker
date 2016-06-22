@@ -9,6 +9,7 @@ redis:
   start_redis_timeout: 3
   data_directory: /tmp/redis-data-dir
   log_directory: /tmp/redis-log-dir
+  pidfile_directory: /tmp/pidfiles
   service_instance_limit: 3
   dedicated:
     nodes:

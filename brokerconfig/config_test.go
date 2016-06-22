@@ -100,6 +100,10 @@ var _ = Describe("parsing the broker config file", func() {
 				Ω(config.RedisConfiguration.InstanceDataDirectory).To(Equal("/tmp/redis/data/directory"))
 			})
 
+			It("loads the pidfile directory", func() {
+				Ω(config.RedisConfiguration.PidfileDirectory).To(Equal("/tmp/redis/pidfiles"))
+			})
+
 			It("loads instance log directory", func() {
 				Ω(config.RedisConfiguration.InstanceLogDirectory).To(Equal("/tmp/redis/log/directory"))
 			})
