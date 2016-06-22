@@ -28,7 +28,7 @@ func KillProcess(session *gexec.Session) {
 }
 
 func KillRedisProcess(instanceID string, brokerConfig brokerconfig.Config) {
-	pidFilePath, err := filepath.Abs(path.Join(brokerConfig.RedisConfiguration.InstanceDataDirectory, instanceID, "redis-server.pid"))
+	pidFilePath, err := filepath.Abs(path.Join(brokerConfig.RedisConfiguration.PidfileDirectory, instanceID+".pid"))
 	Ω(err).ToNot(HaveOccurred())
 
 	fileContent, err := ioutil.ReadFile(pidFilePath)

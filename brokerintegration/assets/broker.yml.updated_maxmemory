@@ -4,6 +4,7 @@ redis:
   shared_vm_plan_id: C210CA06-E7E5-4F5D-A5AA-7A2C51CC290E
   dedicated_vm_plan_id: 74E8984C-5F8C-11E4-86BE-07807B3B2589
   data_directory: /tmp/redis-data-dir
+  pidfile_directory: /tmp/pidfiles
   redis_conf_path: assets/redis.conf.updated_maxmemory
   log_directory: /tmp/redis-log-dir
   process_check_interval: 1

@@ -52,7 +52,7 @@ func (redisServiceBroker *RedisServiceBroker) Services() []brokerapi.Service {
 			Metadata: brokerapi.ServiceMetadata{
 				DisplayName:      "Redis",
 				LongDescription:  "",
-				DocumentationUrl: "http://docs.pivotal.io/redis/index.html",
+				DocumentationUrl: "http://docs.pivotal.io/p1-services/Redis.html",
 				SupportUrl:       "http://support.pivotal.io",
 				Listing: brokerapi.ServiceMetadataListing{
 					Blurb:    "",

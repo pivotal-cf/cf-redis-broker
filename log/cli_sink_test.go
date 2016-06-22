@@ -44,8 +44,8 @@ var _ = Describe("CliSink", func() {
 				message := `
 					{
 						"timestamp":"1431625200.765033007",
-						"source":"test",
-						"message":"test.test_main",
+						"source":"backup",
+						"message":"backup.backup_main",
 						"log_level":1,
 						"data":{
 							"event":"Exiting",
@@ -57,7 +57,7 @@ var _ = Describe("CliSink", func() {
 				os.Stdout.Close()
 
 				output, _ := ioutil.ReadAll(stdoutReader)
-				Expect(string(output)).To(Equal("      test_main -> Exiting\n"))
+				Expect(string(output)).To(Equal("    backup_main -> Exiting\n"))
 			})
 		})
 	})

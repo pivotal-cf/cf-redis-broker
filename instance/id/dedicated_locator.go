@@ -73,23 +73,13 @@ func (p *dedicatedInstanceIDLocator) LocateID(string, nodeIP string) (string, er
 	)
 
 	if res.StatusCode != http.StatusOK {
-		var errorMessage error
-
-		if res.StatusCode == 404 {
-			errorMessage = fmt.Errorf(
-				"Unexpected response code %d from endpoint - check your Redis instance has been provisioned successfully",
-				res.StatusCode,
-			)
-		} else {
-			errorMessage = fmt.Errorf("Unexpected response code %d from endpoint", res.StatusCode)
-		}
-
-		p.logger.Error("check-response-status", errorMessage, lager.Data{
+		err := fmt.Errorf("Unexpected response code %d from endpoint", res.StatusCode)
+		p.logger.Error("check-response-status", err, lager.Data{
 			"event":         "failed",
 			"url":           requestURL,
 			"response_code": res.StatusCode,
 		})
-		return "", errorMessage
+		return "", err
 	}
 
 	body, err := ioutil.ReadAll(res.Body)

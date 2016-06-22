@@ -167,11 +167,21 @@ func (repo *LocalRepository) Delete(instanceID string) error {
 		return err
 	}
 
+	err = os.Remove(repo.InstancePidFilePath(instanceID))
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (repo *LocalRepository) EnsureDirectoriesExist(instance *Instance) error {
 	err := os.MkdirAll(repo.InstanceDataDir(instance.ID), 0755)
+	if err != nil {
+		return err
+	}
+
+	err = os.MkdirAll(repo.RedisConf.PidfileDirectory, 0755)
 	if err != nil {
 		return err
 	}
@@ -216,7 +226,7 @@ func (repo *LocalRepository) InstanceConfigPath(instanceID string) string {
 }
 
 func (repo *LocalRepository) InstancePidFilePath(instanceID string) string {
-	return path.Join(repo.InstanceBaseDir(instanceID), "redis-server.pid")
+	return path.Join(repo.RedisConf.PidfileDirectory, instanceID+".pid")
 }
 
 func (repo *LocalRepository) InstancePid(instanceID string) (pid int, err error) {
