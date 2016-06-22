@@ -62,6 +62,13 @@ func (brokerClient *BrokerClient) ProvisionInstance(instanceID string, plan stri
 		}
 	}
 
+	// TODO - #122030819
+	// Currently, the broker's Provision of a Redis instance does not wait until
+	// the instance is ready (this seems to be when the log for Redis reports
+	// "server started" and Redis' PID file is populated). This artifical wait
+	// is a dumb work around until this is fixed.
+	time.Sleep(time.Second)
+
 	return status, response
 }
 
