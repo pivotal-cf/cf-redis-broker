@@ -40,7 +40,7 @@ func (brokerClient *BrokerClient) ProvisionInstance(instanceID string, plan stri
 
 	backoff := []int{10, 30, 60, 0}
 
-	for i := range backoff {
+	for _, i := range backoff {
 		status, response = ExecuteAuthenticatedHTTPRequestWithBody("PUT",
 			brokerClient.InstanceURI(instanceID),
 			brokerClient.Config.AuthConfiguration.Username,
@@ -83,7 +83,7 @@ func (brokerClient *BrokerClient) DeprovisionInstance(instanceID string) (int, [
 
 	backoff := []int{10, 30, 60, 0}
 
-	for i := range backoff {
+	for _, i := range backoff {
 		status, response = brokerClient.executeAuthenticatedRequest("DELETE", brokerClient.InstanceURI(instanceID))
 
 		if status == http.StatusOK {
