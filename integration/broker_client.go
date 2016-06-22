@@ -10,6 +10,12 @@ import (
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
 )
 
+var xipIOBackoff []int
+
+func init() {
+	xipIOBackoff = []int{10, 30, 30, 60, 0}
+}
+
 type BrokerClient struct {
 	Config *brokerconfig.Config
 }
@@ -38,9 +44,7 @@ func (brokerClient *BrokerClient) ProvisionInstance(instanceID string, plan stri
 		panic("unable to marshal the payload to provision instance")
 	}
 
-	backoff := []int{10, 30, 60, 0}
-
-	for _, i := range backoff {
+	for _, i := range xipIOBackoff {
 		status, response = ExecuteAuthenticatedHTTPRequestWithBody("PUT",
 			brokerClient.InstanceURI(instanceID),
 			brokerClient.Config.AuthConfiguration.Username,
@@ -77,20 +81,58 @@ func (brokerClient *BrokerClient) MakeCatalogRequest() (int, []byte) {
 }
 
 func (brokerClient *BrokerClient) BindInstance(instanceID, bindingID string) (int, []byte) {
-	return brokerClient.executeAuthenticatedRequest("PUT", brokerClient.BindingURI(instanceID, bindingID))
+	var status int
+	var response []byte
+
+	for _, i := range xipIOBackoff {
+		status, response = brokerClient.executeAuthenticatedRequest("PUT", brokerClient.BindingURI(instanceID, bindingID))
+
+		if status == http.StatusOK {
+			break // Pass
+		}
+
+		if isNotXIPIOHostErr(response) {
+			break // Fail
+		}
+
+		if i != 0 {
+			fmt.Printf("xip.io unavailable; retrying bind in %d seconds\n", i)
+			time.Sleep(time.Second * time.Duration(i))
+		}
+	}
+
+	return status, response
 }
 
 func (brokerClient *BrokerClient) UnbindInstance(instanceID, bindingID string) (int, []byte) {
-	return brokerClient.executeAuthenticatedRequest("DELETE", brokerClient.BindingURI(instanceID, bindingID))
+	var status int
+	var response []byte
+
+	for _, i := range xipIOBackoff {
+		status, response = brokerClient.executeAuthenticatedRequest("DELETE", brokerClient.BindingURI(instanceID, bindingID))
+
+		if status == http.StatusOK {
+			break // Pass
+		}
+
+		if isNotXIPIOHostErr(response) {
+			break // Fail
+		}
+
+		if i != 0 {
+			fmt.Printf("xip.io unavailable; retrying unbind in %d seconds\n", i)
+			time.Sleep(time.Second * time.Duration(i))
+		}
+	}
+
+	return status, response
 }
 
 func (brokerClient *BrokerClient) DeprovisionInstance(instanceID string) (int, []byte) {
 	var status int
 	var response []byte
 
-	backoff := []int{10, 30, 60, 0}
-
-	for _, i := range backoff {
+	for _, i := range xipIOBackoff {
 		status, response = brokerClient.executeAuthenticatedRequest("DELETE", brokerClient.InstanceURI(instanceID))
 
 		if status == http.StatusOK {
