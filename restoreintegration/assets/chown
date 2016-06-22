@@ -1,0 +1,22 @@
+#!/usr/bin/env ruby
+
+#
+# Fake chown for testing purposes
+#
+# Returns 0 when args are:
+# vcap:vcap /tmp/instance_dir/test_instance/db/appendonly.aof
+#
+# Returns 1 otherwise
+#
+
+unless ARGV.fetch(0) == "vcap:vcap"
+  fail "First argument is not `vcap:vcap`"
+end
+
+case ARGV.fetch(1) 
+when "/tmp/instance_dir/test_instance/db/appendonly.aof", "/tmp/instance_dir/appendonly.aof"
+  return exit(0)
+else
+  fail "Second argument is not `/tmp/instance_dir/test_instance/db/appendonly.aof`"
+end
+
