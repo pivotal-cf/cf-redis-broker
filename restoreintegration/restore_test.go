@@ -281,7 +281,11 @@ func startRedisSession(config restoreconfig.Config, instanceID, planName string)
 	)
 	Expect(err).ToNot(HaveOccurred())
 
-	pidfilePath := filepath.Join(testInstanceDir, "redis-server.pid")
+	pidfilePath := config.InstancePidFilePath(instanceID)
+
+	err = os.MkdirAll(config.PidfileDirectory, 0777)
+	Expect(err).NotTo(HaveOccurred())
+
 	redisCmd := exec.Command("redis-server",
 		"--dir", testInstanceDir,
 		"--save", "900", "1",
