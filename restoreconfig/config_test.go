@@ -29,6 +29,10 @@ var _ = Describe("Config", func() {
 			Expect(restoreConfig.RedisDataDirectory).To(Equal("/tmp/redis/data"))
 		})
 
+		It("Reads the pidfile directory", func() {
+			Expect(restoreConfig.PidfileDirectory).To(Equal("/tmp/pidfiles"))
+		})
+
 		It("Reads the RedisServerExecutablePath", func() {
 			Expect(restoreConfig.RedisServerExecutablePath).To(Equal("/path/to/redis"))
 		})
@@ -50,18 +54,33 @@ var _ = Describe("Config", func() {
 		})
 
 		Describe("#InstancePid", func() {
-			It("Returns instance PID", func() {
-				instanceDataDir := path.Join(restoreConfig.RedisDataDirectory, "instance-id")
-				os.MkdirAll(instanceDataDir, 0777)
-				err := ioutil.WriteFile(path.Join(instanceDataDir, "redis-server.pid"), []byte("1234"), 0777)
+			var pidfilePath string
+
+			BeforeEach(func() {
+				err := os.MkdirAll(restoreConfig.PidfileDirectory, 0777)
+				Expect(err).NotTo(HaveOccurred())
+
+				pidfilePath = path.Join(restoreConfig.PidfileDirectory, "instance-id.pid")
+				err = ioutil.WriteFile(pidfilePath, []byte("1234"), 0777)
 				Expect(err).ToNot(HaveOccurred())
+			})
+
+			AfterEach(func() {
+				if pidfilePath == "" {
+					err := os.Remove(pidfilePath)
+					Expect(err).NotTo(HaveOccurred())
+				}
+			})
+
+			It("Returns instance PID", func() {
 				Expect(restoreConfig.InstancePid("instance-id")).To(Equal(1234))
 			})
 		})
 
 		Describe("#InstancePidFilePath", func() {
 			It("Returns the instance PID file path", func() {
-				Expect(restoreConfig.InstancePidFilePath("instance-id")).To(Equal("/tmp/redis/data/instance-id/redis-server.pid"))
+				expected := "/tmp/pidfiles/instance-id.pid"
+				Expect(restoreConfig.InstancePidFilePath("instance-id")).To(Equal(expected))
 			})
 		})
 
@@ -80,18 +99,33 @@ var _ = Describe("Config", func() {
 		})
 
 		Describe("#InstancePid", func() {
-			It("Returns instance PID", func() {
-				instanceDataDir := path.Join(restoreConfig.RedisDataDirectory)
-				os.MkdirAll(instanceDataDir, 0777)
-				err := ioutil.WriteFile(path.Join(instanceDataDir, "redis-server.pid"), []byte("1234"), 0777)
+			var pidfilePath string
+
+			BeforeEach(func() {
+				err := os.MkdirAll(restoreConfig.PidfileDirectory, 0777)
+				Expect(err).NotTo(HaveOccurred())
+
+				pidfilePath = path.Join(restoreConfig.PidfileDirectory, "redis.pid")
+				err = ioutil.WriteFile(pidfilePath, []byte("1234"), 0777)
 				Expect(err).ToNot(HaveOccurred())
+			})
+
+			AfterEach(func() {
+				if pidfilePath == "" {
+					err := os.Remove(pidfilePath)
+					Expect(err).NotTo(HaveOccurred())
+				}
+			})
+
+			It("Returns instance PID", func() {
 				Expect(restoreConfig.InstancePid("instance-id")).To(Equal(1234))
 			})
 		})
 
 		Describe("#InstancePidFilePath", func() {
 			It("Returns the instance PID file path", func() {
-				Expect(restoreConfig.InstancePidFilePath("instance-id")).To(Equal("/tmp/redis/data/redis-server.pid"))
+				expected := "/tmp/pidfiles/redis.pid"
+				Expect(restoreConfig.InstancePidFilePath("instance-id")).To(Equal(expected))
 			})
 		})
 
