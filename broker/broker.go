@@ -50,18 +50,13 @@ func (redisServiceBroker *RedisServiceBroker) Services() []brokerapi.Service {
 			Description: redisServiceBroker.Config.RedisConfiguration.Description,
 			Bindable:    true,
 			Plans:       planList,
-			Metadata: brokerapi.ServiceMetadata{
-				DisplayName:      redisServiceBroker.Config.RedisConfiguration.DisplayName,
-				LongDescription:  redisServiceBroker.Config.RedisConfiguration.LongDescription,
-				DocumentationUrl: redisServiceBroker.Config.RedisConfiguration.DocumentationURL,
-				SupportUrl:       redisServiceBroker.Config.RedisConfiguration.SupportURL,
-				Listing: brokerapi.ServiceMetadataListing{
-					Blurb:    "",
-					ImageUrl: fmt.Sprintf("data:image/png;base64,%s", redisServiceBroker.Config.RedisConfiguration.IconImage),
-				},
-				Provider: brokerapi.ServiceMetadataProvider{
-					Name: redisServiceBroker.Config.RedisConfiguration.ProviderDisplayName,
-				},
+			Metadata: &brokerapi.ServiceMetadata{
+				DisplayName:         redisServiceBroker.Config.RedisConfiguration.DisplayName,
+				LongDescription:     redisServiceBroker.Config.RedisConfiguration.LongDescription,
+				DocumentationUrl:    redisServiceBroker.Config.RedisConfiguration.DocumentationURL,
+				SupportUrl:          redisServiceBroker.Config.RedisConfiguration.SupportURL,
+				ImageUrl:            fmt.Sprintf("data:image/png;base64,%s", redisServiceBroker.Config.RedisConfiguration.IconImage),
+				ProviderDisplayName: redisServiceBroker.Config.RedisConfiguration.ProviderDisplayName,
 			},
 			Tags: []string{
 				"pivotal",
@@ -71,7 +66,8 @@ func (redisServiceBroker *RedisServiceBroker) Services() []brokerapi.Service {
 	}
 }
 
-func (redisServiceBroker *RedisServiceBroker) Provision(instanceID string, serviceDetails brokerapi.ServiceDetails) error {
+//Provision ...
+func (redisServiceBroker *RedisServiceBroker) Provision(instanceID string, serviceDetails brokerapi.ProvisionDetails) error {
 	if redisServiceBroker.instanceExists(instanceID) {
 		return brokerapi.ErrInstanceAlreadyExists
 	}
@@ -158,7 +154,7 @@ func (redisServiceBroker *RedisServiceBroker) plans() map[string]*brokerapi.Serv
 			ID:          redisServiceBroker.Config.RedisConfiguration.SharedVMPlanID,
 			Name:        PlanNameShared,
 			Description: "This plan provides a single Redis process on a shared VM, which is suitable for development and testing workloads",
-			Metadata: brokerapi.ServicePlanMetadata{
+			Metadata: &brokerapi.ServicePlanMetadata{
 				Bullets: []string{
 					"Each instance shares the same VM",
 					"Single dedicated Redis process",
@@ -174,7 +170,7 @@ func (redisServiceBroker *RedisServiceBroker) plans() map[string]*brokerapi.Serv
 			ID:          redisServiceBroker.Config.RedisConfiguration.DedicatedVMPlanID,
 			Name:        PlanNameDedicated,
 			Description: "This plan provides a single Redis process on a dedicated VM, which is suitable for production workloads",
-			Metadata: brokerapi.ServicePlanMetadata{
+			Metadata: &brokerapi.ServicePlanMetadata{
 				Bullets: []string{
 					"Dedicated VM per instance",
 					"Single dedicated Redis process",

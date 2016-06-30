@@ -105,7 +105,7 @@ var _ = Describe("Redis service broker", func() {
 	Describe(".Provision", func() {
 		Context("when the plan is recognized", func() {
 			It("creates an instance", func() {
-				err := redisBroker.Provision(instanceID, brokerapi.ServiceDetails{PlanID: sharedPlanID})
+				err := redisBroker.Provision(instanceID, brokerapi.ProvisionDetails{PlanID: sharedPlanID})
 				Ω(err).ToNot(HaveOccurred())
 
 				Expect(len(someCreatorAndBinder.createdInstanceIds)).To(Equal(1))
@@ -114,12 +114,12 @@ var _ = Describe("Redis service broker", func() {
 
 			Context("when the instance already exists", func() {
 				BeforeEach(func() {
-					err := redisBroker.Provision(instanceID, brokerapi.ServiceDetails{PlanID: sharedPlanID})
+					err := redisBroker.Provision(instanceID, brokerapi.ProvisionDetails{PlanID: sharedPlanID})
 					Ω(err).ToNot(HaveOccurred())
 				})
 
 				It("gives an error when trying to use the same instanceID", func() {
-					err := redisBroker.Provision(instanceID, brokerapi.ServiceDetails{PlanID: sharedPlanID})
+					err := redisBroker.Provision(instanceID, brokerapi.ProvisionDetails{PlanID: sharedPlanID})
 					Expect(err).To(Equal(brokerapi.ErrInstanceAlreadyExists))
 				})
 			})
@@ -130,7 +130,7 @@ var _ = Describe("Redis service broker", func() {
 				})
 
 				It("returns the same error", func() {
-					err := redisBroker.Provision(instanceID, brokerapi.ServiceDetails{PlanID: sharedPlanID})
+					err := redisBroker.Provision(instanceID, brokerapi.ProvisionDetails{PlanID: sharedPlanID})
 					Expect(err).To(MatchError("something went bad"))
 				})
 			})
@@ -138,21 +138,21 @@ var _ = Describe("Redis service broker", func() {
 
 		Context("when the plan is not recognized", func() {
 			It("returns a suitable error", func() {
-				err := redisBroker.Provision(instanceID, brokerapi.ServiceDetails{PlanID: "not_a_plan_id"})
+				err := redisBroker.Provision(instanceID, brokerapi.ProvisionDetails{PlanID: "not_a_plan_id"})
 				Ω(err).To(MatchError("plan_id not recognized"))
 			})
 		})
 
 		Context("when the plan id is not provided", func() {
 			It("returns a suitable error", func() {
-				err := redisBroker.Provision(instanceID, brokerapi.ServiceDetails{})
+				err := redisBroker.Provision(instanceID, brokerapi.ProvisionDetails{})
 				Ω(err).To(MatchError("plan_id required"))
 			})
 		})
 
 		Context("when the plan is recognized, but the broker has not been configured with the appropriate instance creator", func() {
 			It("returns a suitable error", func() {
-				err := redisBroker.Provision(instanceID, brokerapi.ServiceDetails{PlanID: dedicatedPlanID})
+				err := redisBroker.Provision(instanceID, brokerapi.ProvisionDetails{PlanID: dedicatedPlanID})
 				Ω(err).To(MatchError("instance creator not found for plan"))
 			})
 		})
@@ -160,7 +160,7 @@ var _ = Describe("Redis service broker", func() {
 
 	Describe(".Deprovision", func() {
 		BeforeEach(func() {
-			err := redisBroker.Provision(instanceID, brokerapi.ServiceDetails{PlanID: sharedPlanID})
+			err := redisBroker.Provision(instanceID, brokerapi.ProvisionDetails{PlanID: sharedPlanID})
 			Ω(err).ToNot(HaveOccurred())
 		})
 
