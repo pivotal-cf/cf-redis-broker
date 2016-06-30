@@ -37,6 +37,13 @@ type ServiceConfiguration struct {
 	InstanceLogDirectory        string    `yaml:"log_directory"`
 	ServiceInstanceLimit        int       `yaml:"service_instance_limit"`
 	Dedicated                   Dedicated `yaml:"dedicated"`
+	Description                 string    `yaml:"description"`
+	LongDescription             string    `yaml:"long_description"`
+	ProviderDisplayName         string    `yaml:"provider_display_name"`
+	DocumentationURL            string    `yaml:"documentation_url"`
+	SupportURL                  string    `yaml:"support_url"`
+	DisplayName                 string    `yaml:"display_name"`
+	IconImage                   string    `yaml:"icon_image"`
 }
 
 type Dedicated struct {

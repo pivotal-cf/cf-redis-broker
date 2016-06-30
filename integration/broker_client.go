@@ -85,7 +85,11 @@ func (brokerClient *BrokerClient) BindInstance(instanceID, bindingID string) (in
 	var response []byte
 
 	for _, i := range xipIOBackoff {
-		status, response = brokerClient.executeAuthenticatedRequest("PUT", brokerClient.BindingURI(instanceID, bindingID))
+		status, response = ExecuteAuthenticatedHTTPRequestWithBody("PUT",
+			brokerClient.BindingURI(instanceID, bindingID),
+			brokerClient.Config.AuthConfiguration.Username,
+			brokerClient.Config.AuthConfiguration.Password,
+			[]byte("{}"))
 
 		if status == http.StatusOK {
 			break // Pass
