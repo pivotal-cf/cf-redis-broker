@@ -2,6 +2,7 @@ package broker
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/pivotal-cf/brokerapi"
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
@@ -56,7 +57,7 @@ func (redisServiceBroker *RedisServiceBroker) Services() []brokerapi.Service {
 				SupportUrl:       redisServiceBroker.Config.RedisConfiguration.SupportURL,
 				Listing: brokerapi.ServiceMetadataListing{
 					Blurb:    "",
-					ImageUrl: redisServiceBroker.Config.RedisConfiguration.IconImage,
+					ImageUrl: fmt.Sprintf("data:image/png;base64,%s", redisServiceBroker.Config.RedisConfiguration.IconImage),
 				},
 				Provider: brokerapi.ServiceMetadataProvider{
 					Name: redisServiceBroker.Config.RedisConfiguration.ProviderDisplayName,
