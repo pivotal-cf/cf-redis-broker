@@ -37,7 +37,7 @@ var _ = Describe("Dedicated instance unbinding", func() {
 		Ω(body).Should(MatchJSON("{}"))
 
 		code, body = brokerClient.UnbindInstance("NON-EXISTANT", bindingID)
-		Ω(code).To(Equal(404))
+		Ω(code).To(Equal(410))
 		Ω(body).Should(MatchJSON("{}"))
 	})
 })

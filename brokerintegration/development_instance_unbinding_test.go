@@ -25,7 +25,7 @@ var _ = Describe("Shared instance unbinding", func() {
 	})
 
 	Context("with invalid instance", func() {
-		HTTPResponseShouldContainExpectedHTTPStatusCode(invalidInputs, 404)
+		HTTPResponseShouldContainExpectedHTTPStatusCode(invalidInputs, 410)
 		HTTPResponseBodyShouldBeEmptyJSON(validInputs)
 	})
 })

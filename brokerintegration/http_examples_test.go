@@ -16,7 +16,7 @@ type HTTPExampleInputs struct {
 
 func HTTPResponseBodyShouldBeEmptyJSON(inputs *HTTPExampleInputs) {
 	It("returns empty JSON", func() {
-		_, body := integration.ExecuteAuthenticatedHTTPRequest(inputs.Method, inputs.URI, brokerConfig.AuthConfiguration.Username, brokerConfig.AuthConfiguration.Password)
+		_, body := integration.ExecuteAuthenticatedHTTPRequestWithBody(inputs.Method, inputs.URI, brokerConfig.AuthConfiguration.Username, brokerConfig.AuthConfiguration.Password, []byte("{}"))
 
 		var parsedJSON map[string][]interface{}
 		json.Unmarshal(body, &parsedJSON)
@@ -27,7 +27,7 @@ func HTTPResponseBodyShouldBeEmptyJSON(inputs *HTTPExampleInputs) {
 
 func HTTPResponseShouldContainBrokerErrorMessage(inputs *HTTPExampleInputs, expectedErrorMessage string) {
 	It("returns the expected error message", func() {
-		_, body := integration.ExecuteAuthenticatedHTTPRequest(inputs.Method, inputs.URI, brokerConfig.AuthConfiguration.Username, brokerConfig.AuthConfiguration.Password)
+		_, body := integration.ExecuteAuthenticatedHTTPRequestWithBody(inputs.Method, inputs.URI, brokerConfig.AuthConfiguration.Username, brokerConfig.AuthConfiguration.Password, []byte("{}"))
 
 		var parsedJSON map[string]interface{}
 		json.Unmarshal(body, &parsedJSON)
@@ -39,7 +39,7 @@ func HTTPResponseShouldContainBrokerErrorMessage(inputs *HTTPExampleInputs, expe
 
 func HTTPResponseShouldContainExpectedHTTPStatusCode(inputs *HTTPExampleInputs, expectedStatusCode int) {
 	It(fmt.Sprint("returns HTTP ", expectedStatusCode), func() {
-		code, _ := integration.ExecuteAuthenticatedHTTPRequest(inputs.Method, inputs.URI, brokerConfig.AuthConfiguration.Username, brokerConfig.AuthConfiguration.Password)
+		code, _ := integration.ExecuteAuthenticatedHTTPRequestWithBody(inputs.Method, inputs.URI, brokerConfig.AuthConfiguration.Username, brokerConfig.AuthConfiguration.Password, []byte("{}"))
 
 		Ω(code).To(Equal(expectedStatusCode))
 	})
