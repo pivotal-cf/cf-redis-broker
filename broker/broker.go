@@ -67,13 +67,15 @@ func (redisServiceBroker *RedisServiceBroker) Services() []brokerapi.Service {
 }
 
 //Provision ...
-func (redisServiceBroker *RedisServiceBroker) Provision(instanceID string, serviceDetails brokerapi.ProvisionDetails) error {
+func (redisServiceBroker *RedisServiceBroker) Provision(instanceID string, serviceDetails brokerapi.ProvisionDetails, asyncAllowed bool) (spec brokerapi.ProvisionedServiceSpec, err error) {
+	spec = brokerapi.ProvisionedServiceSpec{}
+
 	if redisServiceBroker.instanceExists(instanceID) {
-		return brokerapi.ErrInstanceAlreadyExists
+		return spec, brokerapi.ErrInstanceAlreadyExists
 	}
 
 	if serviceDetails.PlanID == "" {
-		return errors.New("plan_id required")
+		return spec, errors.New("plan_id required")
 	}
 
 	planIdentifier := ""
@@ -85,53 +87,58 @@ func (redisServiceBroker *RedisServiceBroker) Provision(instanceID string, servi
 	}
 
 	if planIdentifier == "" {
-		return errors.New("plan_id not recognized")
+		return spec, errors.New("plan_id not recognized")
 	}
 
 	instanceCreator, ok := redisServiceBroker.InstanceCreators[planIdentifier]
 	if !ok {
-		return errors.New("instance creator not found for plan")
+		return spec, errors.New("instance creator not found for plan")
 	}
 
-	err := instanceCreator.Create(instanceID)
+	err = instanceCreator.Create(instanceID)
 	if err != nil {
-		return err
+		return spec, err
 	}
 
-	return nil
+	return spec, nil
 }
 
-func (redisServiceBroker *RedisServiceBroker) Deprovision(instanceID string) error {
+func (redisServiceBroker *RedisServiceBroker) Deprovision(instanceID string, details brokerapi.DeprovisionDetails, asyncAllowed bool) (brokerapi.IsAsync, error) {
+	isAsync := brokerapi.IsAsync(false)
+
 	for _, instanceCreator := range redisServiceBroker.InstanceCreators {
 		instanceExists, _ := instanceCreator.InstanceExists(instanceID)
 		if instanceExists {
-			return instanceCreator.Destroy(instanceID)
+			return isAsync, instanceCreator.Destroy(instanceID)
 		}
 	}
-	return brokerapi.ErrInstanceDoesNotExist
+	return isAsync, brokerapi.ErrInstanceDoesNotExist
 }
 
-func (redisServiceBroker *RedisServiceBroker) Bind(instanceID, bindingID string) (interface{}, error) {
+func (redisServiceBroker *RedisServiceBroker) Bind(instanceID, bindingID string, details brokerapi.BindDetails) (brokerapi.Binding, error) {
+	binding := brokerapi.Binding{}
+
 	for _, repo := range redisServiceBroker.InstanceBinders {
 		instanceExists, _ := repo.InstanceExists(instanceID)
 		if instanceExists {
 			instanceCredentials, err := repo.Bind(instanceID, bindingID)
 			if err != nil {
-				return nil, err
+				return binding, err
 			}
 			credentialsMap := map[string]interface{}{
 				"host":     instanceCredentials.Host,
 				"port":     instanceCredentials.Port,
 				"password": instanceCredentials.Password,
 			}
-			return credentialsMap, nil
+
+			binding.Credentials = credentialsMap
+			return binding, nil
 		}
 	}
-
-	return nil, brokerapi.ErrInstanceDoesNotExist
+	return brokerapi.Binding{}, brokerapi.ErrInstanceDoesNotExist
 }
 
-func (redisServiceBroker *RedisServiceBroker) Unbind(instanceID, bindingID string) error {
+func (redisServiceBroker *RedisServiceBroker) Unbind(instanceID, bindingID string, details brokerapi.UnbindDetails) error {
 	for _, repo := range redisServiceBroker.InstanceBinders {
 		instanceExists, _ := repo.InstanceExists(instanceID)
 		if instanceExists {
@@ -192,4 +199,15 @@ func (redisServiceBroker *RedisServiceBroker) instanceExists(instanceID string) 
 		}
 	}
 	return false
+}
+
+// LastOperation ...
+// If the broker provisions asynchronously, the Cloud Controller will poll this endpoint
+// for the status of the provisioning operation.
+func (redisServiceBroker *RedisServiceBroker) LastOperation(instanceID string) (brokerapi.LastOperation, error) {
+	return brokerapi.LastOperation{}, nil
+}
+
+func (redisServiceBroker *RedisServiceBroker) Update(instanceID string, details brokerapi.UpdateDetails, asyncAllowed bool) (brokerapi.IsAsync, error) {
+	return false, nil
 }
