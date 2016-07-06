@@ -1,6 +1,7 @@
 package brokerintegration_test
 
 import (
+	"fmt"
 	"sort"
 
 	. "github.com/onsi/ginkgo"
@@ -28,8 +29,8 @@ var _ = Describe("processmonitor cmd", func() {
 				helpers.KillProcess(monitorSession)
 			})
 
-			It("logs that no instances have been provisioned", func() {
-				Eventually(monitorSession.Buffer()).Should(gbytes.Say("No Redis instances provisioned"))
+			It("logs 0 instances found", func() {
+				Eventually(monitorSession.Buffer()).Should(gbytes.Say("0 shared Redis instances found"))
 			})
 		})
 
@@ -48,9 +49,16 @@ var _ = Describe("processmonitor cmd", func() {
 				Expect(statusCode).To(Equal(200))
 			})
 
-			It("logs one instance", func() {
+			It("logs 1 instance found", func() {
 				Eventually(monitorSession.Buffer()).Should(
-					gbytes.Say("Detected provisioned instances: \\[%s\\]", instanceUuid))
+					gbytes.Say("1 shared Redis instance found"),
+				)
+			})
+
+			It("logs the instance ID", func() {
+				Eventually(monitorSession.Buffer()).Should(
+					gbytes.Say(fmt.Sprintf("Found shared instance: %s", instanceUuid)),
+				)
 			})
 		})
 
@@ -78,9 +86,20 @@ var _ = Describe("processmonitor cmd", func() {
 				}
 			})
 
-			It("logs all instance guids when processmonitor starts", func() {
+			It("logs 2 instances found", func() {
 				Eventually(monitorSession.Buffer()).Should(
-					gbytes.Say("Detected provisioned instances: \\[%s %s\\]", instanceUuids[0], instanceUuids[1]))
+					gbytes.Say("2 shared Redis instances found"),
+				)
+			})
+
+			It("logs the 2 instance IDs", func() {
+				Eventually(monitorSession.Buffer()).Should(
+					gbytes.Say(fmt.Sprintf("Found shared instance: %s", instanceUuids[0])),
+				)
+
+				Eventually(monitorSession.Buffer()).Should(
+					gbytes.Say(fmt.Sprintf("Found shared instance: %s", instanceUuids[1])),
+				)
 			})
 		})
 	})

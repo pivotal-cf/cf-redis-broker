@@ -1,6 +1,7 @@
 package redis
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -113,31 +114,75 @@ func (repo *LocalRepository) lockFilePath(instance *Instance) string {
 	return filepath.Join(repo.InstanceBaseDir(instance.ID), "lock")
 }
 
-func (repo *LocalRepository) AllInstances() ([]*Instance, error) {
+func (repo *LocalRepository) allInstances(verbose bool) ([]*Instance, []error) {
+	if verbose {
+		repo.Logger.Info("all-instances", lager.Data{
+			"message": fmt.Sprintf("Starting shared instance lookup in data directory: %s", repo.RedisConf.InstanceDataDirectory),
+		})
+	}
+
 	instances := []*Instance{}
 
 	instanceDirs, err := ioutil.ReadDir(repo.RedisConf.InstanceDataDirectory)
 	if err != nil {
-		return instances, err
+		repo.Logger.Error("all-instances", err, lager.Data{
+			"message":        "Error finding shared instances",
+			"data-directory": repo.RedisConf.InstanceDataDirectory,
+		})
+		return instances, []error{err}
 	}
+
+	var pluralisedInstance string
+	if len(instanceDirs) == 1 {
+		pluralisedInstance = "instance"
+	} else {
+		pluralisedInstance = "instances"
+	}
+
+	if verbose {
+		repo.Logger.Info("all-instances", lager.Data{
+			"message": fmt.Sprintf("%d shared Redis %s found", len(instanceDirs), pluralisedInstance),
+		})
+	}
+
+	errs := []error{}
 
 	for _, instanceDir := range instanceDirs {
 
 		instance, err := repo.FindByID(instanceDir.Name())
 
 		if err != nil {
-			return instances, err
+			repo.Logger.Error("all-instances", err, lager.Data{
+				"message": fmt.Sprintf("Error getting instance details for instance ID: %s", instanceDir.Name()),
+			})
+
+			errs = append(errs, err)
+			continue
+		}
+
+		if verbose {
+			repo.Logger.Info("all-instances", lager.Data{
+				"message": fmt.Sprintf("Found shared instance: %s", instance.ID),
+			})
 		}
 
 		instances = append(instances, instance)
 	}
 
-	return instances, nil
+	return instances, errs
 }
 
-func (repo *LocalRepository) InstanceCount() (int, error) {
-	instances, err := repo.AllInstances()
-	return len(instances), err
+func (repo *LocalRepository) AllInstancesVerbose() ([]*Instance, []error) {
+	return repo.allInstances(true)
+}
+
+func (repo *LocalRepository) AllInstances() ([]*Instance, []error) {
+	return repo.allInstances(false)
+}
+
+func (repo *LocalRepository) InstanceCount() (int, []error) {
+	instances, errs := repo.AllInstances()
+	return len(instances), errs
 }
 
 func (repo *LocalRepository) Bind(instanceID string, bindingID string) (broker.InstanceCredentials, error) {
