@@ -3,6 +3,8 @@ package main
 import (
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/pivotal-cf/brokerapi"
 	"github.com/pivotal-cf/brokerapi/auth"
@@ -41,6 +43,15 @@ func main() {
 	}
 
 	localRepo := redis.NewLocalRepository(config.RedisConfiguration, brokerLogger)
+
+	sigChannel := make(chan os.Signal, 1)
+	signal.Notify(sigChannel, syscall.SIGTERM)
+	go func() {
+		<-sigChannel
+		brokerLogger.Info("Starting Redis Broker shutdown")
+		localRepo.AllInstancesVerbose()
+		os.Exit(0)
+	}()
 
 	localRepo.AllInstancesVerbose()
 
