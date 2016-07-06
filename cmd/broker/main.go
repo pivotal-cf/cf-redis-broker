@@ -25,6 +25,8 @@ func main() {
 	brokerLogger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
 	brokerLogger.RegisterSink(lager.NewWriterSink(os.Stderr, lager.ERROR))
 
+	brokerLogger.Info("Starting CF Redis broker")
+
 	brokerLogger.Info("Config File: " + brokerConfigPath)
 
 	config, err := brokerconfig.ParseConfig(brokerConfigPath)
@@ -39,6 +41,8 @@ func main() {
 	}
 
 	localRepo := redis.NewLocalRepository(config.RedisConfiguration, brokerLogger)
+
+	localRepo.AllInstancesVerbose()
 
 	processController := &redis.OSProcessController{
 		CommandRunner:            commandRunner,

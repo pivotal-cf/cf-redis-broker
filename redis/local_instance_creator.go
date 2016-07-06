@@ -1,6 +1,7 @@
 package redis
 
 import (
+	"errors"
 	"time"
 
 	"github.com/pborman/uuid"
@@ -23,7 +24,7 @@ type LocalInstanceRepository interface {
 	InstanceConfigPath(instanceID string) string
 	InstanceLogFilePath(instanceID string) string
 	InstancePidFilePath(instanceID string) string
-	InstanceCount() (int, error)
+	InstanceCount() (int, []error)
 	Lock(instance *Instance) error
 	Unlock(instance *Instance) error
 }
@@ -36,9 +37,9 @@ type LocalInstanceCreator struct {
 }
 
 func (localInstanceCreator *LocalInstanceCreator) Create(instanceID string) error {
-	instanceCount, err := localInstanceCreator.InstanceCount()
-	if err != nil {
-		return err
+	instanceCount, errs := localInstanceCreator.InstanceCount()
+	if len(errs) > 0 {
+		return errors.New("Failed to determine current instance count, view broker logs for details")
 	}
 
 	if instanceCount >= localInstanceCreator.RedisConfiguration.ServiceInstanceLimit {
@@ -53,7 +54,7 @@ func (localInstanceCreator *LocalInstanceCreator) Create(instanceID string) erro
 		Password: uuid.NewRandom().String(),
 	}
 
-	err = localInstanceCreator.Setup(instance)
+	err := localInstanceCreator.Setup(instance)
 	if err != nil {
 		return err
 	}

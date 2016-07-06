@@ -1,11 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"os/signal"
 	"path/filepath"
-	"sort"
 	"syscall"
 	"time"
 
@@ -58,23 +56,7 @@ func main() {
 
 	checkInterval := config.RedisConfiguration.ProcessCheckIntervalSeconds
 
-	instances, err := repo.AllInstances()
-	if err != nil {
-		logger.Error("error getting list of instances", err)
-	}
-
-	if len(instances) == 0 {
-		logger.Info("No Redis instances provisioned")
-	} else {
-		instanceUuids := []string{}
-
-		for _, instance := range instances {
-			instanceUuids = append(instanceUuids, instance.ID)
-		}
-
-		sort.Strings(instanceUuids)
-		logger.Info(fmt.Sprintf("Detected provisioned instances: %v", instanceUuids))
-	}
+	instances, _ := repo.AllInstancesVerbose()
 
 	for _, instance := range instances {
 		copyConfigFile(instance, repo, logger)
@@ -84,10 +66,7 @@ func main() {
 		if skipProcessCheck {
 			logger.Info("Skipping instance check")
 		} else {
-			instances, err := repo.AllInstances()
-			if err != nil {
-				logger.Error("error getting list of instances", err)
-			}
+			instances, _ := repo.AllInstances()
 
 			for _, instance := range instances {
 				ensureRunningIfNotLocked(instance, repo, processController, logger)

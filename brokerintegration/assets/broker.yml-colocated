@@ -1,0 +1,32 @@
+redis:
+  service_name: my-redis
+  service_id: 123456abcdef
+  dedicated_vm_plan_id: 74E8984C-5F8C-11E4-86BE-07807B3B2589
+  shared_vm_plan_id: C210CA06-E7E5-4F5D-A5AA-7A2C51CC290E
+  host: localhost
+  redis_conf_path: assets/redis.conf
+  process_check_interval: 1
+  start_redis_timeout: 3
+  data_directory: /tmp/redis-data-dir
+  log_directory: /tmp/redis-log-dir
+  pidfile_directory: /tmp/pidfiles
+  service_instance_limit: 3
+  documentation_url: http://docs.pivotal.io/p1-services/Redis.html
+  support_url: http://support.pivotal.io
+  display_name: Redis
+  description: Redis service to provide a key-value store
+  dedicated:
+    nodes:
+    - server1.127.0.0.1.xip.io
+    - server2.127.0.0.1.xip.io
+    - server3.127.0.0.1.xip.io
+    port: 6379
+    statefile_path: /tmp/redis-config-dir/statefile.json
+auth:
+  password: secret
+  username: admin
+backend_host: localhost
+backend_port: "3001"
+monit_executable_path: ""
+redis_server_executable_path: ""
+agent_port: "9876"
