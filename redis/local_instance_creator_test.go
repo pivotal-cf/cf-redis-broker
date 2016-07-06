@@ -32,11 +32,7 @@ var _ = Describe("Local Redis Creator", func() {
 		instanceID = uuid.NewRandom().String()
 		fakeProcessController = &fakes.FakeProcessController{}
 
-		fakeLocalRepository = &fakes.FakeLocalRepository{
-			DeletedInstanceIds: []string{},
-			CreatedInstances:   []*redis.Instance{},
-			Instances:          []*redis.Instance{},
-		}
+		fakeLocalRepository = new(fakes.FakeLocalRepository)
 
 		localInstanceCreator = &redis.LocalInstanceCreator{
 			FindFreePort:            fakeFreePortFinder,
@@ -51,12 +47,7 @@ var _ = Describe("Local Redis Creator", func() {
 	Describe("Create", func() {
 		Context("when retrieving the number of instances fails", func() {
 			BeforeEach(func() {
-				localInstanceCreator.LocalInstanceRepository = &fakes.FakeLocalRepository{
-					DeletedInstanceIds: []string{},
-					CreatedInstances:   []*redis.Instance{},
-					Instances:          []*redis.Instance{},
-					InstanceCountErr:   errors.New("could not retrieve instance count"),
-				}
+				fakeLocalRepository.InstanceCountReturns(0, []error{errors.New("foo")})
 			})
 
 			It("should return an error if unable to retrieve instance count", func() {
@@ -85,28 +76,17 @@ var _ = Describe("Local Redis Creator", func() {
 				Ω(fakeProcessController.StartedInstances[0].ID).To(Equal(instanceID))
 			})
 
-			It("deletes the lock file in the instance data directory after redis has been started", func() {
-				fakeProcessController.DoOnInstanceStart = func() {
-					Ω(fakeLocalRepository.UnlockedInstances).Should(BeEmpty())
-				}
+			It("calls Unlock on local repository with correct instance ID", func() {
 				err := localInstanceCreator.Create(instanceID)
-				Ω(err).ShouldNot(HaveOccurred())
-				Ω(fakeLocalRepository.UnlockedInstances).Should(HaveLen(1))
-				Ω(fakeLocalRepository.UnlockedInstances[0].ID).Should(Equal(instanceID))
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(fakeLocalRepository.UnlockCallCount()).To(Equal(1))
+				Expect(fakeLocalRepository.UnlockArgsForCall(0).ID).To(Equal(instanceID))
 			})
-
 		})
 
 		Context("when the service instance limit has been met", func() {
 			BeforeEach(func() {
-				fakeLocalRepository.Instances = []*redis.Instance{
-					&redis.Instance{
-						ID:       "1",
-						Port:     1234,
-						Host:     "whatever",
-						Password: "whatever",
-					},
-				}
+				fakeLocalRepository.InstanceCountReturns(1, []error{})
 			})
 
 			It("does not start a new Redis instance", func() {
@@ -125,39 +105,44 @@ var _ = Describe("Local Redis Creator", func() {
 	Describe("destroying a redis instance", func() {
 		Context("when the instance exists", func() {
 			BeforeEach(func() {
-				localInstanceCreator.Create(instanceID)
+				fakeLocalRepository.FindByIDReturns(
+					&redis.Instance{
+						ID: instanceID,
+					},
+					nil,
+				)
+			})
+
+			JustBeforeEach(func() {
+				err := localInstanceCreator.Destroy(instanceID)
+				Expect(err).NotTo(HaveOccurred())
 			})
 
 			It("calls lock before stopping redis", func() {
-				Ω(fakeLocalRepository.LockedInstances).To(BeEmpty())
-				fakeProcessController.DoOnInstanceStop = func() {
-					Ω(fakeLocalRepository.LockedInstances).To(HaveLen(1))
-					Ω(fakeLocalRepository.LockedInstances[0].ID).To(Equal(instanceID))
-				}
-				err := localInstanceCreator.Destroy(instanceID)
-				Ω(err).ShouldNot(HaveOccurred())
+				Expect(fakeLocalRepository.LockCallCount()).To(Equal(1))
+				Expect(fakeLocalRepository.LockArgsForCall(0).ID).To(Equal(instanceID))
 			})
 
 			It("kills the instance", func() {
-				err := localInstanceCreator.Destroy(instanceID)
-				Ω(err).ShouldNot(HaveOccurred())
 				Ω(len(fakeProcessController.KilledInstances)).To(Equal(1))
 				Ω(fakeProcessController.KilledInstances[0].ID).To(Equal(instanceID))
 			})
 
 			It("deletes the instance data directory", func() {
-				localInstanceCreator.Destroy(instanceID)
-				Ω(fakeLocalRepository.DeletedInstanceIds).To(Equal([]string{
-					instanceID,
-				}))
+				Expect(fakeLocalRepository.DeleteCallCount()).To(Equal(1))
+				Expect(fakeLocalRepository.DeleteArgsForCall(0)).To(Equal(instanceID))
 			})
 		})
 
 		Context("When the instance does not exist", func() {
 			var destroyErr error
+
 			BeforeEach(func() {
-				missingInstanceID := "missingInstanceID"
-				destroyErr = localInstanceCreator.Destroy(missingInstanceID)
+				fakeLocalRepository.FindByIDReturns(nil, errors.New("instance not found"))
+			})
+
+			JustBeforeEach(func() {
+				destroyErr = localInstanceCreator.Destroy("missingInstanceID")
 			})
 
 			It("returns an error", func() {
@@ -169,7 +154,7 @@ var _ = Describe("Local Redis Creator", func() {
 			})
 
 			It("does not try to delete instances from the instance repository", func() {
-				Ω(fakeLocalRepository.DeletedInstanceIds).To(BeEmpty())
+				Expect(fakeLocalRepository.DeleteCallCount()).To(Equal(0))
 			})
 		})
 	})

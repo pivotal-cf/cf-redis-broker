@@ -1,10 +1,12 @@
 package redis_test
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 
 	"github.com/pborman/uuid"
 	"github.com/pivotal-golang/lager/lagertest"
@@ -275,8 +277,8 @@ var _ = Describe("Local Repository", func() {
 	Describe("InstanceCount", func() {
 		Context("when there are no instances", func() {
 			It("returns 0", func() {
-				instanceCount, err := repo.InstanceCount()
-				Ω(err).ToNot(HaveOccurred())
+				instanceCount, errs := repo.InstanceCount()
+				Ω(errs).To(BeEmpty())
 				Ω(instanceCount).To(Equal(0))
 			})
 		})
@@ -285,8 +287,8 @@ var _ = Describe("Local Repository", func() {
 			It("returns the correct count", func() {
 				newTestInstance(instanceID, repo)
 
-				instanceCount, err := repo.InstanceCount()
-				Ω(err).ToNot(HaveOccurred())
+				instanceCount, errs := repo.InstanceCount()
+				Ω(errs).To(BeEmpty())
 				Ω(instanceCount).To(Equal(1))
 			})
 		})
@@ -295,28 +297,124 @@ var _ = Describe("Local Repository", func() {
 			It("returns an error", func() {
 				os.RemoveAll(tmpInstanceDataDir)
 
-				_, err := repo.InstanceCount()
-				Ω(err).To(HaveOccurred())
+				_, errs := repo.InstanceCount()
+				Expect(len(errs)).To(Equal(1))
+				Ω(errs[0]).To(HaveOccurred())
 			})
 		})
 	})
 
-	Describe("AllInstances", func() {
+	Describe("AllInstancesVerbose", func() {
+		It("logs that it is starting to look for shared instances, and in which directory", func() {
+			repo.AllInstancesVerbose()
+			Expect(logger).To(gbytes.Say(fmt.Sprintf("Starting shared instance lookup in data directory: %s", tmpInstanceDataDir)))
+		})
+
 		Context("when there are no instances", func() {
+			var instances []*redis.Instance
+
+			JustBeforeEach(func() {
+				var allInstancesErrors []error
+				instances, allInstancesErrors = repo.AllInstancesVerbose()
+				Expect(allInstancesErrors).To(BeEmpty())
+			})
+
 			It("returns an empty instance slice", func() {
-				instances, err := repo.AllInstances()
-				Ω(err).ToNot(HaveOccurred())
-				Ω(instances).To(BeEmpty())
+				Expect(instances).To(BeEmpty())
+			})
+
+			It("logs the instance count", func() {
+				Expect(logger).To(gbytes.Say("0 shared Redis instances found"))
 			})
 		})
 
-		Context("when there are some instances", func() {
-			It("contains created instances", func() {
-				instance := newTestInstance(instanceID, repo)
+		Context("when there is one instance", func() {
+			var instance *redis.Instance
+			var instances []*redis.Instance
+			var errs []error
 
-				instances, err := repo.AllInstances()
-				Ω(err).ToNot(HaveOccurred())
-				Ω(instances).To(ContainElement(instance))
+			BeforeEach(func() {
+				instance = newTestInstance(instanceID, repo)
+			})
+
+			Context("listing InstanceExists", func() {
+				BeforeEach(func() {
+					instances, errs = repo.AllInstancesVerbose()
+				})
+
+				It("contains created instances", func() {
+					Ω(errs).To(BeEmpty())
+					Ω(instances).To(ContainElement(instance))
+				})
+
+				It("logs the instance count", func() {
+					Expect(logger).To(gbytes.Say("1 shared Redis instance found"))
+				})
+
+				It("logs the ID of the instance", func() {
+					Expect(logger).To(gbytes.Say(fmt.Sprintf("Found shared instance: %s", instance.ID)))
+				})
+			})
+
+			Context("when getting one repo ID fails", func() {
+				BeforeEach(func() {
+					os.Remove(repo.InstanceConfigPath(instance.ID))
+					_, errs = repo.AllInstances()
+				})
+
+				It("returns one error", func() {
+					Expect(len(errs)).To(Equal(1))
+					Expect(errs[0]).To(HaveOccurred())
+				})
+
+				It("logs the error", func() {
+					Expect(logger).To(gbytes.Say(errs[0].Error()))
+					Expect(logger).To(gbytes.Say(fmt.Sprintf("Error getting instance details for instance ID: %s", instanceID)))
+				})
+			})
+		})
+
+		Context("when there are several instances", func() {
+			var instanceIDs []string
+			var instances []*redis.Instance
+
+			BeforeEach(func() {
+				for i := 0; i < 3; i++ {
+					instanceIDs = append(instanceIDs, uuid.NewRandom().String())
+				}
+				sort.Strings(instanceIDs)
+				for _, instanceID := range instanceIDs {
+					instances = append(instances, newTestInstance(instanceID, repo))
+				}
+			})
+
+			AfterEach(func() {
+				instanceIDs = []string{}
+				instances = []*redis.Instance{}
+			})
+
+			It("logs the instance count", func() {
+				_, errs := repo.AllInstancesVerbose()
+				Ω(errs).To(BeEmpty())
+				Expect(logger).To(gbytes.Say("3 shared Redis instances found"))
+			})
+
+			Context("when getting one repo ID fails", func() {
+				var errs []error
+
+				BeforeEach(func() {
+					os.Remove(repo.InstanceConfigPath(instanceIDs[0]))
+					instances, errs = repo.AllInstances()
+				})
+
+				It("returns one error", func() {
+					Expect(len(errs)).To(Equal(1))
+					Expect(errs[0]).To(HaveOccurred())
+				})
+
+				It("returns the other two instances", func() {
+					Expect(len(instances)).To(Equal(2))
+				})
 			})
 		})
 
@@ -324,8 +422,8 @@ var _ = Describe("Local Repository", func() {
 			instance := newTestInstance(instanceID, repo)
 			repo.Delete(instanceID)
 
-			instances, err := repo.AllInstances()
-			Ω(err).ToNot(HaveOccurred())
+			instances, errs := repo.AllInstances()
+			Ω(errs).To(BeEmpty())
 			Ω(instances).ToNot(ContainElement(instance))
 		})
 
@@ -333,12 +431,154 @@ var _ = Describe("Local Repository", func() {
 			It("returns an error", func() {
 				os.RemoveAll(tmpInstanceDataDir)
 
-				_, err := repo.AllInstances()
-				Ω(err).To(HaveOccurred())
+				_, errs := repo.AllInstances()
+				Expect(len(errs)).To(Equal(1))
+				Ω(errs[0]).To(HaveOccurred())
+			})
+
+			It("logs the error", func() {
+				os.RemoveAll(tmpInstanceDataDir)
+
+				_, errs := repo.AllInstances()
+
+				Expect(logger).To(gbytes.Say(errs[0].Error()))
+				Expect(logger).To(gbytes.Say("Error finding shared instances"))
 			})
 		})
 	})
 
+	Describe("AllInstances", func() {
+		It("doesn't log that it is starting to look for shared instances, and in which directory", func() {
+			repo.AllInstances()
+			Expect(logger).NotTo(gbytes.Say(fmt.Sprintf("Starting shared instance lookup in data directory: %s", tmpInstanceDataDir)))
+		})
+
+		Context("when there are no instances", func() {
+			It("returns an empty instance slice", func() {
+				instances, errs := repo.AllInstances()
+				Ω(errs).To(BeEmpty())
+				Ω(instances).To(BeEmpty())
+			})
+
+			It("doesn't log the instance count", func() {
+				Expect(logger).NotTo(gbytes.Say("0 shared Redis instances found"))
+			})
+		})
+
+		Context("when there is one instance", func() {
+			var instance *redis.Instance
+			var instances []*redis.Instance
+			var errs []error
+
+			BeforeEach(func() {
+				instance = newTestInstance(instanceID, repo)
+			})
+
+			Context("listing InstanceExists", func() {
+				BeforeEach(func() {
+					instances, errs = repo.AllInstances()
+				})
+
+				It("contains created instances", func() {
+					Ω(errs).To(BeEmpty())
+					Ω(instances).To(ContainElement(instance))
+				})
+
+				It("doesn't log the ID of the instance", func() {
+					Expect(logger).NotTo(gbytes.Say(fmt.Sprintf("Found shared instance: %s", instance.ID)))
+				})
+			})
+
+			Context("when getting one repo ID fails", func() {
+				BeforeEach(func() {
+					os.Remove(repo.InstanceConfigPath(instance.ID))
+					_, errs = repo.AllInstances()
+				})
+
+				It("returns one error", func() {
+					Expect(len(errs)).To(Equal(1))
+					Expect(errs[0]).To(HaveOccurred())
+				})
+
+				It("logs the error", func() {
+					Expect(logger).To(gbytes.Say(errs[0].Error()))
+					Expect(logger).To(gbytes.Say(fmt.Sprintf("Error getting instance details for instance ID: %s", instanceID)))
+				})
+			})
+		})
+
+		Context("when there are several instances", func() {
+			var instanceIDs []string
+			var instances []*redis.Instance
+
+			BeforeEach(func() {
+				for i := 0; i < 3; i++ {
+					instanceIDs = append(instanceIDs, uuid.NewRandom().String())
+				}
+				sort.Strings(instanceIDs)
+				for _, instanceID := range instanceIDs {
+					instances = append(instances, newTestInstance(instanceID, repo))
+				}
+			})
+
+			AfterEach(func() {
+				instanceIDs = []string{}
+				instances = []*redis.Instance{}
+			})
+
+			It("doesn't log the instance count", func() {
+				_, errs := repo.AllInstances()
+				Ω(errs).To(BeEmpty())
+				Expect(logger).NotTo(gbytes.Say("3 shared Redis instances found"))
+			})
+
+			Context("when getting one repo ID fails", func() {
+				var errs []error
+
+				BeforeEach(func() {
+					os.Remove(repo.InstanceConfigPath(instanceIDs[0]))
+					instances, errs = repo.AllInstances()
+				})
+
+				It("returns one error", func() {
+					Expect(len(errs)).To(Equal(1))
+					Expect(errs[0]).To(HaveOccurred())
+				})
+
+				It("returns the other two instances", func() {
+					Expect(len(instances)).To(Equal(2))
+				})
+			})
+		})
+
+		It("does not contain deleted instances", func() {
+			instance := newTestInstance(instanceID, repo)
+			repo.Delete(instanceID)
+
+			instances, errs := repo.AllInstances()
+			Ω(errs).To(BeEmpty())
+			Ω(instances).ToNot(ContainElement(instance))
+		})
+
+		Context("when getting the data directories fails", func() {
+			It("returns an error", func() {
+				os.RemoveAll(tmpInstanceDataDir)
+
+				_, errs := repo.AllInstances()
+				Expect(len(errs)).To(Equal(1))
+				Ω(errs[0]).To(HaveOccurred())
+			})
+
+			It("logs the error", func() {
+				os.RemoveAll(tmpInstanceDataDir)
+
+				_, errs := repo.AllInstances()
+
+				Expect(logger).To(gbytes.Say(errs[0].Error()))
+				Expect(logger).To(gbytes.Say("Error finding shared instances"))
+			})
+		})
+	})
 })
 
 var _ = Describe("Setup", func() {
