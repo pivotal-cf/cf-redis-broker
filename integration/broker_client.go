@@ -71,7 +71,7 @@ func (brokerClient *BrokerClient) ProvisionInstance(instanceID string, plan stri
 	// the instance is ready (this seems to be when the log for Redis reports
 	// "server started" and Redis' PID file is populated). This artifical wait
 	// is a dumb work around until this is fixed.
-	time.Sleep(time.Second)
+	time.Sleep(time.Second * 2)
 
 	return status, response
 }
