@@ -276,7 +276,13 @@ func (repo *RemoteRepository) StateFromFile() (Statefile, error) {
 	statefileContents := newStatefile()
 
 	if _, err := os.Stat(repo.statefilePath); os.IsNotExist(err) {
-		repo.logger.Info(fmt.Sprintf("statefile %s not found, generating instead", repo.statefilePath))
+		repo.logger.Info(fmt.Sprintf(
+			"statefile %s not found, generating instead",
+			repo.statefilePath,
+		))
+		repo.logger.Info("all-instances", lager.Data{
+			"message": "0 dedicated Redis instances found",
+		})
 		return statefileContents, nil
 	}
 

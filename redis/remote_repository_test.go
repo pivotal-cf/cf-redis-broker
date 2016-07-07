@@ -55,14 +55,12 @@ var _ = Describe("RemoteRepository", func() {
 
 	Describe("NewRemoteRepository", func() {
 		Context("When a state file does not exist", func() {
-			It("does not return an error", func() {
-				_, err := redis.NewRemoteRepository(fakeAgentClient, config, logger)
-				Expect(err).ToNot(HaveOccurred())
+			It("logs statefile creation", func() {
+				Expect(logger).To(gbytes.Say(fmt.Sprintf("statefile %s not found, generating instead", statefilePath)))
 			})
 
-			It("logs statefile creation", func() {
-				redis.NewRemoteRepository(fakeAgentClient, config, logger)
-				Expect(logger).To(gbytes.Say(fmt.Sprintf("statefile %s not found, generating instead", statefilePath)))
+			It("logs 0 dedicated instances found", func() {
+				Expect(logger).To(gbytes.Say("0 dedicated Redis instances found"))
 			})
 		})
 
