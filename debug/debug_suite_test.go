@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/reporters"
@@ -53,6 +54,18 @@ var _ = BeforeSuite(func() {
 		err := http.ListenAndServe("localhost:3000", nil)
 		Expect(err).ToNot(HaveOccurred())
 	}()
+
+	client := http.Client{}
+	for i := 0; i < 10; i++ {
+		_, err = client.Get("http://localhost:3000/debug")
+		if err == nil {
+			break
+		}
+		time.Sleep(time.Second * 1)
+		if i == 9 {
+			Fail("Timed out waiting for debug handler setup")
+		}
+	}
 })
 
 var _ = AfterSuite(func() {
