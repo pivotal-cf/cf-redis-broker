@@ -13,6 +13,7 @@ import (
 	"github.com/pivotal-cf/cf-redis-broker/debug"
 	"github.com/pivotal-cf/cf-redis-broker/integration/helpers"
 	"github.com/pivotal-cf/cf-redis-broker/redis"
+	"github.com/pivotal-golang/lager"
 
 	"testing"
 )
@@ -40,7 +41,8 @@ var _ = BeforeSuite(func() {
 	config, err := brokerconfig.ParseConfig(path)
 	Ω(err).NotTo(HaveOccurred())
 
-	repo, err := redis.NewRemoteRepository(&redis.RemoteAgentClient{}, config)
+	logger := lager.NewLogger("foo")
+	repo, err := redis.NewRemoteRepository(&redis.RemoteAgentClient{}, config, logger)
 	Ω(err).NotTo(HaveOccurred())
 
 	handler := debug.NewHandler(repo)

@@ -1,6 +1,8 @@
 package brokerintegration_test
 
 import (
+	"fmt"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
@@ -26,5 +28,10 @@ var _ = Describe("starting the broker", func() {
 
 	It("logs that it has identified zero shared instances", func() {
 		Eventually(broker.Out).Should(gbytes.Say("0 shared Redis instances found"))
+	})
+
+	It("logs that it has identified zero dedicated instances", func() {
+		statefilePath := brokerConfig.RedisConfiguration.Dedicated.StatefilePath
+		Eventually(broker.Out).Should(gbytes.Say(fmt.Sprintf("statefile %s not found, generating instead", statefilePath)))
 	})
 })
