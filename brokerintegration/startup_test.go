@@ -34,4 +34,8 @@ var _ = Describe("starting the broker", func() {
 		statefilePath := brokerConfig.RedisConfiguration.Dedicated.StatefilePath
 		Eventually(broker.Out).Should(gbytes.Say(fmt.Sprintf("statefile %s not found, generating instead", statefilePath)))
 	})
+
+	It("logs that it has identified zero dedicated instances", func() {
+		Eventually(broker.Out).Should(gbytes.Say("0 dedicated Redis instances found"))
+	})
 })
