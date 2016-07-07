@@ -34,7 +34,7 @@ type AgentClient interface {
 func NewRemoteRepository(agentClient AgentClient, config brokerconfig.Config, logger lager.Logger) (*RemoteRepository, error) {
 	repo := RemoteRepository{
 		instanceLimit:    len(config.RedisConfiguration.Dedicated.Nodes),
-		instanceBindings: map[string][]string{},
+		instanceBindings: make(map[string][]string),
 		statefilePath:    config.RedisConfiguration.Dedicated.StatefilePath,
 		agentClient:      agentClient,
 		agentPort:        config.AgentPort,
@@ -242,6 +242,10 @@ type Statefile struct {
 	InstanceBindings   map[string][]string `json:"instance_bindings"`
 }
 
+func newStatefile() Statefile {
+	return Statefile{InstanceBindings: make(map[string][]string)}
+}
+
 func (repo *RemoteRepository) PersistStatefile() error {
 	statefileContents := Statefile{
 		AvailableInstances: repo.availableInstances,
@@ -266,14 +270,14 @@ func (repo *RemoteRepository) IDForHost(host string) string {
 	return ""
 }
 
-func (repo *RemoteRepository) loadStateFromFile() error {
+func (repo *RemoteRepository) StateFromFile() (Statefile, error) {
 	repo.logger.Info(fmt.Sprintf("Starting dedicated instance lookup in statefile: %s", repo.statefilePath))
 
-	statefileContents := Statefile{}
+	statefileContents := newStatefile()
 
 	if _, err := os.Stat(repo.statefilePath); os.IsNotExist(err) {
 		repo.logger.Info(fmt.Sprintf("statefile %s not found, generating instead", repo.statefilePath))
-		return nil
+		return statefileContents, nil
 	}
 
 	stateBytes, err := ioutil.ReadFile(repo.statefilePath)
@@ -282,7 +286,7 @@ func (repo *RemoteRepository) loadStateFromFile() error {
 			"failed to read statefile",
 			err, lager.Data{"statefilePath": repo.statefilePath},
 		)
-		return err
+		return statefileContents, err
 	}
 
 	err = json.Unmarshal(stateBytes, &statefileContents)
@@ -295,7 +299,7 @@ func (repo *RemoteRepository) loadStateFromFile() error {
 				"stateFileContents": string(stateBytes),
 			},
 		)
-		return err
+		return statefileContents, err
 	}
 
 	var pluralisedInstance string
@@ -309,6 +313,15 @@ func (repo *RemoteRepository) loadStateFromFile() error {
 	repo.logger.Info("all-instances", lager.Data{
 		"message": fmt.Sprintf("%d dedicated Redis %s found", len(statefileContents.AllocatedInstances), pluralisedInstance),
 	})
+
+	return statefileContents, nil
+}
+
+func (repo *RemoteRepository) loadStateFromFile() error {
+	statefileContents, err := repo.StateFromFile()
+	if err != nil {
+		return err
+	}
 
 	repo.allocatedInstances = statefileContents.AllocatedInstances
 	repo.instanceBindings = statefileContents.InstanceBindings

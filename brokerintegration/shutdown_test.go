@@ -30,8 +30,12 @@ var _ = Describe("Broker Integration", func() {
 			Expect(broker.Out).To(gbytes.Say("Starting Redis Broker shutdown"))
 		})
 
-		It("logs the instance count", func() {
+		It("logs that it has identified zero shared instances", func() {
 			Expect(broker.Out).To(gbytes.Say("0 shared Redis instances found"))
+		})
+
+		It("logs that it has identified zero dedicated instances", func() {
+			Expect(broker.Out).To(gbytes.Say("0 dedicated Redis instances found"))
 		})
 	})
 })
