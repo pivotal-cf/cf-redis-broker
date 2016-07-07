@@ -44,15 +44,6 @@ func main() {
 
 	localRepo := redis.NewLocalRepository(config.RedisConfiguration, brokerLogger)
 
-	sigChannel := make(chan os.Signal, 1)
-	signal.Notify(sigChannel, syscall.SIGTERM)
-	go func() {
-		<-sigChannel
-		brokerLogger.Info("Starting Redis Broker shutdown")
-		localRepo.AllInstancesVerbose()
-		os.Exit(0)
-	}()
-
 	localRepo.AllInstancesVerbose()
 
 	processController := &redis.OSProcessController{
@@ -79,6 +70,16 @@ func main() {
 	if err != nil {
 		brokerLogger.Fatal("Error initializing remote repository", err)
 	}
+
+	sigChannel := make(chan os.Signal, 1)
+	signal.Notify(sigChannel, syscall.SIGTERM)
+	go func() {
+		<-sigChannel
+		brokerLogger.Info("Starting Redis Broker shutdown")
+		localRepo.AllInstancesVerbose()
+		remoteRepo.StateFromFile()
+		os.Exit(0)
+	}()
 
 	serviceBroker := &broker.RedisServiceBroker{
 		InstanceCreators: map[string]broker.InstanceCreator{
