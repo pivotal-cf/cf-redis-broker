@@ -76,6 +76,7 @@ var _ = Describe("RemoteRepository", func() {
 					AllocatedInstances: []*redis.Instance{
 						&redis.Instance{
 							Host: "10.0.0.3",
+							ID:   "dedicated-instance",
 						},
 					},
 				}
@@ -129,6 +130,13 @@ var _ = Describe("RemoteRepository", func() {
 				It("logs the instance count", func() {
 					redis.NewRemoteRepository(fakeAgentClient, config, logger)
 					Eventually(logger).Should(gbytes.Say("1 dedicated Redis instance found"))
+				})
+
+				It("logs the instance IDs", func() {
+					redis.NewRemoteRepository(fakeAgentClient, config, logger)
+					Eventually(logger).Should(gbytes.Say(
+						fmt.Sprintf("Found dedicated instance: %s", statefile.AllocatedInstances[0].ID),
+					))
 				})
 			})
 

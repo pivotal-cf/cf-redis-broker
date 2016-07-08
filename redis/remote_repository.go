@@ -320,6 +320,12 @@ func (repo *RemoteRepository) StateFromFile() (Statefile, error) {
 		"message": fmt.Sprintf("%d dedicated Redis %s found", len(statefileContents.AllocatedInstances), pluralisedInstance),
 	})
 
+	for _, instance := range statefileContents.AllocatedInstances {
+		repo.logger.Info("all-instances", lager.Data{
+			"message": fmt.Sprintf("Found dedicated instance: %s", instance.ID),
+		})
+	}
+
 	return statefileContents, nil
 }
 
