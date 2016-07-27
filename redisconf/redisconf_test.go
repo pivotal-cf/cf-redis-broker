@@ -198,29 +198,72 @@ var _ = Describe("redisconf", func() {
 	})
 
 	Describe("CopyWithInstanceAdditions", func() {
-		It("writes the instance configuration", func() {
-			fromPath, err := filepath.Abs(path.Join("assets", "redis.conf"))
+		var fromPath string
+		var toPath string
+		var loadErr error
+		var dir string
+		var resultingConf redisconf.Conf
+
+		instanceID := "an-instance-id"
+		port := "1234"
+		password := "an-password"
+
+		aliases := map[string]string{
+			"SAVE":   "my-save-command",
+			"BGSAVE": "my-bgsave-command",
+			"CONFIG": "my-config-command",
+		}
+
+		BeforeEach(func() {
+			var err error
+
+			fromPath, err = filepath.Abs(path.Join("assets", "redis.conf"))
 			Expect(err).ToNot(HaveOccurred())
 
-			dir, err := ioutil.TempDir("", "redisconf-test")
+			dir, err = ioutil.TempDir("", "redisconf-test")
 			Expect(err).ToNot(HaveOccurred())
-			toPath := filepath.Join(dir, "redis.conf")
+			toPath = filepath.Join(dir, "redis.conf")
 
-			instanceID := "an-instance-id"
-			port := "1234"
-			password := "an-password"
-
-			err = redisconf.CopyWithInstanceAdditions(fromPath, toPath, instanceID, port, password)
-			Ω(err).ToNot(HaveOccurred())
-
-			resultingConf, err := redisconf.Load(toPath)
+			err = redisconf.CopyWithInstanceAdditions(fromPath, toPath, instanceID, port, password, aliases)
 			Expect(err).ToNot(HaveOccurred())
 
-			Ω(resultingConf.Get("syslog-enabled")).Should(Equal("yes"))
-			Ω(resultingConf.Get("syslog-ident")).Should(Equal(fmt.Sprintf("redis-server-%s", instanceID)))
-			Ω(resultingConf.Get("syslog-facility")).Should(Equal("local0"))
-			Ω(resultingConf.Get("port")).Should(Equal(port))
-			Ω(resultingConf.Get("requirepass")).Should(Equal(password))
+			resultingConf, loadErr = redisconf.Load(toPath)
+		})
+
+		AfterEach(func() {
+			os.RemoveAll(dir)
+		})
+
+		It("does not return an error", func() {
+			Expect(loadErr).NotTo(HaveOccurred())
+		})
+
+		It(`correctly configures "syslog-enabled"`, func() {
+			Expect(resultingConf.Get("syslog-enabled")).To(Equal("yes"))
+		})
+
+		It(`correctly configures "syslog-enabled"`, func() {
+			Expect(resultingConf.Get("syslog-ident")).To(Equal(fmt.Sprintf("redis-server-%s", instanceID)))
+		})
+
+		It(`correctly configures "syslog-facility"`, func() {
+			Expect(resultingConf.Get("syslog-facility")).To(Equal("local0"))
+		})
+
+		It(`correctly configures "port"`, func() {
+			Expect(resultingConf.Get("port")).To(Equal(port))
+		})
+
+		It(`correctly aliases "SAVE"`, func() {
+			Expect(resultingConf.CommandAliases()["SAVE"]).To(Equal(aliases["SAVE"]))
+		})
+
+		It(`correctly aliases "BGSAVE"`, func() {
+			Expect(resultingConf.CommandAliases()["BGSAVE"]).To(Equal(aliases["BGSAVE"]))
+		})
+
+		It(`correctly aliases "CONFIG"`, func() {
+			Expect(resultingConf.CommandAliases()["CONFIG"]).To(Equal(aliases["CONFIG"]))
 		})
 	})
 })

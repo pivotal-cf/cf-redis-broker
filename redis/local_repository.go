@@ -78,7 +78,7 @@ func (repo *LocalRepository) Setup(instance *Instance) error {
 		return err
 	}
 
-	err = repo.WriteConfigFile(instance)
+	err = repo.WriteConfigFile(instance, make(map[string]string))
 	if err != nil {
 		repo.Logger.Error("write-config-file", err, lager.Data{
 			"instance_id": instance.ID,
@@ -239,13 +239,14 @@ func (repo *LocalRepository) EnsureDirectoriesExist(instance *Instance) error {
 	return nil
 }
 
-func (repo *LocalRepository) WriteConfigFile(instance *Instance) error {
+func (repo *LocalRepository) WriteConfigFile(instance *Instance, aliases map[string]string) error {
 	return redisconf.CopyWithInstanceAdditions(
 		repo.RedisConf.DefaultConfigPath,
 		repo.InstanceConfigPath(instance.ID),
 		instance.ID,
 		strconv.Itoa(instance.Port),
 		instance.Password,
+		aliases,
 	)
 }
 

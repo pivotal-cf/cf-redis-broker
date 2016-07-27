@@ -180,7 +180,14 @@ func parseParam(line string) (Param, error) {
 	}, nil
 }
 
-func CopyWithInstanceAdditions(fromPath, toPath, syslogIdentSuffix, port, password string) error {
+func CopyWithInstanceAdditions(
+	fromPath,
+	toPath,
+	syslogIdentSuffix,
+	port,
+	password string,
+	aliases map[string]string,
+) error {
 	defaultConfig, err := Load(fromPath)
 	if err != nil {
 		return err
@@ -192,6 +199,13 @@ func CopyWithInstanceAdditions(fromPath, toPath, syslogIdentSuffix, port, passwo
 
 	defaultConfig.Set("port", port)
 	defaultConfig.Set("requirepass", password)
+
+	for command, alias := range aliases {
+		defaultConfig = append(defaultConfig, Param{
+			Key:   "rename-command",
+			Value: fmt.Sprintf(`%s "%s"`, command, alias),
+		})
+	}
 
 	err = defaultConfig.Save(toPath)
 	if err != nil {

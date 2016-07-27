@@ -13,6 +13,7 @@ import (
 
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
 	"github.com/pivotal-cf/cf-redis-broker/redis"
+	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -166,6 +167,15 @@ var _ = Describe("Local Repository", func() {
 				configContents, err := ioutil.ReadFile(repo.InstanceConfigPath(instance.ID))
 				Ω(err).NotTo(HaveOccurred())
 				Ω(configContents).ShouldNot(Equal(originalConfigContents))
+			})
+
+			It("correctly aliases commands", func() {
+				configContents, err := ioutil.ReadFile(repo.InstanceConfigPath(instance.ID))
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(configContents).To(MatchRegexp(renameCommand("SAVE")))
+				Expect(configContents).To(MatchRegexp(renameCommand("CONFIG")))
+				Expect(configContents).To(MatchRegexp(renameCommand("BGSAVE")))
 			})
 
 			It("does not clear the data directory", func() {
@@ -579,6 +589,47 @@ var _ = Describe("Local Repository", func() {
 			})
 		})
 	})
+
+	Describe("WriteConfigFile", func() {
+		var instance *redis.Instance
+
+		BeforeEach(func() {
+			instance = newTestInstance(instanceID, repo)
+		})
+
+		It("correctly aliases commands", func() {
+			configFilePath := path.Join(tmpInstanceDataDir, instance.ID, "redis.conf")
+
+			configContents, err := ioutil.ReadFile(configFilePath)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(configContents).To(MatchRegexp(renameCommand("SAVE")))
+			Expect(configContents).To(MatchRegexp(renameCommand("BGSAVE")))
+			Expect(configContents).To(MatchRegexp(renameCommand("CONFIG")))
+		})
+
+		Context("When a command alias already exists", func() {
+			var conf redisconf.Conf
+			var configAlias string
+
+			BeforeEach(func() {
+				var err error
+				conf, err = redisconf.Load(repo.InstanceConfigPath(instanceID))
+				Expect(err).NotTo(HaveOccurred())
+
+				configAlias = conf.CommandAliases()["CONFIG"]
+				err = repo.WriteConfigFile(instance)
+				Expect(err).NotTo(HaveOccurred())
+
+				conf, err = redisconf.Load(repo.InstanceConfigPath(instanceID))
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			FIt("Should not create a new alias", func() {
+				Expect(configAlias).To(Equal(conf.CommandAliases()["CONFIG"]))
+			})
+		})
+	})
 })
 
 var _ = Describe("Setup", func() {
@@ -740,4 +791,8 @@ func writeInstance(instance *redis.Instance, repo *redis.LocalRepository) {
 	err = ioutil.WriteFile(repo.InstancePidFilePath(instance.ID), pid, 0644)
 	Ω(err).NotTo(HaveOccurred())
 	file.Close()
+}
+
+func renameCommand(command string) string {
+	return fmt.Sprintf(`(?m)^rename\-command %s \"[a-z\d\-]+\"$`, command)
 }
