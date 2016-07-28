@@ -1,0 +1,3 @@
+---
+interval: {{.LatencyInterval}}
+latency_file_path: {{.LatencyFilePath}}
