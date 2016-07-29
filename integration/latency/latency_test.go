@@ -12,7 +12,7 @@ import (
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 	"github.com/pivotal-cf/cf-redis-broker/integration"
-	"github.com/pivotal-cf/redis-backups/integration/helpers"
+	"github.com/pivotal-cf/cf-redis-broker/integration/helpers"
 )
 
 var session *gexec.Session
