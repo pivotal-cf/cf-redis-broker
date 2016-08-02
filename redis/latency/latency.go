@@ -88,16 +88,20 @@ func (l *Latency) Start() error {
 
 	go func() {
 		for {
+			l.logger.Info("In file write loop", lager.Data{"interval": l.interval})
 			select {
 			case <-time.After(l.interval):
 				func() {
+					l.logger.Info("Interval elapsed, locking vars")
 					updateMutex.Lock()
 					defer updateMutex.Unlock()
+
+					l.logger.Info("vars locked, calculating average", lager.Data{"totalDuration": totalDuration.Nanoseconds(), "count": count})
 
 					microTime := float64(totalDuration.Nanoseconds()/int64(count)) / 1000000
 					stringDuration := fmt.Sprintf("%.2f", microTime)
 
-					l.logger.Info("Writing latency to file", lager.Data{"Latency": stringDuration})
+					l.logger.Info("Writing latency to file", lager.Data{"Latency": stringDuration, "count": count, "totalDuration": totalDuration})
 					ioutil.WriteFile(l.latencyFilePath, []byte(stringDuration), 0644)
 
 					totalDuration = 0.
@@ -105,6 +109,7 @@ func (l *Latency) Start() error {
 				}()
 
 			case <-l.fileWriteStopChan:
+				l.logger.Info("Stopchan received")
 				return
 			}
 		}
