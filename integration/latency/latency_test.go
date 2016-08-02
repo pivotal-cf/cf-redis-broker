@@ -3,6 +3,7 @@ package latency_test
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
@@ -22,6 +23,8 @@ var _ = Describe("Latency", func() {
 	AfterEach(func() {
 		session.Terminate()
 		Eventually(session).Should(gexec.Exit())
+
+		os.Remove(latencyConfigFilePath)
 	})
 
 	JustBeforeEach(func() {
@@ -187,6 +190,65 @@ var _ = Describe("Latency", func() {
 
 		It("logs that the config file does not exist", func() {
 			Eventually(session.Out).Should(gbytes.Say("open /not/a/file: no such file or directory"))
+		})
+	})
+
+	Context("when requirepass is set", func() {
+		var (
+			redisPassRunner         *integration.RedisRunner
+			redisPassConfigFilePath string
+			redisPassPort           int
+		)
+
+		BeforeEach(func() {
+			redisPassPort = 6481
+			redisPassTemplateData := &RedisTemplateData{
+				RedisPort:     redisPassPort,
+				RedisPassword: "apassword",
+			}
+			redisPassConfigFilePath = filepath.Join(latencyDir, "redis-pass.conf")
+			err := helpers.HandleTemplate(
+				helpers.AssetPath("redis-pass.conf.template"),
+				redisPassConfigFilePath,
+				redisPassTemplateData,
+			)
+			Expect(err).ToNot(HaveOccurred())
+
+			redisPassRunner = integration.NewRedisRunner(uint(redisPassPort))
+			redisPassRunner.Start([]string{redisPassConfigFilePath})
+
+			latencyTemplateData := &LatencyTemplateData{
+				LatencyFilePath: latencyFilePath,
+				LatencyInterval: latencyInterval,
+			}
+
+			latencyConfTemplate, err := filepath.Abs(filepath.Join("assets", "latency.yml.template"))
+			Expect(err).NotTo(HaveOccurred())
+
+			err = helpers.HandleTemplate(
+				latencyConfTemplate,
+				latencyConfigFilePath,
+				latencyTemplateData,
+			)
+			Expect(err).ToNot(HaveOccurred())
+
+			cmd = exec.Command(
+				latencyExecutablePath,
+				"-redisconf", redisPassConfigFilePath,
+				"-config", latencyConfigFilePath,
+			)
+		})
+
+		AfterEach(func() {
+			redisPassRunner.Stop()
+			os.Remove(redisPassConfigFilePath)
+		})
+
+		It("writes output to the correct file", func() {
+			Eventually(func() string {
+				msg, _ := ioutil.ReadFile(latencyFilePath)
+				return string(msg)
+			}, "2s").Should(MatchRegexp(`\d.\d{2}`))
 		})
 	})
 })
