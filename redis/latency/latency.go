@@ -64,7 +64,7 @@ func (l *Latency) Start() error {
 		updateMutex   sync.Mutex
 	)
 
-	l.logger.Info("Start latency monitering")
+	l.logger.Info("Start latency monitoring")
 	go func() {
 		for {
 			select {
