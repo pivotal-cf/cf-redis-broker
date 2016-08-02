@@ -70,8 +70,12 @@ func (l *Latency) Start() error {
 			select {
 			case <-time.After(time.Millisecond * 10):
 				start := time.Now()
-				l.redisClient.Ping()
+				err := l.redisClient.Ping()
 				duration := time.Since(start)
+
+				if err != nil {
+					continue
+				}
 
 				func() {
 					updateMutex.Lock()
@@ -88,19 +92,25 @@ func (l *Latency) Start() error {
 
 	go func() {
 		for {
+			l.logger.Info("In file write loop", lager.Data{"interval": l.interval})
 			select {
 			case <-time.After(l.interval):
 				func() {
 					updateMutex.Lock()
 					defer updateMutex.Unlock()
 
+					if count == 0 {
+						totalDuration = 0.0
+						return
+					}
+
 					microTime := float64(totalDuration.Nanoseconds()/int64(count)) / 1000000
 					stringDuration := fmt.Sprintf("%.2f", microTime)
 
-					l.logger.Info("Writing latency to file", lager.Data{"Latency": stringDuration})
+					l.logger.Info("Writing latency to file", lager.Data{"Latency": stringDuration, "count": count, "totalDuration": totalDuration})
 					ioutil.WriteFile(l.latencyFilePath, []byte(stringDuration), 0644)
 
-					totalDuration = 0.
+					totalDuration = 0.0
 					count = 0
 				}()
 

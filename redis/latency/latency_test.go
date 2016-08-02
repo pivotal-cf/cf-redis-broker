@@ -83,7 +83,7 @@ var _ = Describe("Latency", func() {
 	})
 
 	It("logs when it starts monitoring", func() {
-		Eventually(log, "2s").Should(gbytes.Say("Start latency monitering"))
+		Eventually(log, "2s").Should(gbytes.Say("Start latency monitoring"))
 	})
 
 	It("logs when it is writing latency to file", func() {
