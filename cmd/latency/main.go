@@ -63,6 +63,6 @@ func main() {
 	monitor.Start()
 
 	for {
+		time.Sleep(time.Second * 10000)
 	}
-
 }
