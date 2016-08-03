@@ -1,3 +1,0 @@
----
-  interval: "5s"
-  latency_file_path: "/tmp/latency-file"
