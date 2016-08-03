@@ -70,8 +70,12 @@ func (l *Latency) Start() error {
 			select {
 			case <-time.After(time.Millisecond * 10):
 				start := time.Now()
-				l.redisClient.Ping()
+				err := l.redisClient.Ping()
 				duration := time.Since(start)
+
+				if err != nil {
+					continue
+				}
 
 				func() {
 					updateMutex.Lock()
@@ -92,11 +96,13 @@ func (l *Latency) Start() error {
 			select {
 			case <-time.After(l.interval):
 				func() {
-					l.logger.Info("Interval elapsed, locking vars")
 					updateMutex.Lock()
 					defer updateMutex.Unlock()
 
-					l.logger.Info("vars locked, calculating average", lager.Data{"totalDuration": totalDuration.Nanoseconds(), "count": count})
+					if count == 0 {
+						totalDuration = 0.0
+						return
+					}
 
 					microTime := float64(totalDuration.Nanoseconds()/int64(count)) / 1000000
 					stringDuration := fmt.Sprintf("%.2f", microTime)
@@ -104,12 +110,11 @@ func (l *Latency) Start() error {
 					l.logger.Info("Writing latency to file", lager.Data{"Latency": stringDuration, "count": count, "totalDuration": totalDuration})
 					ioutil.WriteFile(l.latencyFilePath, []byte(stringDuration), 0644)
 
-					totalDuration = 0.
+					totalDuration = 0.0
 					count = 0
 				}()
 
 			case <-l.fileWriteStopChan:
-				l.logger.Info("Stopchan received")
 				return
 			}
 		}

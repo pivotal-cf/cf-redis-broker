@@ -40,6 +40,7 @@ func main() {
 
 	redisClient, err := client.Connect(
 		client.Port(redisConf.Port()),
+		client.Password(redisConf.Password()),
 	)
 	if err != nil {
 		logger.Fatal("redis-client-connect", err, lager.Data{})

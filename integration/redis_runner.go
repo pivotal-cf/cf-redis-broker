@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -13,12 +14,23 @@ import (
 type RedisRunner struct {
 	process *os.Process
 	Dir     string
+	Port    uint
+}
+
+func NewRedisRunner(port uint) *RedisRunner {
+	return &RedisRunner{
+		Port: port,
+	}
 }
 
 const RedisPort = 6480
 
 func (runner *RedisRunner) Start(redisArgs []string) {
 	command := exec.Command("redis-server", redisArgs...)
+
+	if runner.Port == 0 {
+		runner.Port = RedisPort
+	}
 
 	var err error
 	runner.Dir, err = ioutil.TempDir("", "redis-client-test")
@@ -30,7 +42,7 @@ func (runner *RedisRunner) Start(redisArgs []string) {
 
 	runner.process = command.Process
 
-	Expect(helpers.ServiceAvailable(RedisPort)).To(BeTrue())
+	Expect(helpers.ServiceAvailable(runner.Port)).To(BeTrue())
 }
 
 func (runner *RedisRunner) Stop() {
@@ -38,7 +50,7 @@ func (runner *RedisRunner) Stop() {
 	Ω(err).ShouldNot(HaveOccurred())
 
 	Eventually(func() error {
-		_, err := redisclient.Dial("tcp", ":6480")
+		_, err = redisclient.Dial("tcp", fmt.Sprintf(":%d", runner.Port))
 		return err
 	}).Should(HaveOccurred())
 

@@ -30,7 +30,8 @@ func TestLatency(t *testing.T) {
 }
 
 type RedisTemplateData struct {
-	RedisPort int
+	RedisPort     int
+	RedisPassword string
 }
 
 type LatencyTemplateData struct {
@@ -39,7 +40,8 @@ type LatencyTemplateData struct {
 }
 
 var _ = BeforeSuite(func() {
-	latencyDir, err := ioutil.TempDir("", "redis-latency-")
+	var err error
+	latencyDir, err = ioutil.TempDir("", "redis-latency-")
 	Expect(err).ToNot(HaveOccurred())
 	latencyFilePath = filepath.Join(latencyDir, "latency")
 	latencyExecutablePath = helpers.BuildExecutable("github.com/pivotal-cf/cf-redis-broker/cmd/latency")
