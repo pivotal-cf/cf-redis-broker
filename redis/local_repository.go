@@ -86,6 +86,12 @@ func (repo *LocalRepository) Setup(instance *Instance) error {
 		return err
 	}
 
+	repo.Logger.Info("provision-instance", lager.Data{
+		"instance_id": instance.ID,
+		"plan":        "shared-vm",
+		"message":     "Successfully provisioned Redis instance",
+	})
+
 	return nil
 }
 
@@ -216,6 +222,12 @@ func (repo *LocalRepository) Delete(instanceID string) error {
 	if err != nil {
 		return err
 	}
+
+	repo.Logger.Info("deprovision-instance", lager.Data{
+		"instance_id": instanceID,
+		"plan":        "shared-vm",
+		"message":     "Successfully deprovisioned Redis instance",
+	})
 
 	return nil
 }

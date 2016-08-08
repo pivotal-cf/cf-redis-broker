@@ -271,6 +271,17 @@ var _ = Describe("Local Repository", func() {
 				err := repo.Delete(instanceID)
 				Ω(err).ToNot(HaveOccurred())
 			})
+
+			It("logs that the instance was deprovisioned", func() {
+				err := repo.Delete(instanceID)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(logger).To(gbytes.Say("deprovision-instance"))
+				expectedData := fmt.Sprintf(
+					`{"instance_id":"%s","message":"Successfully deprovisioned Redis instance","plan":"shared-vm"}`, instanceID,
+				)
+				Expect(logger).To(gbytes.Say(expectedData))
+			})
 		})
 	})
 
@@ -663,6 +674,17 @@ var _ = Describe("Setup", func() {
 
 			redisServerName := "redis-server-" + instanceID
 			Expect(configFileContent).To(ContainSubstring(redisServerName))
+		})
+
+		It("logs that the instance was provisioned", func() {
+			err := repo.Setup(&instance)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(logger).To(gbytes.Say("provision-instance"))
+			expectedData := fmt.Sprintf(
+				`{"instance_id":"%s","message":"Successfully provisioned Redis instance","plan":"shared-vm"}`, instanceID,
+			)
+			Expect(logger).To(gbytes.Say(expectedData))
 		})
 	})
 
