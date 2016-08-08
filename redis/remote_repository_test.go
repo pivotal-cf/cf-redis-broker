@@ -405,6 +405,16 @@ var _ = Describe("RemoteRepository", func() {
 				Expect(statefileContents.AllocatedInstances[1].Host).To(Equal("10.0.0.2"))
 			})
 
+			It("logs that the instance was provisioned", func() {
+				err := repo.Create("bar")
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(logger).To(gbytes.Say("provision-instance"))
+
+				expectedData := `{"instance_id":"bar","message":"Successfully provisioned Redis instance","plan":"dedicated-vm"}`
+				Expect(logger).To(gbytes.Say(expectedData))
+			})
+
 			Context("when it cannot persist the state to the state file", func() {
 				BeforeEach(func() {
 					os.Remove(statefilePath)
@@ -511,6 +521,16 @@ var _ = Describe("RemoteRepository", func() {
 					Expect(err).ToNot(HaveOccurred())
 
 					Expect(fakeAgentClient.ResetURLs).To(ConsistOf("https://" + instance.Host + ":1234"))
+				})
+
+				It("logs that the instance was deprovisioned", func() {
+					err := repo.Destroy("foo")
+					Expect(err).ToNot(HaveOccurred())
+
+					Expect(logger).To(gbytes.Say("deprovision-instance"))
+
+					expectedData := `{"instance_id":"foo","message":"Successfully deprovisioned Redis instance","plan":"dedicated-vm"}`
+					Expect(logger).To(gbytes.Say(expectedData))
 				})
 
 				Context("when it cannot persist the state to the state file", func() {

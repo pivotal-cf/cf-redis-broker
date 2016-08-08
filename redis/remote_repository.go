@@ -112,6 +112,12 @@ func (repo *RemoteRepository) Destroy(instanceID string) error {
 		return err
 	}
 
+	repo.logger.Info("deprovision-instance", lager.Data{
+		"instance_id": instanceID,
+		"plan":        "dedicated-vm",
+		"message":     "Successfully deprovisioned Redis instance",
+	})
+
 	return nil
 }
 
@@ -143,6 +149,12 @@ func (repo *RemoteRepository) Create(instanceID string) error {
 		repo.deallocateInstance(instance)
 		return err
 	}
+
+	repo.logger.Info("provision-instance", lager.Data{
+		"instance_id": instanceID,
+		"plan":        "dedicated-vm",
+		"message":     "Successfully provisioned Redis instance",
+	})
 
 	return nil
 }
