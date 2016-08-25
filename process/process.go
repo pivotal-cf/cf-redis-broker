@@ -33,6 +33,12 @@ func (*ProcessChecker) Alive(pid int) bool {
 	return true
 }
 
+func (*ProcessChecker) IsRedisServer(finderProvider FinderProvider, pid int) bool {
+	f, _ := finderProvider.NewProcess(pid)
+	n, _ := f.Name()
+	return n == "redis-server"
+}
+
 type PIDProvider func() (int, error)
 
 func (k *ProcessKiller) KillProvidedPID(pidProvider PIDProvider) error {
@@ -57,4 +63,12 @@ func (*ProcessKiller) Kill(pid int) error {
 
 	osProcess.Wait()
 	return nil
+}
+
+type ProcessFinder interface {
+	Name() (string, error)
+}
+
+type FinderProvider interface {
+	NewProcess(int) (ProcessFinder, error)
 }

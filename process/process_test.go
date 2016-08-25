@@ -6,6 +6,7 @@ import (
 	"os/exec"
 
 	"github.com/pivotal-cf/cf-redis-broker/process"
+	"github.com/pivotal-cf/cf-redis-broker/process/processfakes"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -99,6 +100,61 @@ var _ = Describe("process", func() {
 
 				err = new(process.ProcessKiller).Kill(pid)
 				Ω(err).Should(HaveOccurred())
+			})
+		})
+	})
+
+	Describe("ProcessChecker", func() {
+		FDescribe("IsRedisServer", func() {
+			var processFinder *processfakes.FakeProcessFinder
+			var finderProvider *processfakes.FakeFinderProvider
+
+			Context("when the process is redis-server", func() {
+				BeforeEach(func() {
+
+					processFinder = new(processfakes.FakeProcessFinder)
+					processFinder.NameReturns("redis-server", nil)
+					finderProvider = new(processfakes.FakeFinderProvider)
+					finderProvider.NewProcessReturns(processFinder, nil)
+
+				})
+
+				It("return true", func() {
+					Expect(new(process.ProcessChecker).IsRedisServer(finderProvider, 1)).To(BeTrue())
+					Expect(finderProvider.NewProcessArgsForCall(0)).To(Equal(1))
+				})
+			})
+
+			Context("when the process is redis-server with details", func() {
+				BeforeEach(func() {
+
+					processFinder = new(processfakes.FakeProcessFinder)
+					processFinder.NameReturns("redis-server *6879", nil)
+					finderProvider = new(processfakes.FakeFinderProvider)
+					finderProvider.NewProcessReturns(processFinder, nil)
+
+				})
+
+				It("return true", func() {
+					Expect(new(process.ProcessChecker).IsRedisServer(finderProvider, 1)).To(BeTrue())
+					Expect(finderProvider.NewProcessArgsForCall(0)).To(Equal(1))
+				})
+			})
+
+			Context("when the process is not redis-server", func() {
+				BeforeEach(func() {
+
+					processFinder = new(processfakes.FakeProcessFinder)
+					processFinder.NameReturns("fail", nil)
+					finderProvider = new(processfakes.FakeFinderProvider)
+					finderProvider.NewProcessReturns(processFinder, nil)
+
+				})
+
+				It("return false", func() {
+					Expect(new(process.ProcessChecker).IsRedisServer(finderProvider, 1)).To(BeFalse())
+					Expect(finderProvider.NewProcessArgsForCall(0)).To(Equal(1))
+				})
 			})
 		})
 	})
