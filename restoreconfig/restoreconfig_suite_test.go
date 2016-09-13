@@ -1,4 +1,4 @@
-package id_test
+package restoreconfig_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestId(t *testing.T) {
+func TestRestoreconfig(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Instance ID Suite")
+	RunSpecs(t, "Restore Config Suite")
 }
