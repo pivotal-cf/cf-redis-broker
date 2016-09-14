@@ -40,7 +40,7 @@ var _ = Describe("RemoteRepository", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		fakeAgentClient = &fakes.FakeAgentClient{}
-		fakeAgentClient.CredentialsFunc = func(rootURL string) (redis.Credentials, error) {
+		fakeAgentClient.CredentialsFunc = func(host string) (redis.Credentials, error) {
 			return redis.Credentials{
 				Port:     6666,
 				Password: "password",
@@ -230,8 +230,8 @@ var _ = Describe("RemoteRepository", func() {
 
 		Describe("#Bind", func() {
 			BeforeEach(func() {
-				fakeAgentClient.CredentialsFunc = func(rootURL string) (redis.Credentials, error) {
-					if rootURL == "https://10.0.0.1:1234" {
+				fakeAgentClient.CredentialsFunc = func(host string) (redis.Credentials, error) {
+					if host == "10.0.0.1" {
 						return redis.Credentials{
 							Port:     123456,
 							Password: "super-secret",
@@ -520,7 +520,7 @@ var _ = Describe("RemoteRepository", func() {
 					err = repo.Destroy("foo")
 					Expect(err).ToNot(HaveOccurred())
 
-					Expect(fakeAgentClient.ResetURLs).To(ConsistOf("https://" + instance.Host + ":1234"))
+					Expect(fakeAgentClient.ResetHosts).To(ConsistOf(instance.Host))
 				})
 
 				It("logs that the instance was deprovisioned", func() {

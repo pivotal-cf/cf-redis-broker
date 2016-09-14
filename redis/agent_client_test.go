@@ -8,36 +8,38 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
 	"github.com/pivotal-cf/cf-redis-broker/redis"
 )
 
 var _ = Describe("RemoteAgentClient", func() {
 	var server *httptest.Server
 	var agentCalled int
-	var remoteAgentClient redis.RemoteAgentClient
+	var remoteAgentClient *redis.RemoteAgentClient
 	var status int
 
 	const (
+		port        = "8080"
+		host        = "127.0.0.1"
 		hostAndPort = "127.0.0.1:8080"
-		rootURL     = "http://127.0.0.1:8080"
+		username    = "username"
+		password    = "password"
 	)
 
 	BeforeEach(func() {
-		remoteAgentClient = redis.RemoteAgentClient{
-			HttpAuth: brokerconfig.AuthConfiguration{
-				Username: "username",
-				Password: "password",
-			},
-		}
+		remoteAgentClient = redis.NewRemoteAgentClient(
+			port,
+			username,
+			password,
+			false,
+		)
 		agentCalled = 0
 
 		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			defer GinkgoRecover()
 
-			username, password, _ := r.BasicAuth()
-			Expect(username).To(Equal(remoteAgentClient.HttpAuth.Username))
-			Expect(password).To(Equal(remoteAgentClient.HttpAuth.Password))
+			user, pass, _ := r.BasicAuth()
+			Expect(user).To(Equal(username))
+			Expect(pass).To(Equal(password))
 
 			Ω([]string{"DELETE", "GET"}).Should(ContainElement(r.Method))
 			Ω(r.URL.Path).Should(Equal("/"))
@@ -68,8 +70,8 @@ var _ = Describe("RemoteAgentClient", func() {
 				status = http.StatusOK
 			})
 
-			It("makes a DELETE request to the rootURL", func() {
-				remoteAgentClient.Reset(rootURL)
+			It("makes a DELETE request to the host", func() {
+				remoteAgentClient.Reset(host)
 				Ω(agentCalled).Should(Equal(1))
 			})
 		})
@@ -80,7 +82,7 @@ var _ = Describe("RemoteAgentClient", func() {
 			})
 
 			It("returns the error", func() {
-				err := remoteAgentClient.Reset(rootURL)
+				err := remoteAgentClient.Reset(host)
 				Ω(err).To(MatchError("Agent error: 500"))
 			})
 		})
@@ -91,14 +93,14 @@ var _ = Describe("RemoteAgentClient", func() {
 			status = http.StatusOK
 		})
 
-		It("makes a GET request to the rootURL", func() {
-			remoteAgentClient.Credentials(rootURL)
+		It("makes a GET request to the host", func() {
+			remoteAgentClient.Credentials(host)
 			Ω(agentCalled).Should(Equal(1))
 		})
 
 		Context("When successful", func() {
 			It("returns the correct credentials", func() {
-				credentials, err := remoteAgentClient.Credentials(rootURL)
+				credentials, err := remoteAgentClient.Credentials(host)
 				Ω(err).ShouldNot(HaveOccurred())
 
 				Ω(credentials).Should(Equal(redis.Credentials{
@@ -111,7 +113,7 @@ var _ = Describe("RemoteAgentClient", func() {
 		Context("When unsuccessful", func() {
 			It("returns an error", func() {
 				status = http.StatusInternalServerError
-				_, err := remoteAgentClient.Credentials(rootURL)
+				_, err := remoteAgentClient.Credentials(host)
 				Ω(err).Should(HaveOccurred())
 				Ω(err.Error()).Should(Equal(`Agent error: 500, {"port": 12345, "password": "super-secret"}`))
 			})

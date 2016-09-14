@@ -7,8 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-
-	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
+	"time"
 )
 
 type Credentials struct {
@@ -17,11 +16,28 @@ type Credentials struct {
 }
 
 type RemoteAgentClient struct {
-	HttpAuth brokerconfig.AuthConfiguration
+	protocol string
+	port     string
+	username string
+	password string
 }
 
-func (client *RemoteAgentClient) Reset(rootURL string) error {
-	response, err := client.doAuthenticatedRequest(rootURL, "DELETE")
+func NewRemoteAgentClient(port, username, password string, secure bool) *RemoteAgentClient {
+	proto := "https"
+	if !secure {
+		proto = "http"
+	}
+
+	return &RemoteAgentClient{
+		protocol: proto,
+		port:     port,
+		username: username,
+		password: password,
+	}
+}
+
+func (client *RemoteAgentClient) Reset(host string) error {
+	response, err := client.doAuthenticatedRequest(host, "DELETE")
 	if err != nil {
 		return err
 	}
@@ -33,10 +49,11 @@ func (client *RemoteAgentClient) Reset(rootURL string) error {
 	return nil
 }
 
-func (client *RemoteAgentClient) Credentials(rootURL string) (Credentials, error) {
+func (client *RemoteAgentClient) Credentials(host string) (Credentials, error) {
+
 	credentials := Credentials{}
 
-	response, err := client.doAuthenticatedRequest(rootURL, "GET")
+	response, err := client.doAuthenticatedRequest(host, "GET")
 	if err != nil {
 		return credentials, err
 	}
@@ -67,15 +84,17 @@ func (client *RemoteAgentClient) agentError(response *http.Response) error {
 	return errors.New(fmt.Sprintf("Agent error: %d%s", response.StatusCode, formattedBody))
 }
 
-func (client *RemoteAgentClient) doAuthenticatedRequest(rootURL, method string) (*http.Response, error) {
-	request, err := http.NewRequest(method, rootURL, nil)
+func (client *RemoteAgentClient) doAuthenticatedRequest(host, method string) (*http.Response, error) {
+	url := fmt.Sprintf("%s://%s:%s", client.protocol, host, client.port)
+	request, err := http.NewRequest(method, url, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	request.SetBasicAuth(client.HttpAuth.Username, client.HttpAuth.Password)
+	request.SetBasicAuth(client.username, client.password)
 
 	httpClient := &http.Client{
+		Timeout: 5 * time.Second,
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		},

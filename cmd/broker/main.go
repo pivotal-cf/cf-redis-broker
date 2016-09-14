@@ -63,9 +63,13 @@ func main() {
 		LocalInstanceRepository: localRepo,
 	}
 
-	agentClient := &redis.RemoteAgentClient{
-		HttpAuth: config.AuthConfiguration,
-	}
+	agentClient := redis.NewRemoteAgentClient(
+		config.AgentPort,
+		config.AuthConfiguration.Username,
+		config.AuthConfiguration.Password,
+		true,
+	)
+
 	remoteRepo, err := redis.NewRemoteRepository(agentClient, config, brokerLogger)
 	if err != nil {
 		brokerLogger.Fatal("Error initializing remote repository", err)
