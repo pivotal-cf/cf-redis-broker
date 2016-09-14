@@ -47,19 +47,19 @@ func NewRemoteRepository(agentClient AgentClient, config brokerconfig.Config, lo
 	}
 
 	for _, ip := range config.RedisConfiguration.Dedicated.Nodes {
-		available := true
+
 		for _, allocatedInstance := range repo.allocatedInstances {
 			if ip == allocatedInstance.Host {
-				available = false
+
 				break
 			}
 		}
-		if available {
-			instance := Instance{
-				Host: ip,
-			}
-			repo.availableInstances = append(repo.availableInstances, &instance)
+
+		instance := Instance{
+			Host: ip,
 		}
+		repo.availableInstances = append(repo.availableInstances, &instance)
+
 	}
 
 	err = repo.PersistStatefile()
@@ -96,8 +96,6 @@ func (repo *RemoteRepository) Destroy(instanceID string) error {
 		return err
 	}
 
-	instance.ID = instanceID
-
 	instanceURL := "https://" + instance.Host + ":" + repo.agentPort
 	err = repo.agentClient.Reset(instanceURL)
 	if err != nil {
@@ -108,6 +106,7 @@ func (repo *RemoteRepository) Destroy(instanceID string) error {
 
 	err = repo.PersistStatefile()
 	if err != nil {
+		//TODO maybe a more appropriate UNDO?
 		repo.allocateInstance(instanceID)
 		return err
 	}
@@ -133,7 +132,7 @@ func (repo *RemoteRepository) Create(instanceID string) error {
 	repo.Lock()
 	defer repo.Unlock()
 
-	if len(repo.availableInstances) <= 0 {
+	if len(repo.availableInstances) == 0 {
 		return brokerapi.ErrInstanceLimitMet
 	}
 
@@ -354,13 +353,15 @@ func (repo *RemoteRepository) loadStateFromFile() error {
 }
 
 func (repo *RemoteRepository) removeBinding(instanceID, bindingID string) error {
-	var newInstanceBindings []string
+	// this should be an empty slice not null!
+	var newInstanceBindings []string // = []string{}
 
 	_, err := repo.FindByID(instanceID)
 	if err != nil {
 		return err
 	}
 
+	// this should be done in-place, see https://github.com/golang/go/wiki/SliceTricks
 	bindings, _ := repo.instanceBindings[instanceID]
 	found := false
 	for _, binding := range bindings {
@@ -380,6 +381,10 @@ func (repo *RemoteRepository) removeBinding(instanceID, bindingID string) error 
 	return nil
 }
 
+// In destroy this is being used as an UNDO in the case of an error when writing the
+// state file. However, this is not a proper UNDO for deallocate because it can't
+// recreate the service bindings. Also it assumes that deallocate prepended the
+// instance to the availableInstances slice.
 func (repo *RemoteRepository) allocateInstance(instanceID string) *Instance {
 
 	instance := repo.availableInstances[0]
@@ -393,13 +398,18 @@ func (repo *RemoteRepository) allocateInstance(instanceID string) *Instance {
 	return instance
 }
 
+// should this return an error if instance can't be found?
 func (repo *RemoteRepository) deallocateInstance(instance *Instance) {
 	nowAllocatedInstances := []*Instance{}
+	// no need to duplicate slice just do it in-place, https://github.com/golang/go/wiki/SliceTricks
 	for _, previouslyAllocatedInstance := range repo.allocatedInstances {
-		if previouslyAllocatedInstance.Host != instance.Host {
+		if previouslyAllocatedInstance.Host != instance.Host { // Why use the IP and not the GUID here?
 			nowAllocatedInstances = append(nowAllocatedInstances, previouslyAllocatedInstance)
 		}
 	}
+
+	// TODO: reset instance ID to "" here. This also requires changes to the way we
+	// rollback instance deallocation in Destroy, we can't use allocateInstance to rollback!
 
 	repo.allocatedInstances = nowAllocatedInstances
 
