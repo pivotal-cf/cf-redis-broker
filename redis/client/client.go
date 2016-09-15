@@ -4,12 +4,31 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
 	redisclient "github.com/garyburd/redigo/redis"
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 )
+
+type Client interface {
+	Disconnect() error
+	WaitUntilRedisNotLoading(timeoutMilliseconds int) error
+	EnableAOF() error
+	LastRDBSaveTime() (int64, error)
+	Info() (map[string]string, error)
+	InfoField(fieldName string) (string, error)
+	GlobalKeyCount() (int, error)
+	GetConfig(key string) (string, error)
+	RDBPath() (string, error)
+	Address() string
+	WaitForNewSaveSince(lastSaveTime int64, timeout time.Duration) error
+	RunBGSave() error
+	Ping() error
+	Exec(command string, args ...interface{}) (interface{}, error)
+}
 
 type client struct {
 	host     string
@@ -51,73 +70,50 @@ func CmdAliases(aliases map[string]string) Option {
 	}
 }
 
-func (c *client) registerAlias(cmd, alias string) {
-	c.aliases[strings.ToUpper(cmd)] = alias
-}
-
-func (c *client) lookupAlias(cmd string) string {
-	alias, found := c.aliases[strings.ToUpper(cmd)]
-	if !found {
-		return cmd
-	}
-	return alias
-}
-
 func Connect(options ...Option) (Client, error) {
-	client := &client{
+	c := &client{
 		host:    "127.0.0.1",
 		port:    redisconf.DefaultPort,
 		aliases: map[string]string{},
 	}
 
 	for _, opt := range options {
-		opt(client)
+		opt(c)
 	}
 
-	address := fmt.Sprintf("%v:%v", client.host, client.port)
+	address := fmt.Sprintf("%v:%v", c.host, c.port)
 
 	var err error
-	client.connection, err = redisclient.Dial("tcp", address)
+	c.connection, err = redisclient.Dial("tcp", address)
 	if err != nil {
 		return nil, err
 	}
 
-	if client.password != "" {
-		if _, err := client.connection.Do("AUTH", client.password); err != nil {
-			client.connection.Close()
+	if c.password != "" {
+		if _, err := c.Exec("AUTH", c.password); err != nil {
+			c.connection.Close()
 			return nil, err
 		}
 	}
 
-	return client, nil
+	return c, nil
 }
 
-type Client interface {
-	Disconnect() error
-	WaitUntilRedisNotLoading(timeoutMilliseconds int) error
-	EnableAOF() error
-	LastRDBSaveTime() (int64, error)
-	Info() (map[string]string, error)
-	InfoField(fieldName string) (string, error)
-	GetConfig(key string) (string, error)
-	RDBPath() (string, error)
-	Address() string
-	WaitForNewSaveSince(lastSaveTime int64, timeout time.Duration) error
-	RunBGSave() error
-	Ping() error
+func (c *client) Exec(command string, args ...interface{}) (interface{}, error) {
+	return c.connection.Do(command, args...)
 }
 
-func (client *client) Disconnect() error {
-	return client.connection.Close()
+func (c *client) Disconnect() error {
+	return c.connection.Close()
 }
 
-func (client *client) Address() string {
-	return fmt.Sprintf("%s:%d", client.host, client.port)
+func (c *client) Address() string {
+	return fmt.Sprintf("%s:%d", c.host, c.port)
 }
 
-func (client *client) WaitUntilRedisNotLoading(timeoutMilliseconds int) error {
+func (c *client) WaitUntilRedisNotLoading(timeoutMilliseconds int) error {
 	for i := 0; i < timeoutMilliseconds; i += 100 {
-		loading, err := client.InfoField("loading")
+		loading, err := c.InfoField("loading")
 		if err != nil {
 			return err
 		}
@@ -132,17 +128,17 @@ func (client *client) WaitUntilRedisNotLoading(timeoutMilliseconds int) error {
 	return nil
 }
 
-func (client *client) EnableAOF() error {
-	return client.setConfig("appendonly", "yes")
+func (c *client) EnableAOF() error {
+	return c.setConfig("appendonly", "yes")
 }
 
-func (client *client) RunBGSave() error {
-	_, err := client.connection.Do(client.lookupAlias("BGSAVE"))
+func (c *client) RunBGSave() error {
+	_, err := c.Exec(c.lookupAlias("BGSAVE"))
 	return err
 }
 
-func (client *client) LastRDBSaveTime() (int64, error) {
-	saveTimeStr, err := client.connection.Do("LASTSAVE")
+func (c *client) LastRDBSaveTime() (int64, error) {
+	saveTimeStr, err := c.Exec("LASTSAVE")
 	if err != nil {
 		return 0, err
 	}
@@ -150,8 +146,8 @@ func (client *client) LastRDBSaveTime() (int64, error) {
 	return saveTimeStr.(int64), nil
 }
 
-func (client *client) InfoField(fieldName string) (string, error) {
-	info, err := client.Info()
+func (c *client) InfoField(fieldName string) (string, error) {
+	info, err := c.Info()
 	if err != nil {
 		return "", fmt.Errorf("Error during redis info: %s" + err.Error())
 	}
@@ -164,72 +160,12 @@ func (client *client) InfoField(fieldName string) (string, error) {
 	return value, nil
 }
 
-func (client *client) WaitForNewSaveSince(lastSaveTime int64, timeout time.Duration) error {
-	timer := time.After(timeout)
-	for {
-		select {
-		case <-time.After(time.Second):
-			latestSaveTime, err := client.LastRDBSaveTime()
-			if err != nil {
-				return err
-			}
-
-			if latestSaveTime > lastSaveTime {
-				return nil
-			}
-		case <-timer:
-			return errors.New("Timed out waiting for background save to complete")
-		}
-	}
-}
-
-func (client *client) GetConfig(key string) (string, error) {
-	configCommand := client.lookupAlias("CONFIG")
-
-	output, err := redisclient.StringMap(client.connection.Do(configCommand, "GET", key))
-	if err != nil {
-		return "", err
-	}
-
-	value, found := output[key]
-	if !found {
-		return "", fmt.Errorf("Key '%s' not found", key)
-	}
-
-	return value, nil
-}
-
-func (client *client) RDBPath() (string, error) {
-	dataDir, err := client.GetConfig("dir")
-	if err != nil {
-		return "", err
-	}
-
-	if dataDir == "" {
-		return "", errors.New("Data dir not set")
-	}
-
-	dbFilename, err := client.GetConfig("dbfilename")
-	if err != nil {
-		return "", err
-	}
-
-	return filepath.Join(dataDir, dbFilename), nil
-}
-
-func (client *client) setConfig(key string, value string) error {
-	configCommand := client.lookupAlias("CONFIG")
-
-	_, err := client.connection.Do(configCommand, "SET", key, value)
-	return err
-}
-
-func (client *client) Info() (map[string]string, error) {
-	infoCommand := client.lookupAlias("INFO")
+func (c *client) Info() (map[string]string, error) {
+	infoCommand := c.lookupAlias("INFO")
 
 	info := map[string]string{}
 
-	response, err := redisclient.String(client.connection.Do(infoCommand))
+	response, err := redisclient.String(c.Exec(infoCommand))
 	if err != nil {
 		return nil, err
 	}
@@ -247,10 +183,98 @@ func (client *client) Info() (map[string]string, error) {
 	return info, nil
 }
 
-func (client *client) Ping() error {
-	pingCommand := client.lookupAlias("PING")
+func (c *client) GlobalKeyCount() (int, error) {
+	infoCommand := c.lookupAlias("INFO")
 
-	response, err := redisclient.String(client.connection.Do(pingCommand))
+	keyspaces, err := redisclient.String(c.Exec(infoCommand, "keyspace"))
+	if err != nil {
+		return 0, err
+	}
+
+	globalCount := 0
+	regex := regexp.MustCompile(`keys=(\d+)`)
+
+	for _, keyspace := range strings.Split(keyspaces, "\n") {
+		matches := regex.FindStringSubmatch(keyspace)
+		if len(matches) != 2 {
+			continue
+		}
+
+		count, err := strconv.Atoi(matches[1])
+		if err != nil {
+			continue
+		}
+
+		globalCount += count
+	}
+
+	return globalCount, nil
+}
+
+func (c *client) WaitForNewSaveSince(lastSaveTime int64, timeout time.Duration) error {
+	timer := time.After(timeout)
+	for {
+		select {
+		case <-time.After(time.Second):
+			latestSaveTime, err := c.LastRDBSaveTime()
+			if err != nil {
+				return err
+			}
+
+			if latestSaveTime > lastSaveTime {
+				return nil
+			}
+		case <-timer:
+			return errors.New("Timed out waiting for background save to complete")
+		}
+	}
+}
+
+func (c *client) GetConfig(key string) (string, error) {
+	configCommand := c.lookupAlias("CONFIG")
+
+	output, err := redisclient.StringMap(c.Exec(configCommand, "GET", key))
+	if err != nil {
+		return "", err
+	}
+
+	value, found := output[key]
+	if !found {
+		return "", fmt.Errorf("Key '%s' not found", key)
+	}
+
+	return value, nil
+}
+
+func (c *client) RDBPath() (string, error) {
+	dataDir, err := c.GetConfig("dir")
+	if err != nil {
+		return "", err
+	}
+
+	if dataDir == "" {
+		return "", errors.New("Data dir not set")
+	}
+
+	dbFilename, err := c.GetConfig("dbfilename")
+	if err != nil {
+		return "", err
+	}
+
+	return filepath.Join(dataDir, dbFilename), nil
+}
+
+func (c *client) setConfig(key string, value string) error {
+	configCommand := c.lookupAlias("CONFIG")
+
+	_, err := c.Exec(configCommand, "SET", key, value)
+	return err
+}
+
+func (c *client) Ping() error {
+	pingCommand := c.lookupAlias("PING")
+
+	response, err := redisclient.String(c.Exec(pingCommand))
 	if err != nil {
 		return err
 	}
@@ -260,4 +284,16 @@ func (client *client) Ping() error {
 	}
 
 	return nil
+}
+
+func (c *client) registerAlias(cmd, alias string) {
+	c.aliases[strings.ToUpper(cmd)] = alias
+}
+
+func (c *client) lookupAlias(cmd string) string {
+	alias, found := c.aliases[strings.ToUpper(cmd)]
+	if !found {
+		return cmd
+	}
+	return alias
 }

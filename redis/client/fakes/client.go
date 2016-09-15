@@ -3,6 +3,8 @@ package fakes
 import (
 	"fmt"
 	"time"
+
+	"github.com/pivotal-cf/cf-redis-broker/redis/client"
 )
 
 type Client struct {
@@ -19,6 +21,14 @@ type Client struct {
 
 	Host string
 	Port int
+}
+
+func (c *Client) Exec(command string, args ...interface{}) (interface{}, error) {
+	return nil, nil
+}
+
+func (c *Client) GlobalKeyCount() (int, error) {
+	return 0, nil
 }
 
 func (c *Client) Address() string {
@@ -74,3 +84,5 @@ func (c *Client) WaitForNewSaveSince(lastSaveTime int64, timeout time.Duration) 
 func (c *Client) Ping() error {
 	return c.PingReturns
 }
+
+var _ client.Client = new(Client)

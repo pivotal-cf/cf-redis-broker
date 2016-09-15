@@ -195,6 +195,52 @@ var _ = Describe("Client", func() {
 			})
 		})
 
+		Describe(".GlobalKeyCount", func() {
+			var redis client.Client
+
+			BeforeEach(func() {
+				var err error
+				redis, err = client.Connect(
+					client.Host(host),
+					client.Port(port),
+				)
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			Context("when there are no keys", func() {
+				It("returns zero", func() {
+					count, err := redis.GlobalKeyCount()
+
+					Expect(err).ToNot(HaveOccurred())
+					Expect(count).To(Equal(0))
+				})
+			})
+
+			Context("when there are multiple databases with keys", func() {
+				var dbIndexes = []int{0, 1, 7, 10}
+
+				BeforeEach(func() {
+					for _, i := range dbIndexes {
+						_, err := redis.Exec("SELECT", i)
+						Expect(err).ToNot(HaveOccurred())
+
+						_, err = redis.Exec("SET", "FOO", "BAR")
+						Expect(err).ToNot(HaveOccurred())
+
+						_, err = redis.Exec("SET", "BAZ", "BAR")
+						Expect(err).ToNot(HaveOccurred())
+					}
+				})
+
+				It("returns the key count across all database", func() {
+					count, err := redis.GlobalKeyCount()
+
+					Expect(err).ToNot(HaveOccurred())
+					Expect(count).To(Equal(2 * len(dbIndexes)))
+				})
+			})
+		})
+
 		Describe("querying info fields", func() {
 			Context("when the field exits", func() {
 				It("returns the value", func() {
