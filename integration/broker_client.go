@@ -1,20 +1,12 @@
 package integration
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
 )
-
-var xipIOBackoff []int
-
-func init() {
-	xipIOBackoff = []int{10, 30, 30, 60, 0}
-}
 
 type BrokerClient struct {
 	Config *brokerconfig.Config
@@ -44,27 +36,12 @@ func (brokerClient *BrokerClient) ProvisionInstance(instanceID string, plan stri
 		panic("unable to marshal the payload to provision instance")
 	}
 
-	for _, i := range xipIOBackoff {
-		status, response = ExecuteAuthenticatedHTTPRequestWithBody("PUT",
-			brokerClient.InstanceURI(instanceID),
-			brokerClient.Config.AuthConfiguration.Username,
-			brokerClient.Config.AuthConfiguration.Password,
-			payloadBytes,
-		)
-
-		if status == http.StatusCreated {
-			break // Pass
-		}
-
-		if isNotXIPIOHostErr(response) {
-			break // Fail
-		}
-
-		if i != 0 {
-			fmt.Printf("xip.io unavailable; retrying provision in %d seconds\n", i)
-			time.Sleep(time.Second * time.Duration(i))
-		}
-	}
+	status, response = ExecuteAuthenticatedHTTPRequestWithBody("PUT",
+		brokerClient.InstanceURI(instanceID),
+		brokerClient.Config.AuthConfiguration.Username,
+		brokerClient.Config.AuthConfiguration.Password,
+		payloadBytes,
+	)
 
 	// TODO - #122030819
 	// Currently, the broker's Provision of a Redis instance does not wait until
@@ -84,26 +61,11 @@ func (brokerClient *BrokerClient) BindInstance(instanceID, bindingID string) (in
 	var status int
 	var response []byte
 
-	for _, i := range xipIOBackoff {
-		status, response = ExecuteAuthenticatedHTTPRequestWithBody("PUT",
-			brokerClient.BindingURI(instanceID, bindingID),
-			brokerClient.Config.AuthConfiguration.Username,
-			brokerClient.Config.AuthConfiguration.Password,
-			[]byte("{}"))
-
-		if status == http.StatusOK {
-			break // Pass
-		}
-
-		if isNotXIPIOHostErr(response) {
-			break // Fail
-		}
-
-		if i != 0 {
-			fmt.Printf("xip.io unavailable; retrying bind in %d seconds\n", i)
-			time.Sleep(time.Second * time.Duration(i))
-		}
-	}
+	status, response = ExecuteAuthenticatedHTTPRequestWithBody("PUT",
+		brokerClient.BindingURI(instanceID, bindingID),
+		brokerClient.Config.AuthConfiguration.Username,
+		brokerClient.Config.AuthConfiguration.Password,
+		[]byte("{}"))
 
 	return status, response
 }
@@ -112,22 +74,7 @@ func (brokerClient *BrokerClient) UnbindInstance(instanceID, bindingID string) (
 	var status int
 	var response []byte
 
-	for _, i := range xipIOBackoff {
-		status, response = brokerClient.executeAuthenticatedRequest("DELETE", brokerClient.BindingURI(instanceID, bindingID))
-
-		if status == http.StatusOK {
-			break // Pass
-		}
-
-		if isNotXIPIOHostErr(response) {
-			break // Fail
-		}
-
-		if i != 0 {
-			fmt.Printf("xip.io unavailable; retrying unbind in %d seconds\n", i)
-			time.Sleep(time.Second * time.Duration(i))
-		}
-	}
+	status, response = brokerClient.executeAuthenticatedRequest("DELETE", brokerClient.BindingURI(instanceID, bindingID))
 
 	return status, response
 }
@@ -136,22 +83,7 @@ func (brokerClient *BrokerClient) DeprovisionInstance(instanceID string) (int, [
 	var status int
 	var response []byte
 
-	for _, i := range xipIOBackoff {
-		status, response = brokerClient.executeAuthenticatedRequest("DELETE", brokerClient.InstanceURI(instanceID))
-
-		if status == http.StatusOK {
-			break // Pass
-		}
-
-		if isNotXIPIOHostErr(response) {
-			break // Fail
-		}
-
-		if i != 0 {
-			fmt.Printf("xip.io unavailable; retrying deprovision in %d seconds\n", i)
-			time.Sleep(time.Second * time.Duration(i))
-		}
-	}
+	status, response = brokerClient.executeAuthenticatedRequest("DELETE", brokerClient.InstanceURI(instanceID))
 
 	return status, response
 }
@@ -174,12 +106,4 @@ func (brokerClient *BrokerClient) InstanceIDFromHost(host string) (int, []byte) 
 
 func (brokerClient *BrokerClient) instanceIDFromHostURI(host string) string {
 	return fmt.Sprintf("http://localhost:3000/instance?host=%s", host)
-}
-
-func isNotXIPIOHostErr(response []byte) bool {
-	if !bytes.Contains(response, []byte("no such host")) {
-		return true
-	}
-
-	return !bytes.Contains(response, []byte("xip.io"))
 }
