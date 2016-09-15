@@ -97,10 +97,7 @@ var _ = Describe("DELETE /", func() {
 func startRedisAndBlockUntilUp() (*gexec.Session, string) {
 	session, connection := startRedis(redisConfPath)
 
-	_, err := connection.Do("SET", "TEST-KEY", "TEST-VALUE")
-	Ω(err).ShouldNot(HaveOccurred())
-
-	_, err = connection.Do("CONFIG", "SET", "maxmemory-policy", "allkeys-lru")
+	_, err := connection.Do("CONFIG", "SET", "maxmemory-policy", "allkeys-lru")
 	Ω(err).ShouldNot(HaveOccurred())
 
 	cwd, err := os.Getwd()

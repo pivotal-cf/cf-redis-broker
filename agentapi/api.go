@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"github.com/pivotal-cf/cf-redis-broker/redis/client"
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 )
 
@@ -23,6 +24,10 @@ func New(resetter redisResetter, configPath string) http.Handler {
 	router.Path("/").
 		Methods("GET").
 		HandlerFunc(credentialsHandler(configPath))
+
+	router.Path("/keycount").
+		Methods("GET").
+		HandlerFunc(keyCountHandler(configPath))
 
 	return router
 }
@@ -66,5 +71,47 @@ func credentialsHandler(configPath string) http.HandlerFunc {
 		w.WriteHeader(http.StatusOK)
 		encoder := json.NewEncoder(w)
 		encoder.Encode(credentials)
+	}
+}
+
+func keyCountHandler(configPath string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		conf, err := redisconf.Load(configPath)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		port, err := strconv.Atoi(conf.Get("port"))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		redis, err := client.Connect(
+			client.Port(port),
+			client.Password(conf.Password()),
+		)
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		count, err := redis.GlobalKeyCount()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		result := &struct {
+			KeyCount int `json:"key_count"`
+		}{
+			KeyCount: count,
+		}
+
+		if err := json.NewEncoder(w).Encode(result); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
 	}
 }
