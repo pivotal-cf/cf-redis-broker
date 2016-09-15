@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"time"
 
 	"github.com/pivotal-cf/cf-redis-broker/agentapi"
 )
@@ -113,7 +112,6 @@ func (client *RemoteAgentClient) doAuthenticatedRequest(host, method, path strin
 	request.SetBasicAuth(client.username, client.password)
 
 	httpClient := &http.Client{
-		Timeout: 5 * time.Second,
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		},
