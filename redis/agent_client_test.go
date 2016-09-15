@@ -3,119 +3,164 @@ package redis_test
 import (
 	"net"
 	"net/http"
-	"net/http/httptest"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/ghttp"
 
+	"github.com/pivotal-cf/cf-redis-broker/agentapi"
 	"github.com/pivotal-cf/cf-redis-broker/redis"
 )
 
 var _ = Describe("RemoteAgentClient", func() {
-	var server *httptest.Server
-	var agentCalled int
-	var remoteAgentClient *redis.RemoteAgentClient
-	var status int
+	var (
+		server *ghttp.Server
+		client *redis.RemoteAgentClient
+		status int
+		host   string
+	)
 
 	const (
-		port        = "8080"
-		host        = "127.0.0.1"
-		hostAndPort = "127.0.0.1:8080"
-		username    = "username"
-		password    = "password"
+		username = "username"
+		password = "password"
 	)
 
 	BeforeEach(func() {
-		remoteAgentClient = redis.NewRemoteAgentClient(
+		status = http.StatusOK
+		server = ghttp.NewServer()
+
+		var (
+			port string
+			err  error
+		)
+
+		host, port, err = net.SplitHostPort(server.Addr())
+		Expect(err).ToNot(HaveOccurred())
+
+		client = redis.NewRemoteAgentClient(
 			port,
 			username,
 			password,
 			false,
 		)
-		agentCalled = 0
-
-		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			defer GinkgoRecover()
-
-			user, pass, _ := r.BasicAuth()
-			Expect(user).To(Equal(username))
-			Expect(pass).To(Equal(password))
-
-			Ω([]string{"DELETE", "GET"}).Should(ContainElement(r.Method))
-			Ω(r.URL.Path).Should(Equal("/"))
-			agentCalled++
-			w.WriteHeader(status)
-			if r.Method == "GET" {
-				w.Write([]byte("{\"port\": 12345, \"password\": \"super-secret\"}"))
-			}
-		})
-
-		listener, err := net.Listen("tcp", hostAndPort)
-		Ω(err).ShouldNot(HaveOccurred())
-
-		server = httptest.NewUnstartedServer(handler)
-		server.Listener = listener
-		server.Start()
-		Eventually(isListeningChecker(hostAndPort)).Should(BeTrue())
 	})
 
 	AfterEach(func() {
 		server.Close()
-		Eventually(isListeningChecker(hostAndPort)).Should(BeFalse())
 	})
 
-	Describe("#Reset", func() {
-		Context("when the DELETE request is successful", func() {
-			BeforeEach(func() {
-				status = http.StatusOK
-			})
-
-			It("makes a DELETE request to the host", func() {
-				remoteAgentClient.Reset(host)
-				Ω(agentCalled).Should(Equal(1))
-			})
+	Describe(".Reset", func() {
+		BeforeEach(func() {
+			server.AppendHandlers(
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("DELETE", "/"),
+					ghttp.VerifyBasicAuth(username, password),
+					ghttp.RespondWithPtr(&status, nil),
+				),
+			)
 		})
 
-		Context("When the DELETE request fails", func() {
+		It("makes a DELETE request to the host", func() {
+			err := client.Reset(host)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(server.ReceivedRequests()).To(HaveLen(1))
+		})
+
+		Context("when the DELETE request fails", func() {
 			BeforeEach(func() {
 				status = http.StatusInternalServerError
 			})
 
 			It("returns the error", func() {
-				err := remoteAgentClient.Reset(host)
-				Ω(err).To(MatchError("Agent error: 500"))
+				err := client.Reset(host)
+				Expect(err).To(MatchError("Agent error: 500"))
 			})
 		})
 	})
 
-	Describe("#Credentials", func() {
+	Describe(".Credentials", func() {
+		var expectedCredentials = redis.Credentials{
+			Port:     12345,
+			Password: "supersecret",
+		}
+
 		BeforeEach(func() {
-			status = http.StatusOK
+			server.AppendHandlers(
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("GET", "/"),
+					ghttp.VerifyBasicAuth(username, password),
+					ghttp.RespondWithJSONEncodedPtr(&status, &expectedCredentials),
+				),
+			)
 		})
 
 		It("makes a GET request to the host", func() {
-			remoteAgentClient.Credentials(host)
-			Ω(agentCalled).Should(Equal(1))
+			_, err := client.Credentials(host)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(server.ReceivedRequests()).To(HaveLen(1))
 		})
 
-		Context("When successful", func() {
-			It("returns the correct credentials", func() {
-				credentials, err := remoteAgentClient.Credentials(host)
-				Ω(err).ShouldNot(HaveOccurred())
+		It("returns the correct credentials", func() {
+			credentials, err := client.Credentials(host)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(credentials).To(Equal(expectedCredentials))
+		})
 
-				Ω(credentials).Should(Equal(redis.Credentials{
-					Port:     12345,
-					Password: "super-secret",
-				}))
+		Context("when the request fails", func() {
+			BeforeEach(func() {
+				status = http.StatusInternalServerError
+			})
+
+			It("returns an error", func() {
+				_, err := client.Credentials(host)
+
+				Expect(err).Should(HaveOccurred())
+				Expect(err).To(MatchError(ContainSubstring("Agent error: 500")))
 			})
 		})
+	})
 
-		Context("When unsuccessful", func() {
-			It("returns an error", func() {
+	Describe(".Keycount", func() {
+		var keycountResponse = agentapi.KeycountResponse{
+			Keycount: 7,
+		}
+
+		BeforeEach(func() {
+			server.AppendHandlers(
+				ghttp.CombineHandlers(
+					ghttp.VerifyRequest("GET", "/keycount"),
+					ghttp.VerifyBasicAuth(username, password),
+					ghttp.RespondWithJSONEncodedPtr(&status, &keycountResponse),
+				),
+			)
+		})
+
+		It("makes a GET request to the host", func() {
+			_, err := client.Keycount(host)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(server.ReceivedRequests()).To(HaveLen(1))
+		})
+
+		It("returns the correct key count", func() {
+			count, err := client.Keycount(host)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(count).To(Equal(keycountResponse.Keycount))
+		})
+
+		Context("when the request fails", func() {
+			BeforeEach(func() {
 				status = http.StatusInternalServerError
-				_, err := remoteAgentClient.Credentials(host)
-				Ω(err).Should(HaveOccurred())
-				Ω(err.Error()).Should(Equal(`Agent error: 500, {"port": 12345, "password": "super-secret"}`))
+			})
+
+			It("returns an error", func() {
+				_, err := client.Keycount(host)
+
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(ContainSubstring("Agent error: 500")))
 			})
 		})
 	})

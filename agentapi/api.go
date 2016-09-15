@@ -10,6 +10,10 @@ import (
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 )
 
+type KeycountResponse struct {
+	Keycount int `json:"key_count"`
+}
+
 type redisResetter interface {
 	ResetRedis() error
 }
@@ -104,10 +108,8 @@ func keyCountHandler(configPath string) http.HandlerFunc {
 			return
 		}
 
-		result := &struct {
-			KeyCount int `json:"key_count"`
-		}{
-			KeyCount: count,
+		result := &KeycountResponse{
+			Keycount: count,
 		}
 
 		if err := json.NewEncoder(w).Encode(result); err != nil {

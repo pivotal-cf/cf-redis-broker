@@ -8,6 +8,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"time"
+
+	"github.com/pivotal-cf/cf-redis-broker/agentapi"
 )
 
 type Credentials struct {
@@ -37,7 +39,7 @@ func NewRemoteAgentClient(port, username, password string, secure bool) *RemoteA
 }
 
 func (client *RemoteAgentClient) Reset(host string) error {
-	response, err := client.doAuthenticatedRequest(host, "DELETE")
+	response, err := client.doAuthenticatedRequest(host, "DELETE", "/")
 	if err != nil {
 		return err
 	}
@@ -50,10 +52,9 @@ func (client *RemoteAgentClient) Reset(host string) error {
 }
 
 func (client *RemoteAgentClient) Credentials(host string) (Credentials, error) {
-
 	credentials := Credentials{}
 
-	response, err := client.doAuthenticatedRequest(host, "GET")
+	response, err := client.doAuthenticatedRequest(host, "GET", "/")
 	if err != nil {
 		return credentials, err
 	}
@@ -75,6 +76,24 @@ func (client *RemoteAgentClient) Credentials(host string) (Credentials, error) {
 	return credentials, nil
 }
 
+func (client *RemoteAgentClient) Keycount(host string) (int, error) {
+	response, err := client.doAuthenticatedRequest(host, "GET", "/keycount")
+	if err != nil {
+		return 0, err
+	}
+
+	if response.StatusCode != http.StatusOK {
+		return 0, client.agentError(response)
+	}
+
+	result := new(agentapi.KeycountResponse)
+	if err := json.NewDecoder(response.Body).Decode(result); err != nil {
+		return 0, err
+	}
+
+	return result.Keycount, nil
+}
+
 func (client *RemoteAgentClient) agentError(response *http.Response) error {
 	body, _ := ioutil.ReadAll(response.Body)
 	formattedBody := ""
@@ -84,8 +103,8 @@ func (client *RemoteAgentClient) agentError(response *http.Response) error {
 	return errors.New(fmt.Sprintf("Agent error: %d%s", response.StatusCode, formattedBody))
 }
 
-func (client *RemoteAgentClient) doAuthenticatedRequest(host, method string) (*http.Response, error) {
-	url := fmt.Sprintf("%s://%s:%s", client.protocol, host, client.port)
+func (client *RemoteAgentClient) doAuthenticatedRequest(host, method, path string) (*http.Response, error) {
+	url := fmt.Sprintf("%s://%s:%s%s", client.protocol, host, client.port, path)
 	request, err := http.NewRequest(method, url, nil)
 	if err != nil {
 		return nil, err

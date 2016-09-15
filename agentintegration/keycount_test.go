@@ -12,6 +12,7 @@ import (
 	"github.com/onsi/gomega/gexec"
 
 	"github.com/garyburd/redigo/redis"
+	"github.com/pivotal-cf/cf-redis-broker/agentapi"
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 )
 
@@ -49,7 +50,7 @@ var _ = Describe("keycount request", func() {
 
 	Context("when the redis database is empty", func() {
 		It("reports zero keys", func() {
-			count, err := getKeyCount()
+			count, err := getKeycount()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(count).To(Equal(0))
 		})
@@ -65,14 +66,14 @@ var _ = Describe("keycount request", func() {
 		})
 
 		It("reports two keys", func() {
-			count, err := getKeyCount()
+			count, err := getKeycount()
 			Expect(err).ToNot(HaveOccurred())
 			Expect(count).To(Equal(2))
 		})
 	})
 })
 
-func getKeyCount() (int, error) {
+func getKeycount() (int, error) {
 	httpClient := &http.Client{
 		Timeout:   5 * time.Second,
 		Transport: http.DefaultTransport,
@@ -94,14 +95,11 @@ func getKeyCount() (int, error) {
 		return 0, fmt.Errorf("unexpected HTTP response code: want %d, got %d", want, got)
 	}
 
-	numKeysResponse := &struct {
-		KeyCount int `json:"key_count"`
-	}{}
-
-	err = json.NewDecoder(response.Body).Decode(numKeysResponse)
+	keycountResp := new(agentapi.KeycountResponse)
+	err = json.NewDecoder(response.Body).Decode(keycountResp)
 	if err != nil {
 		return 0, err
 	}
 
-	return numKeysResponse.KeyCount, nil
+	return keycountResp.Keycount, nil
 }
