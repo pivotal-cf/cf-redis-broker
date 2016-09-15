@@ -11,9 +11,9 @@
   "service_instance_limit": 0
   "dedicated":
     "nodes":
-    - "server1.127.0.0.1.xip.io"
-    - "server2.127.0.0.1.xip.io"
-    - "server3.127.0.0.1.xip.io"
+    - server1.lvh.me
+    - server2.lvh.me
+    - server3.lvh.me
     "port": 6379
     "statefile_path": "/tmp/redis-config-dir/statefile.json"
 "auth":

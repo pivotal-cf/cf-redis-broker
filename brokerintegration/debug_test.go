@@ -20,9 +20,9 @@ var _ = Describe("Debug", func() {
 			debugInfo := getDebugInfo()
 
 			Expect(debugInfo.Pool.Count).To(Equal(3))
-			Expect(debugInfo.Pool.Clusters).To(ContainElement([]string{"server1.127.0.0.1.xip.io"}))
-			Expect(debugInfo.Pool.Clusters).To(ContainElement([]string{"server2.127.0.0.1.xip.io"}))
-			Expect(debugInfo.Pool.Clusters).To(ContainElement([]string{"server3.127.0.0.1.xip.io"}))
+			Expect(debugInfo.Pool.Clusters).To(ContainElement([]string{"server1.lvh.me"}))
+			Expect(debugInfo.Pool.Clusters).To(ContainElement([]string{"server2.lvh.me"}))
+			Expect(debugInfo.Pool.Clusters).To(ContainElement([]string{"server3.lvh.me"}))
 			Expect(len(debugInfo.Pool.Clusters)).To(Equal(3))
 		})
 
@@ -103,7 +103,7 @@ var _ = Describe("Debug", func() {
 				Expect(len(debugInfo.Allocated.Clusters)).To(Equal(1))
 
 				host := debugInfo.Allocated.Clusters[0].Hosts[0]
-				Expect(host).To(MatchRegexp(`server[1-3]\.127\.0\.0\.1\.xip\.io`))
+				Expect(host).To(MatchRegexp(`server[1-3]\.lvh\.me`))
 
 				Expect(debugInfo.Pool.Clusters).NotTo(ContainElement([]string{host}))
 			})

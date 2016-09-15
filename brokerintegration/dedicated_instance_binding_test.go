@@ -16,6 +16,7 @@ var _ = Describe("Dedicated instance binding", func() {
 	var httpInputs HTTPExampleInputs
 
 	BeforeEach(func() {
+
 		instanceID = uuid.NewRandom().String()
 		bindingID = uuid.NewRandom().String()
 		httpInputs = HTTPExampleInputs{
