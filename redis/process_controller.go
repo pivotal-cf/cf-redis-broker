@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/pivotal-cf/cf-redis-broker/redis/client"
-	"github.com/pivotal-golang/lager"
+	"code.cloudfoundry.org/lager"
 
 	"github.com/pivotal-cf/cf-redis-broker/system"
 )

@@ -1,6 +1,6 @@
 package task
 
-import "github.com/pivotal-golang/lager"
+import "code.cloudfoundry.org/lager"
 
 type pipeline struct {
 	name   string

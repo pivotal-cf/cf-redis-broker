@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/pivotal-cf/cf-redis-broker/s3"
-	"github.com/pivotal-golang/lager"
+	"code.cloudfoundry.org/lager"
 )
 
 type s3upload struct {

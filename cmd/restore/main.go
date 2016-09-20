@@ -18,7 +18,7 @@ import (
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 	"github.com/pivotal-cf/cf-redis-broker/restoreconfig"
 	"github.com/pivotal-cf/cf-redis-broker/system"
-	"github.com/pivotal-golang/lager"
+	"code.cloudfoundry.org/lager"
 )
 
 const aofRewriteInProgressCheckIntervalMilliseconds = 100

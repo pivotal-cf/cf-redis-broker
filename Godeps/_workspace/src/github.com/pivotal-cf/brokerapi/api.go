@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strconv"
 
+	"code.cloudfoundry.org/lager"
 	"github.com/gorilla/mux"
 	"github.com/pivotal-cf/brokerapi/auth"
-	"github.com/pivotal-golang/lager"
 )
 
 const provisionLogKey = "provision"
@@ -131,7 +131,8 @@ func (h serviceBrokerHandler) provision(w http.ResponseWriter, req *http.Request
 
 	if provisionResponse.IsAsync {
 		h.respond(w, http.StatusAccepted, ProvisioningResponse{
-			DashboardURL: provisionResponse.DashboardURL,
+			DashboardURL:  provisionResponse.DashboardURL,
+			OperationData: provisionResponse.OperationData,
 		})
 	} else {
 		h.respond(w, http.StatusCreated, ProvisioningResponse{
@@ -155,7 +156,7 @@ func (h serviceBrokerHandler) update(w http.ResponseWriter, req *http.Request) {
 
 	acceptsIncompleteFlag, _ := strconv.ParseBool(req.URL.Query().Get("accepts_incomplete"))
 
-	isAsync, err := h.serviceBroker.Update(instanceID, details, acceptsIncompleteFlag)
+	updateServiceSpec, err := h.serviceBroker.Update(instanceID, details, acceptsIncompleteFlag)
 	if err != nil {
 		switch err {
 		case ErrAsyncRequired:
@@ -184,10 +185,10 @@ func (h serviceBrokerHandler) update(w http.ResponseWriter, req *http.Request) {
 	}
 
 	statusCode := http.StatusOK
-	if isAsync {
+	if updateServiceSpec.IsAsync {
 		statusCode = http.StatusAccepted
 	}
-	h.respond(w, statusCode, struct{}{})
+	h.respond(w, statusCode, UpdateResponse{OperationData: updateServiceSpec.OperationData})
 }
 
 func (h serviceBrokerHandler) deprovision(w http.ResponseWriter, req *http.Request) {
@@ -203,7 +204,7 @@ func (h serviceBrokerHandler) deprovision(w http.ResponseWriter, req *http.Reque
 	}
 	asyncAllowed := req.FormValue("accepts_incomplete") == "true"
 
-	isAsync, err := h.serviceBroker.Deprovision(instanceID, details, asyncAllowed)
+	deprovisionSpec, err := h.serviceBroker.Deprovision(instanceID, details, asyncAllowed)
 	if err != nil {
 		switch err {
 		case ErrInstanceDoesNotExist:
@@ -224,8 +225,8 @@ func (h serviceBrokerHandler) deprovision(w http.ResponseWriter, req *http.Reque
 		return
 	}
 
-	if isAsync {
-		h.respond(w, http.StatusAccepted, EmptyResponse{})
+	if deprovisionSpec.IsAsync {
+		h.respond(w, http.StatusAccepted, DeprovisionResponse{OperationData: deprovisionSpec.OperationData})
 	} else {
 		h.respond(w, http.StatusOK, EmptyResponse{})
 	}
@@ -318,6 +319,7 @@ func (h serviceBrokerHandler) unbind(w http.ResponseWriter, req *http.Request) {
 func (h serviceBrokerHandler) lastOperation(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
 	instanceID := vars["instance_id"]
+	operationData := req.FormValue("operation")
 
 	logger := h.logger.Session(lastOperationLogKey, lager.Data{
 		instanceIDLogKey: instanceID,
@@ -325,7 +327,7 @@ func (h serviceBrokerHandler) lastOperation(w http.ResponseWriter, req *http.Req
 
 	logger.Info("starting-check-for-operation")
 
-	lastOperation, err := h.serviceBroker.LastOperation(instanceID)
+	lastOperation, err := h.serviceBroker.LastOperation(instanceID, operationData)
 
 	if err != nil {
 		switch err {

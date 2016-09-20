@@ -3,7 +3,7 @@ package s3
 import (
 	"github.com/goamz/goamz/aws"
 	goamz "github.com/goamz/goamz/s3"
-	"github.com/pivotal-golang/lager"
+	"code.cloudfoundry.org/lager"
 )
 
 type s3Client struct {

@@ -11,6 +11,10 @@
 			"Rev": "62951a8009ab331bb21dc418074fa54e66eb9b6a"
 		},
 		{
+			"ImportPath": "code.cloudfoundry.org/lager/lagertest",
+			"Rev": "62951a8009ab331bb21dc418074fa54e66eb9b6a"
+		},
+		{
 			"ImportPath": "github.com/cloudfoundry-incubator/candiedyaml",
 			"Rev": "150e4e8f749b21a7f0de8e3cfd885143fcea6b32"
 		},
@@ -220,19 +224,11 @@
 		},
 		{
 			"ImportPath": "github.com/pivotal-cf/brokerapi",
-			"Rev": "1a60b0cfd400917401a94de80f51b48a3caaa254"
+			"Rev": "0ea2a3913c148837e8615a1ef8bde757151934c3"
 		},
 		{
 			"ImportPath": "github.com/pivotal-cf/brokerapi/auth",
-			"Rev": "1a60b0cfd400917401a94de80f51b48a3caaa254"
-		},
-		{
-			"ImportPath": "github.com/pivotal-golang/lager",
-			"Rev": "81d18ed6a75f16276fed99134f0e8397ec2e91e2"
-		},
-		{
-			"ImportPath": "github.com/pivotal-golang/lager/lagertest",
-			"Rev": "81d18ed6a75f16276fed99134f0e8397ec2e91e2"
+			"Rev": "0ea2a3913c148837e8615a1ef8bde757151934c3"
 		},
 		{
 			"ImportPath": "github.com/st3v/glager",

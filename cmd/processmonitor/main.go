@@ -12,7 +12,7 @@ import (
 	"github.com/pivotal-cf/cf-redis-broker/process"
 	"github.com/pivotal-cf/cf-redis-broker/redis"
 	"github.com/pivotal-cf/cf-redis-broker/system"
-	"github.com/pivotal-golang/lager"
+	"code.cloudfoundry.org/lager"
 )
 
 func main() {

@@ -14,7 +14,7 @@ import (
 	"github.com/pivotal-cf/cf-redis-broker/debug"
 	"github.com/pivotal-cf/cf-redis-broker/integration/helpers"
 	"github.com/pivotal-cf/cf-redis-broker/redis"
-	"github.com/pivotal-golang/lager"
+	"code.cloudfoundry.org/lager"
 
 	"testing"
 )

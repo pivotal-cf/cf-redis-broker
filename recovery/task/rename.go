@@ -3,7 +3,7 @@ package task
 import (
 	"os"
 
-	"github.com/pivotal-golang/lager"
+	"code.cloudfoundry.org/lager"
 )
 
 type rename struct {

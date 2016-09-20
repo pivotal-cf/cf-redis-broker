@@ -1,6 +1,6 @@
 package log
 
-import "github.com/pivotal-golang/lager"
+import "code.cloudfoundry.org/lager"
 
 var logger lager.Logger
 

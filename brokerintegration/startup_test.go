@@ -7,6 +7,8 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
+	. "github.com/st3v/glager"
+
 	"github.com/pivotal-cf/cf-redis-broker/integration"
 	"github.com/pivotal-cf/cf-redis-broker/integration/helpers"
 )
@@ -37,5 +39,14 @@ var _ = Describe("starting the broker", func() {
 
 	It("logs that it has identified zero dedicated instances", func() {
 		Eventually(broker.Out).Should(gbytes.Say("0 dedicated Redis instances found"))
+	})
+
+	FIt("logs that the consistency is being verified", func() {
+		Eventually(broker.Out).Should(HaveLogged(
+			Info(
+				Action("redis-broker.consistency.keep-checking"),
+				Data("message", "started"),
+			),
+		))
 	})
 })

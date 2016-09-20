@@ -9,17 +9,15 @@ type ServiceBroker interface {
 	Services() []Service
 
 	Provision(instanceID string, details ProvisionDetails, asyncAllowed bool) (ProvisionedServiceSpec, error)
-	Deprovision(instanceID string, details DeprovisionDetails, asyncAllowed bool) (IsAsync, error)
+	Deprovision(instanceID string, details DeprovisionDetails, asyncAllowed bool) (DeprovisionServiceSpec, error)
 
 	Bind(instanceID, bindingID string, details BindDetails) (Binding, error)
 	Unbind(instanceID, bindingID string, details UnbindDetails) error
 
-	Update(instanceID string, details UpdateDetails, asyncAllowed bool) (IsAsync, error)
+	Update(instanceID string, details UpdateDetails, asyncAllowed bool) (UpdateServiceSpec, error)
 
-	LastOperation(instanceID string) (LastOperation, error)
+	LastOperation(instanceID, operationData string) (LastOperation, error)
 }
-
-type IsAsync bool
 
 type ProvisionDetails struct {
 	ServiceID        string          `json:"service_id"`
@@ -30,8 +28,9 @@ type ProvisionDetails struct {
 }
 
 type ProvisionedServiceSpec struct {
-	IsAsync      bool
-	DashboardURL string
+	IsAsync       bool
+	DashboardURL  string
+	OperationData string
 }
 
 type BindDetails struct {
@@ -50,6 +49,16 @@ type BindResource struct {
 type UnbindDetails struct {
 	PlanID    string `json:"plan_id"`
 	ServiceID string `json:"service_id"`
+}
+
+type UpdateServiceSpec struct {
+	IsAsync       bool
+	OperationData string
+}
+
+type DeprovisionServiceSpec struct {
+	IsAsync       bool
+	OperationData string
 }
 
 type DeprovisionDetails struct {
@@ -85,9 +94,23 @@ const (
 )
 
 type Binding struct {
-	Credentials     interface{} `json:"credentials"`
-	SyslogDrainURL  string      `json:"syslog_drain_url,omitempty"`
-	RouteServiceURL string      `json:"route_service_url,omitempty"`
+	Credentials     interface{}   `json:"credentials"`
+	SyslogDrainURL  string        `json:"syslog_drain_url,omitempty"`
+	RouteServiceURL string        `json:"route_service_url,omitempty"`
+	VolumeMounts    []VolumeMount `json:"volume_mounts,omitempty"`
+}
+
+type VolumeMount struct {
+	Driver       string       `json:"driver"`
+	ContainerDir string       `json:"container_dir"`
+	Mode         string       `json:"mode"`
+	DeviceType   string       `json:"device_type"`
+	Device       SharedDevice `json:"device"`
+}
+
+type SharedDevice struct {
+	VolumeId    string                 `json:"volume_id"`
+	MountConfig map[string]interface{} `json:"mount_config"`
 }
 
 var (

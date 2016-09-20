@@ -22,7 +22,7 @@ package main
 
 import (
     "github.com/pivotal-cf/brokerapi"
-    "github.com/pivotal-golang/lager"
+    "code.cloudfoundry.org/lager"
 )
 
 type myServiceBroker struct {}
@@ -40,13 +40,13 @@ func (*myServiceBroker) Provision(
     // chose to provision the instance synchronously.
 }
 
-func (*myServiceBroker) LastOperation(instanceID string) (brokerapi.LastOperation, error) {
+func (*myServiceBroker) LastOperation(instanceID, operationData string) (brokerapi.LastOperation, error) {
     // If the broker provisions asynchronously, the Cloud Controller will poll this endpoint
     // for the status of the provisioning operation.
     // This also applies to deprovisioning (work in progress).
 }
 
-func (*myServiceBroker) Deprovision(instanceID string, details brokerapi.DeprovisionDetails, asyncAllowed bool) (brokerapi.IsAsync, error) {
+func (*myServiceBroker) Deprovision(instanceID string, details brokerapi.DeprovisionDetails, asyncAllowed bool) (brokerapi.DeprovisionServiceSpec, error) {
     // Deprovision a new instance here. If async is allowed, the broker can still
     // chose to deprovision the instance synchronously, hence the first return value.
 }
@@ -61,7 +61,7 @@ func (*myServiceBroker) Unbind(instanceID, bindingID string, details brokerapi.U
     // Unbind from instances here
 }
 
-func (*myServiceBroker) Update(instanceID string, details brokerapi.UpdateDetails, asyncAllowed bool) (brokerapi.IsAsync, error) {
+func (*myServiceBroker) Update(instanceID string, details brokerapi.UpdateDetails, asyncAllowed bool) (brokerapi.UpdateServiceSpec, error) {
   // Update instance here
 }
 
