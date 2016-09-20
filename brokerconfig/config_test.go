@@ -7,6 +7,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
 )
 
@@ -127,6 +128,10 @@ var _ = Describe("parsing the broker config file", func() {
 
 			It("loads the agent port", func() {
 				Ω(config.AgentPort).Should(Equal("1234"))
+			})
+
+			It("loads the consistency verification interval", func() {
+				Ω(config.ConsistencyVerificationInterval).Should(Equal(123))
 			})
 		})
 

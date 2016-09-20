@@ -9,13 +9,14 @@ import (
 )
 
 type Config struct {
-	RedisConfiguration        ServiceConfiguration `yaml:"redis"`
-	AuthConfiguration         AuthConfiguration    `yaml:"auth"`
-	Host                      string               `yaml:"backend_host"`
-	Port                      string               `yaml:"backend_port"`
-	MonitExecutablePath       string               `yaml:"monit_executable_path"`
-	RedisServerExecutablePath string               `yaml:"redis_server_executable_path"`
-	AgentPort                 string               `yaml:"agent_port"`
+	RedisConfiguration              ServiceConfiguration `yaml:"redis"`
+	AuthConfiguration               AuthConfiguration    `yaml:"auth"`
+	Host                            string               `yaml:"backend_host"`
+	Port                            string               `yaml:"backend_port"`
+	MonitExecutablePath             string               `yaml:"monit_executable_path"`
+	RedisServerExecutablePath       string               `yaml:"redis_server_executable_path"`
+	AgentPort                       string               `yaml:"agent_port"`
+	ConsistencyVerificationInterval int                  `yaml:"consistency_verification_interval"`
 }
 
 type AuthConfiguration struct {
