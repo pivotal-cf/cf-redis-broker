@@ -38,7 +38,7 @@ var _ = Describe("CheckSchedule", func() {
 	})
 
 	Context("when the schedule has been started", func() {
-		BeforeEach(func() {
+		JustBeforeEach(func() {
 			schedule.Start()
 		})
 
@@ -50,8 +50,9 @@ var _ = Describe("CheckSchedule", func() {
 			var expectedErr = errors.New("some error")
 
 			BeforeEach(func() {
+				count := 0
 				checker.CheckStub = func() error {
-					if checker.CheckCallCount() == 3 {
+					if count += 1; count == 3 {
 						return expectedErr
 					}
 					return nil

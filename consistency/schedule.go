@@ -27,7 +27,7 @@ func (cs *CheckSchedule) Start() {
 	}
 
 	cs.done = make(chan struct{})
-	go cs.check()
+	go check(cs.checker, cs.interval, cs.done, cs.logger)
 }
 
 func (cs *CheckSchedule) Stop() {
@@ -39,16 +39,16 @@ func (cs *CheckSchedule) Stop() {
 	cs.done = nil
 }
 
-func (cs *CheckSchedule) check() {
-	ticker := time.Tick(cs.interval)
+func check(checker Checker, interval time.Duration, done <-chan struct{}, logger lager.Logger) {
+	ticker := time.Tick(interval)
 
 	for {
 		select {
 		case <-ticker:
-			if err := cs.checker.Check(); err != nil {
-				cs.logger.Error("check-schedule", err)
+			if err := checker.Check(); err != nil {
+				logger.Error("check-schedule", err)
 			}
-		case <-cs.done:
+		case <-done:
 			return
 		}
 	}
