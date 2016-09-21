@@ -5,14 +5,16 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
+	"code.cloudfoundry.org/lager"
 	"github.com/pivotal-cf/brokerapi"
 	"github.com/pivotal-cf/brokerapi/auth"
-	"code.cloudfoundry.org/lager"
 
 	"github.com/pivotal-cf/cf-redis-broker/availability"
 	"github.com/pivotal-cf/cf-redis-broker/broker"
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
+	"github.com/pivotal-cf/cf-redis-broker/consistency"
 	"github.com/pivotal-cf/cf-redis-broker/debug"
 	"github.com/pivotal-cf/cf-redis-broker/process"
 	"github.com/pivotal-cf/cf-redis-broker/redis"
@@ -75,11 +77,23 @@ func main() {
 		brokerLogger.Fatal("Error initializing remote repository", err)
 	}
 
+	if config.ConsistencyVerificationInterval > 0 {
+		interval := time.Duration(config.ConsistencyVerificationInterval) * time.Second
+
+		consistency.KeepVerifying(
+			agentClient,
+			config.RedisConfiguration.Dedicated.StatefilePath,
+			interval,
+			brokerLogger,
+		)
+	}
+
 	sigChannel := make(chan os.Signal, 1)
 	signal.Notify(sigChannel, syscall.SIGTERM)
 	go func() {
 		<-sigChannel
 		brokerLogger.Info("Starting Redis Broker shutdown")
+		consistency.StopVerifying()
 		localRepo.AllInstancesVerbose()
 		remoteRepo.StateFromFile()
 		os.Exit(0)

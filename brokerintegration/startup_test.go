@@ -14,10 +14,17 @@ import (
 )
 
 var _ = Describe("starting the broker", func() {
-	var broker *gexec.Session
+	var (
+		broker *gexec.Session
+		config string
+	)
 
 	BeforeEach(func() {
-		broker = integration.LaunchProcessWithBrokerConfig(brokerExecutablePath, "broker.yml-colocated")
+		config = "broker.yml-colocated"
+	})
+
+	JustBeforeEach(func() {
+		broker = integration.LaunchProcessWithBrokerConfig(brokerExecutablePath, config)
 	})
 
 	AfterEach(func() {
@@ -41,12 +48,28 @@ var _ = Describe("starting the broker", func() {
 		Eventually(broker.Out).Should(gbytes.Say("0 dedicated Redis instances found"))
 	})
 
-	FIt("logs that the consistency is being verified", func() {
-		Eventually(broker.Out).Should(HaveLogged(
-			Info(
-				Action("redis-broker.consistency.keep-checking"),
-				Data("message", "started"),
-			),
-		))
+	Context("when consistency checks are not configured to run", func() {
+		It("does not verify consistency", func() {
+			Consistently(broker.Out).ShouldNot(HaveLogged(
+				Info(
+					Action("redis-broker.consistency.keep-verifying"),
+				),
+			))
+		})
+	})
+
+	Context("when consistency checks are configured to run every 5 seconds", func() {
+		BeforeEach(func() {
+			config = "broker.yml-consistency"
+		})
+
+		It("logs that consistency is being verified", func() {
+			Eventually(broker.Out).Should(HaveLogged(
+				Info(
+					Action("redis-broker.consistency.keep-verifying"),
+					Data("message", "started", "interval", "5s"),
+				),
+			))
+		})
 	})
 })
