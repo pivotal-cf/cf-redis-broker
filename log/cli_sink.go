@@ -1,9 +1,8 @@
 package log
 
 import (
-	"encoding/json"
-	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -19,35 +18,35 @@ type lagerEntry struct {
 }
 
 type CliSink struct {
-	writer lager.Sink
+	writer      io.Writer
+	minLogLevel lager.LogLevel
 }
 
 func NewCliSink(minLogLevel lager.LogLevel) lager.Sink {
 	return &CliSink{
-		writer: lager.NewWriterSink(os.Stdout, minLogLevel),
+		writer:      os.Stdout,
+		minLogLevel: minLogLevel,
 	}
 }
 
-func (s *CliSink) Log(level lager.LogLevel, payload []byte) {
-	msg, err := prettify(payload)
-	if err == nil {
-		s.writer.Log(level, msg)
+func (s *CliSink) Log(format lager.LogFormat) {
+	if format.LogLevel < s.minLogLevel {
+		return
 	}
+
+	if format.Message == "" || format.Data == nil || format.Data["event"] == "" {
+		return
+	}
+
+	fmt.Fprintln(s.writer, prettify(format.Message, format.Data["event"]))
 }
 
-func prettify(message []byte) ([]byte, error) {
-	var entry lagerEntry
-
-	err := json.Unmarshal(message, &entry)
-	if err != nil || entry.Message == "" || entry.Data["event"] == "" {
-		return []byte{}, errors.New("Cannot pretiffy message")
-	}
-
-	return []byte(fmt.Sprintf(
+func prettify(message string, event interface{}) string {
+	return fmt.Sprintf(
 		"%15s -> %s",
-		splitLagerMessage(entry.Message),
-		entry.Data["event"]),
-	), nil
+		splitLagerMessage(message),
+		event,
+	)
 }
 
 func splitLagerMessage(message string) string {

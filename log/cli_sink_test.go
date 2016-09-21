@@ -5,10 +5,11 @@ import (
 	"io/ioutil"
 	"os"
 
+	"code.cloudfoundry.org/lager"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
 	"github.com/pivotal-cf/cf-redis-broker/log"
-	"code.cloudfoundry.org/lager"
 )
 
 var _ = Describe("CliSink", func() {
@@ -31,7 +32,26 @@ var _ = Describe("CliSink", func() {
 	Describe(".Log", func() {
 		Context("when the payload doesn't have lager data with event key", func() {
 			It("does not write to stdout", func() {
-				sink.Log(lager.INFO, []byte("Logging to stdout"))
+				sink.Log(lager.LogFormat{
+					LogLevel: lager.INFO,
+					Message:  "Logging to stdout",
+				})
+
+				os.Stdout.Close()
+
+				output, _ := ioutil.ReadAll(stdoutReader)
+				Expect(string(output)).To(Equal(""))
+			})
+		})
+
+		Context("when the payload does have lager data with event key set to empty string", func() {
+			It("does not write to stdout", func() {
+				sink.Log(lager.LogFormat{
+					LogLevel: lager.INFO,
+					Message:  "Logging to stdout",
+					Data:     lager.Data{"event": ""},
+				})
+
 				os.Stdout.Close()
 
 				output, _ := ioutil.ReadAll(stdoutReader)
@@ -41,19 +61,17 @@ var _ = Describe("CliSink", func() {
 
 		Context("when payload has lager data with event key", func() {
 			It("prints a prettified message to stdout", func() {
-				message := `
-					{
-						"timestamp":"1431625200.765033007",
-						"source":"backup",
-						"message":"backup.backup_main",
-						"log_level":1,
-						"data":{
-							"event":"Exiting",
-							"exit_code":1
-						}
-					}
-				`
-				sink.Log(lager.INFO, []byte(message))
+				sink.Log(lager.LogFormat{
+					Timestamp: "1431625200.765033007",
+					Source:    "backup",
+					Message:   "backup.backup_main",
+					LogLevel:  lager.INFO,
+					Data: lager.Data{
+						"event":     "Exiting",
+						"exit_code": 1,
+					},
+				})
+
 				os.Stdout.Close()
 
 				output, _ := ioutil.ReadAll(stdoutReader)
