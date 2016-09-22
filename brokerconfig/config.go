@@ -16,7 +16,7 @@ type Config struct {
 	MonitExecutablePath             string               `yaml:"monit_executable_path"`
 	RedisServerExecutablePath       string               `yaml:"redis_server_executable_path"`
 	AgentPort                       string               `yaml:"agent_port"`
-	ConsistencyVerificationInterval int                  `yaml:"consistency_verification_interval"`
+	ConsistencyVerificationInterval int                  `yaml:"consistency_check_interval_seconds"`
 }
 
 type AuthConfiguration struct {

@@ -30,4 +30,4 @@ backend_port: "3001"
 monit_executable_path: ""
 redis_server_executable_path: ""
 agent_port: "9876"
-consistency_verification_interval: 5
+consistency_check_interval_seconds: 5
