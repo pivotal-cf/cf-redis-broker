@@ -26,7 +26,7 @@ var _ = Describe("consistency", func() {
 			statefilePath string
 			keycount      int
 
-			interval = 10 * time.Millisecond
+			interval = 100 * time.Millisecond
 		)
 
 		JustBeforeEach(func() {
