@@ -19,7 +19,7 @@ run_go_vet() {
   all_go_code_except_Godeps | xargs go tool vet
 }
 
-all_go_code_except_Godeps() {
+all_go_code_except_vendor() {
   find . -maxdepth 1 -type d -not -path "*/vendor*" -a -not -path '*/.git*' -a -not -path '.'
 }
 
