@@ -16,7 +16,7 @@ main() {
 
 run_go_vet() {
   __message "Running go vet"
-  all_go_code_except_vendor | xargs go tool vet
+  all_go_code_except_Godeps | xargs go tool vet
 }
 
 all_go_code_except_vendor() {
@@ -31,7 +31,7 @@ __message() {
 run_golint() {
   __message "Running golint"
   golint_result=$(
-    all_go_code_except_vendor \
+    all_go_code_except_Godeps \
       | xargs golint \
       | awk '! /should have comment.* or be unexported/ { print $0 }'
   )
@@ -46,12 +46,12 @@ run_golint() {
 run_tests() {
   __message "Running tests"
 
-  GOPATH=$PWD/vendor:$GOPATH \
+  GOPATH=$PWD/Godeps/_workspace:$GOPATH \
     ginkgo -r -v -race --keepGoing -randomizeAllSpecs -skipMeasurements -failOnPending -cover $test_args
 }
 
 setup_go() {
-  eval "$(gimme 1.7.3)"
+  eval "$(gimme 1.6.3)"
   go get github.com/onsi/ginkgo/ginkgo \
   golang.org/x/tools/cmd/cover \
   github.com/golang/lint/golint \
