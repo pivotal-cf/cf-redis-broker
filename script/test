@@ -20,7 +20,7 @@ run_go_vet() {
 }
 
 all_go_code_except_Godeps() {
-  find . -maxdepth 1 -type d -not -path "*/vendor*" -a -not -path '*/.git*' -a -not -path '.'
+  find . -maxdepth 1 -type d -not -path "*/Godeps*" -a -not -path '*/.git*' -a -not -path '.'
 }
 
 __message() {
