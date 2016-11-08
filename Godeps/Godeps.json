@@ -40,6 +40,10 @@
 			"Rev": "760aa2f8a491b6019dcf2df81d913927cb25fbc6"
 		},
 		{
+			"ImportPath": "github.com/goamz/goamz/s3/s3test",
+			"Rev": "760aa2f8a491b6019dcf2df81d913927cb25fbc6"
+		},
+		{
 			"ImportPath": "github.com/golang/protobuf/proto",
 			"Rev": "1f49d83d9aa00e6ce4fc8258c71cc7786aec968a"
 		},
@@ -234,6 +238,10 @@
 		{
 			"ImportPath": "github.com/vaughan0/go-ini",
 			"Rev": "a98ad7ee00ec53921f08832bc06ecf7fd600e6a1"
+		},
+		{
+			"ImportPath": "golang.org/x/sys/unix",
+			"Rev": "8f0908ab3b2457e2e15403d3697c9ef5cb4b57a9"
 		},
 		{
 			"ImportPath": "gopkg.in/yaml.v2",
