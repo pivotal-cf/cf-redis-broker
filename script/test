@@ -15,7 +15,7 @@ main() {
 
 run_go_vet() {
   __message "Running go vet"
-  all_go_code_except_vendor | xargs go tool vet
+  all_go_code_except_Godeps | xargs go tool vet
 }
 
 all_go_code_except_vendor() {
@@ -30,7 +30,7 @@ __message() {
 run_golint() {
   __message "Running golint"
   golint_result=$(
-    all_go_code_except_vendor \
+    all_go_code_except_Godeps \
       | xargs golint \
       | awk '! /should have comment.* or be unexported/ { print $0 }'
   )
@@ -45,7 +45,7 @@ run_golint() {
 run_tests() {
   __message "Running tests"
 
-  GOPATH=$PWD/vendor/_workspace:$GOPATH \
+  GOPATH=$PWD/Godeps/_workspace:$GOPATH \
     ginkgo -r -race --keepGoing -randomizeAllSpecs -skipMeasurements -failOnPending -cover -noColor $test_args
 }
 
