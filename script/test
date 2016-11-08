@@ -16,11 +16,11 @@ main() {
 
 run_go_vet() {
   __message "Running go vet"
-  all_go_code_except_vendor | xargs go tool vet
+  all_go_code_except_Godeps | xargs go tool vet
 }
 
-all_go_code_except_vendor() {
-  find . -maxdepth 1 -type d -not -path "*/vendor*" -a -not -path '*/.git*' -a -not -path '.'
+all_go_code_except_Godeps() {
+  find . -maxdepth 1 -type d -not -path "*/Godeps*" -a -not -path '*/.git*' -a -not -path '.'
 }
 
 __message() {
@@ -31,7 +31,7 @@ __message() {
 run_golint() {
   __message "Running golint"
   golint_result=$(
-    all_go_code_except_vendor \
+    all_go_code_except_Godeps \
       | xargs golint \
       | awk '! /should have comment.* or be unexported/ { print $0 }'
   )
@@ -46,7 +46,7 @@ run_golint() {
 run_tests() {
   __message "Running tests"
 
-  GOPATH=$PWD/vednor/_workspace:$GOPATH \
+  GOPATH=$PWD/Godeps/_workspace:$GOPATH \
     ginkgo -r -v -race --keepGoing -randomizeAllSpecs -skipMeasurements -failOnPending -cover $test_args
 }
 
