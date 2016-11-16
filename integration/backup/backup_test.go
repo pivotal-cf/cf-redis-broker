@@ -17,6 +17,10 @@ import (
 	"github.com/pivotal-golang/lager"
 )
 
+var (
+	bucketName string
+)
+
 var _ = Describe("backups", func() {
 	Context("when config is invalid", func() {
 		It("exits with status code 78", func() {
@@ -36,20 +40,23 @@ var _ = Describe("backups", func() {
 
 	Context("when S3 is configured correctly", func() {
 		var (
-			configDir          string
-			dataDir            string
-			logDir             string
-			configFile         string
-			redisConfig        string
-			planName           string
-			awsAccessKey       string
-			awsSecretAccessKey string
-			brokerUrl          string
+			configDir            string
+			dataDir              string
+			logDir               string
+			configFile           string
+			redisConfig          string
+			planName             string
+			awsAccessKey         string
+			awsSecretAccessKey   string
+			brokerUrl            string
+			manifestTemplatePath string
 		)
 
 		BeforeEach(func() {
 			configDir, dataDir, logDir = helpers.CreateTestDirs()
 			brokerUrl = fmt.Sprintf("http://%s:%d", brokerHost, brokerPort)
+			manifestTemplatePath = "working-backup.yml.template"
+			bucketName = "redis-backup-test"
 		})
 
 		JustBeforeEach(func() {
@@ -82,8 +89,9 @@ var _ = Describe("backups", func() {
 				panic(err)
 			}
 			configFile = filepath.Join(configDir, "working-backup.yml")
+
 			err = helpers.HandleTemplate(
-				helpers.AssetPath("working-backup.yml.template"),
+				helpers.AssetPath(manifestTemplatePath),
 				configFile,
 				templateData,
 			)
@@ -185,6 +193,31 @@ var _ = Describe("backups", func() {
 
 				}
 			})
+
+			Context("when no path inside the S3 bucket is configured", func() {
+				//This test will leave an anonymous directory that contains the backups, because of #131558295.
+				//As the directory structure is different from the one cleanupS3 expects, it is not cleaned after the end of the tests.
+				//Please delete manually.
+				BeforeEach(func() {
+					manifestTemplatePath = "working-backup-no-path.yml.template"
+				})
+
+				It("succeeds", func() {
+					backupExitCode := runBackup(configFile)
+					apiClient := newApiClient(awsAccessKey, awsSecretAccessKey)
+					filesAndDirsInBucket, bucketListErr := apiClient.Bucket(bucketName).GetBucketContents()
+
+					By("exiting with 0")
+					Expect(backupExitCode).To(Equal(0))
+
+					By("uploading the dump.rdb file to the correct S3 location")
+					Expect(bucketListErr).ToNot(HaveOccurred())
+					Expect(len(*filesAndDirsInBucket)).To(Equal(1))
+					for k, _ := range *filesAndDirsInBucket {
+						Expect(k).To(HavePrefix(time.Now().Format("2006")))
+					}
+				})
+			})
 		})
 	})
 })
@@ -198,17 +231,17 @@ func newApiClient(awsAccessKey, awsSecretAccessKey string) *goamz.S3 {
 func cleanupS3(awsAccessKey, awsSecretAccessKey string) {
 	apiClient := newApiClient(awsAccessKey, awsSecretAccessKey)
 
-	m, err := apiClient.Bucket("redis-backup-test").GetBucketContents()
+	m, err := apiClient.Bucket(bucketName).GetBucketContents()
 	panicOnError(err)
 	for k, _ := range *m {
-		panicOnError(apiClient.Bucket("redis-backup-test").Del(k))
+		panicOnError(apiClient.Bucket(bucketName).Del(k))
 	}
 	year := time.Now().Format("2006")
 	month := time.Now().Format("01")
 	day := time.Now().Format("02")
-	panicOnError(apiClient.Bucket("redis-backup-test").Del(fmt.Sprintf("%v/%v/%v", year, month, day)))
-	panicOnError(apiClient.Bucket("redis-backup-test").Del(fmt.Sprintf("%v/%v", year, month)))
-	panicOnError(apiClient.Bucket("redis-backup-test").Del(fmt.Sprintf("%v", year)))
+	panicOnError(apiClient.Bucket(bucketName).Del(fmt.Sprintf("%v/%v/%v", year, month, day)))
+	panicOnError(apiClient.Bucket(bucketName).Del(fmt.Sprintf("%v/%v", year, month)))
+	panicOnError(apiClient.Bucket(bucketName).Del(fmt.Sprintf("%v", year)))
 }
 
 func panicOnError(err error) {
