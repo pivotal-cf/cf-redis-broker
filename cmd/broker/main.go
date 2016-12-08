@@ -59,7 +59,7 @@ func main() {
 	}
 
 	localCreator := &redis.LocalInstanceCreator{
-		FindFreePort:            system.FindFreePort,
+		FreeTcpPort:     system.NewFreeTcpPort(),
 		RedisConfiguration:      config.RedisConfiguration,
 		ProcessController:       processController,
 		LocalInstanceRepository: localRepo,

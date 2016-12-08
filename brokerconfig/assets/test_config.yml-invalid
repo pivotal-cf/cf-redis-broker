@@ -6,6 +6,8 @@ redis:
   redis_conf_path: /path/to/redis/config.conf
   process_check_interval: 5
   service_instance_limit: 3
+  shared_max_port: 65535
+  shared_min_port: 1024
   backup:
     endpoint_url: http://s3url.com
     bucket_name: redis-backups

@@ -12,14 +12,10 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/pivotal-cf/cf-redis-broker/system"
 )
 
 var freePortsFound int
-
-func fakeFreePortFinder() (int, error) {
-	freePortsFound++
-	return 8080, nil
-}
 
 var _ = Describe("Local Redis Creator", func() {
 
@@ -30,12 +26,15 @@ var _ = Describe("Local Redis Creator", func() {
 
 	BeforeEach(func() {
 		instanceID = uuid.NewRandom().String()
+		freeTcpPort := &system.FakeFreeTcpPort{Cb: func() {
+			freePortsFound++
+		}}
 		fakeProcessController = &fakes.FakeProcessController{}
 
 		fakeLocalRepository = new(fakes.FakeLocalRepository)
 
 		localInstanceCreator = &redis.LocalInstanceCreator{
-			FindFreePort:            fakeFreePortFinder,
+			FreeTcpPort:     freeTcpPort,
 			ProcessController:       fakeProcessController,
 			LocalInstanceRepository: fakeLocalRepository,
 			RedisConfiguration: brokerconfig.ServiceConfiguration{
