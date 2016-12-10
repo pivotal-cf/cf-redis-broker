@@ -1,17 +1,15 @@
 package agentapi_test
 
 import (
-	"encoding/json"
 	"errors"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
 
-	"github.com/pivotal-cf/cf-redis-broker/agentapi"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/pivotal-cf/cf-redis-broker/agentapi"
 )
 
 type fakeRedisResetter struct {
@@ -23,17 +21,17 @@ func (client *fakeRedisResetter) ResetRedis() error {
 }
 
 var _ = Describe("redis agent HTTP API", func() {
-	var server *httptest.Server
-	var redisClient *fakeRedisResetter
-	var deleteCount int
-	var configPath string
-	var response *http.Response
+	var (
+		server      *httptest.Server
+		redisClient *fakeRedisResetter
+		deleteCount int
+		configPath  string
+		response    *http.Response
+	)
 
 	BeforeEach(func() {
-		var err error
-		configPath, err = filepath.Abs("assets/redis.conf")
-		Expect(err).NotTo(HaveOccurred())
-		redisClient = &fakeRedisResetter{}
+		configPath = getAbsPath(filepath.FromSlash("assets/redis.conf"))
+		redisClient = new(fakeRedisResetter)
 		deleteCount = 0
 	})
 
@@ -53,14 +51,10 @@ var _ = Describe("redis agent HTTP API", func() {
 
 		Context("When it can read the conf file successfully", func() {
 			It("returns the correct credentials", func() {
-				body, err := ioutil.ReadAll(response.Body)
-				Expect(err).NotTo(HaveOccurred())
+				body := readAll(response.Body)
+				response := unmarshalJSON(body)
 
-				response := map[string]interface{}{}
-				err = json.Unmarshal(body, &response)
-				Expect(err).NotTo(HaveOccurred())
-
-				Expect(response["port"]).To(Equal(float64(1234))) // json.Unmarshal provides float64s by default
+				Expect(response["port"]).To(Equal(float64(1234)))
 				Expect(response["password"]).To(Equal("an-password"))
 			})
 		})
@@ -71,14 +65,12 @@ var _ = Describe("redis agent HTTP API", func() {
 			})
 
 			It("returns an 500", func() {
-				Expect(response.StatusCode).To(Equal(500))
+				Expect(response.StatusCode).To(Equal(http.StatusInternalServerError))
 			})
 
 			It("returns the correct error in the body", func() {
-				body, err := ioutil.ReadAll(response.Body)
-				Expect(err).NotTo(HaveOccurred())
-
-				Expect(string(body)).To(ContainSubstring("no such file or directory"))
+				body := string(readAll(response.Body))
+				Expect(body).To(ContainSubstring("no such file or directory"))
 			})
 		})
 	})
@@ -99,7 +91,7 @@ var _ = Describe("redis agent HTTP API", func() {
 			})
 
 			It("returns HTTP 200 OK", func() {
-				Expect(response.StatusCode).To(Equal(200))
+				Expect(response.StatusCode).To(Equal(http.StatusOK))
 			})
 		})
 
@@ -112,14 +104,12 @@ var _ = Describe("redis agent HTTP API", func() {
 			})
 
 			It("returns 500", func() {
-				Expect(response.StatusCode).To(Equal(500))
+				Expect(response.StatusCode).To(Equal(http.StatusInternalServerError))
 			})
 
 			It("returns the correct error in the body", func() {
-				body, err := ioutil.ReadAll(response.Body)
-				Expect(err).NotTo(HaveOccurred())
-
-				Expect(string(body)).To(Equal("redis burned down\n"))
+				body := string(readAll(response.Body))
+				Expect(body).To(Equal("redis burned down\n"))
 			})
 		})
 	})
