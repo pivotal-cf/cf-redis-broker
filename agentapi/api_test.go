@@ -32,7 +32,7 @@ var _ = Describe("redis agent HTTP API", func() {
 	BeforeEach(func() {
 		var err error
 		configPath, err = filepath.Abs("assets/redis.conf")
-		Ω(err).ShouldNot(HaveOccurred())
+		Expect(err).NotTo(HaveOccurred())
 		redisClient = &fakeRedisResetter{}
 		deleteCount = 0
 	})
@@ -54,14 +54,14 @@ var _ = Describe("redis agent HTTP API", func() {
 		Context("When it can read the conf file successfully", func() {
 			It("returns the correct credentials", func() {
 				body, err := ioutil.ReadAll(response.Body)
-				Ω(err).ShouldNot(HaveOccurred())
+				Expect(err).NotTo(HaveOccurred())
 
 				response := map[string]interface{}{}
 				err = json.Unmarshal(body, &response)
-				Ω(err).ShouldNot(HaveOccurred())
+				Expect(err).NotTo(HaveOccurred())
 
-				Ω(response["port"]).Should(Equal(float64(1234))) // json.Unmarshal provides float64s by default
-				Ω(response["password"]).Should(Equal("an-password"))
+				Expect(response["port"]).To(Equal(float64(1234))) // json.Unmarshal provides float64s by default
+				Expect(response["password"]).To(Equal("an-password"))
 			})
 		})
 
@@ -71,14 +71,14 @@ var _ = Describe("redis agent HTTP API", func() {
 			})
 
 			It("returns an 500", func() {
-				Ω(response.StatusCode).Should(Equal(500))
+				Expect(response.StatusCode).To(Equal(500))
 			})
 
 			It("returns the correct error in the body", func() {
 				body, err := ioutil.ReadAll(response.Body)
-				Ω(err).ShouldNot(HaveOccurred())
+				Expect(err).NotTo(HaveOccurred())
 
-				Ω(string(body)).Should(ContainSubstring("no such file or directory"))
+				Expect(string(body)).To(ContainSubstring("no such file or directory"))
 			})
 		})
 	})
@@ -95,11 +95,11 @@ var _ = Describe("redis agent HTTP API", func() {
 			})
 
 			It("deletes all data from redis", func() {
-				Ω(deleteCount).To(Equal(1))
+				Expect(deleteCount).To(Equal(1))
 			})
 
 			It("returns HTTP 200 OK", func() {
-				Ω(response.StatusCode).Should(Equal(200))
+				Expect(response.StatusCode).To(Equal(200))
 			})
 		})
 
@@ -112,14 +112,14 @@ var _ = Describe("redis agent HTTP API", func() {
 			})
 
 			It("returns 500", func() {
-				Ω(response.StatusCode).Should(Equal(500))
+				Expect(response.StatusCode).To(Equal(500))
 			})
 
 			It("returns the correct error in the body", func() {
 				body, err := ioutil.ReadAll(response.Body)
-				Ω(err).ShouldNot(HaveOccurred())
+				Expect(err).NotTo(HaveOccurred())
 
-				Ω(string(body)).Should(Equal("redis burned down\n"))
+				Expect(string(body)).To(Equal("redis burned down\n"))
 			})
 		})
 	})
@@ -134,7 +134,7 @@ var _ = Describe("redis agent HTTP API", func() {
 			})
 
 			It(method+" returns an http error", func() {
-				Ω(response.StatusCode).Should(Equal(http.StatusNotFound))
+				Expect(response.StatusCode).To(Equal(http.StatusNotFound))
 			})
 		}
 	})
@@ -142,10 +142,10 @@ var _ = Describe("redis agent HTTP API", func() {
 
 func makeRequest(method string, url string) *http.Response {
 	request, err := http.NewRequest(method, url, nil)
-	Ω(err).ShouldNot(HaveOccurred())
+	Expect(err).NotTo(HaveOccurred())
 
 	response, err := http.DefaultClient.Do(request)
-	Ω(err).ShouldNot(HaveOccurred())
+	Expect(err).NotTo(HaveOccurred())
 
 	return response
 }
