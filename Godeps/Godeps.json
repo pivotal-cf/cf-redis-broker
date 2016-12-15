@@ -1,6 +1,7 @@
 {
 	"ImportPath": "github.com/pivotal-cf/cf-redis-broker",
-	"GoVersion": "go1.6.2",
+	"GoVersion": "go1.7",
+	"GodepVersion": "v73",
 	"Packages": [
 		"./..."
 	],
