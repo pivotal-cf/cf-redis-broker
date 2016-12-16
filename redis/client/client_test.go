@@ -31,7 +31,7 @@ var _ = Describe("Client", func() {
 		Context("when the server is not running", func() {
 			It("returns an error", func() {
 				_, err := client.Connect(host, conf)
-				Ω(err).Should(MatchError("dial tcp 127.0.0.1:6480: connection refused"))
+				Ω(err).Should(HaveOccurred())
 			})
 		})
 

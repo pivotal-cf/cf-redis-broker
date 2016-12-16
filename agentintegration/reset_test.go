@@ -80,7 +80,7 @@ var _ = Describe("DELETE /", func() {
 		config, err := redis.Strings(redisConn.Do("CONFIG", "GET", "maxmemory-policy"))
 
 		Ω(err).ShouldNot(HaveOccurred())
-		Ω(config[1]).Should(Equal("volatile-lru"))
+		Ω(config[1]).Should(Equal("noeviction"))
 	})
 
 	It("deletes all data from redis", func() {
