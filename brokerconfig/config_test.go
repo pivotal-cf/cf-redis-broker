@@ -9,14 +9,15 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
+	"github.com/pivotal-cf/cf-redis-broker/system"
 )
 
 var _ = Describe("parsing the broker config file", func() {
 
 	Describe("ParseConfig", func() {
 		var (
-			config         brokerconfig.Config
-			configPath     string
+			config brokerconfig.Config
+			configPath string
 			parseConfigErr error
 		)
 
@@ -133,6 +134,14 @@ var _ = Describe("parsing the broker config file", func() {
 			It("loads the consistency verification interval", func() {
 				Ω(config.ConsistencyVerificationInterval).Should(Equal(123))
 			})
+
+			It("loads the minimum port", func() {
+				Ω(config.RedisConfiguration.SharedMinPort).To(Equal(1024))
+			})
+
+			It("loads the maximum port", func() {
+				Ω(config.RedisConfiguration.SharedMaxPort).To(Equal(65535))
+			})
 		})
 
 		Context("when the configuration is invalid", func() {
@@ -181,6 +190,8 @@ var _ = Describe("parsing the broker config file", func() {
 				DefaultConfigPath:     validFile,
 				InstanceDataDirectory: validDir,
 				InstanceLogDirectory:  validDir,
+				SharedMinPort:         1024,
+				SharedMaxPort:         65535,
 			}
 		})
 
@@ -234,6 +245,47 @@ var _ = Describe("parsing the broker config file", func() {
 					err := brokerconfig.ValidateConfig(config)
 					Ω(err).To(HaveOccurred())
 					Ω(err.Error()).To(Equal("File '/a/non-existent/path' (RedisConfig.InstanceLogDirectory) not found"))
+				})
+			})
+		})
+		Describe("PortRange", func() {
+			Context("When port range given are correct", func() {
+				It("does not return an error", func() {
+					err := brokerconfig.ValidateConfig(config)
+					Ω(err).ToNot(HaveOccurred())
+				})
+			})
+			Context("When minimum port is higher than maximal port", func() {
+				It("returns an error", func() {
+					config.SharedMinPort = system.MIN_ACCEPTED_PORT + 5
+					config.SharedMaxPort = system.MIN_ACCEPTED_PORT + 3
+					err := brokerconfig.ValidateConfig(config)
+					Ω(err).To(HaveOccurred())
+					Ω(err.Error()).To(Equal("Not valid range port: minimum port is higher than maximum port"))
+				})
+			})
+			Context("When minimum port is lower than minimum accepted port", func() {
+				It("returns an error", func() {
+					config.SharedMinPort = system.MIN_ACCEPTED_PORT - 1
+					err := brokerconfig.ValidateConfig(config)
+					Ω(err).To(HaveOccurred())
+					Ω(err.Error()).To(ContainSubstring("Not valid range port: minimum port is lower than"))
+				})
+			})
+			Context("When minimum port is higher than maximum accepted port", func() {
+				It("returns an error", func() {
+					config.SharedMinPort = system.MAX_ACCEPTED_PORT + 1
+					err := brokerconfig.ValidateConfig(config)
+					Ω(err).To(HaveOccurred())
+					Ω(err.Error()).To(ContainSubstring("Not valid range port: minimum port is higher than"))
+				})
+			})
+			Context("When maximum port is higher than maximum accepted port", func() {
+				It("returns an error", func() {
+					config.SharedMaxPort = system.MAX_ACCEPTED_PORT + 1
+					err := brokerconfig.ValidateConfig(config)
+					Ω(err).To(HaveOccurred())
+					Ω(err.Error()).To(ContainSubstring("Not valid range port: maximum port is higher than"))
 				})
 			})
 		})

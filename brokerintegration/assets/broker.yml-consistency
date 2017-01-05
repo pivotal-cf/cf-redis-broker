@@ -15,6 +15,8 @@ redis:
   support_url: http://support.pivotal.io
   display_name: Redis
   description: Redis service to provide a key-value store
+  shared_max_port: 65535
+  shared_min_port: 1024
   dedicated:
     nodes:
     - server1.127.0.0.1.xip.io

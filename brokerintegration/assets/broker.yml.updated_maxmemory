@@ -10,6 +10,8 @@ redis:
   process_check_interval: 1
   start_redis_timeout: 3
   service_instance_limit: 3
+  shared_max_port: 65535
+  shared_min_port: 1024
   dedicated:
     nodes: []
     statefile_path: /tmp/redis-config-dir/statefile.json
