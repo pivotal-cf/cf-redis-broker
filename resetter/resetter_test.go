@@ -12,6 +12,7 @@ import (
 
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 	"github.com/pivotal-cf/cf-redis-broker/resetter"
+	monitFakes "github.com/pivotal-cf/redisutils/monit/fakes"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -65,12 +66,14 @@ var _ = Describe("Client", func() {
 		confPath        string
 		defaultConfPath string
 		conf            redisconf.Conf
+		fakeMonit       *monitFakes.FakeMonit
 
 		monitExecutablePath = "/path/to/monit"
 		redisPassword       = "somepassword"
 	)
 
 	BeforeEach(func() {
+		fakeMonit = new(monitFakes.FakeMonit)
 		commandRunner = new(fakeRunner)
 		commandRunner.redisProcessStatus = "running"
 		fakePortChecker = new(fakeChecker)
@@ -125,7 +128,7 @@ var _ = Describe("Client", func() {
 		_, err = os.Create(rdbPath)
 		Ω(err).ShouldNot(HaveOccurred())
 
-		redisClient = resetter.New(defaultConfPath, confPath, fakePortChecker, commandRunner, monitExecutablePath)
+		redisClient = resetter.New(defaultConfPath, confPath, fakePortChecker, commandRunner, monitExecutablePath, fakeMonit)
 	})
 
 	AfterEach(func() {
@@ -135,60 +138,10 @@ var _ = Describe("Client", func() {
 
 	Describe("#ResetRedis", func() {
 		It("stops and starts redis with monit", func() {
-			commandRunner.summaryOutputStrings = []string{
-				`The Monit daemon 5.2.4 uptime: 23m
-
-Process 'redis-agent'               running
-Process 'redis'                     running
-Process 'syslog-configurator'       running
-System 'system_d289e4bf-dc4b-4369-a7a7-a45e71319fe0' running`,
-				`The Monit daemon 5.2.4 uptime: 23m
-
-Process 'redis-agent'               running
-Process 'redis'                     not monitored
-Process 'syslog-configurator'       running
-System 'system_d289e4bf-dc4b-4369-a7a7-a45e71319fe0' running`,
-				`The Monit daemon 5.2.4 uptime: 23m
-
-Process 'redis-agent'               running
-Process 'redis'                     something_wierd_state
-Process 'syslog-configurator'       running
-System 'system_d289e4bf-dc4b-4369-a7a7-a45e71319fe0' running`,
-				`The Monit daemon 5.2.4 uptime: 23m
-
-Process 'redis-agent'               running
-Process 'redis'                     running
-Process 'syslog-configurator'       running
-System 'system_d289e4bf-dc4b-4369-a7a7-a45e71319fe0' running`,
-			}
 			err := redisClient.ResetRedis()
-			Ω(err).ShouldNot(HaveOccurred())
-
-			Ω(len(commandRunner.commandsRan)).To(Equal(6))
-
-			Ω(commandRunner.commandsRan[0].Args).To(Equal(
-				[]string{monitExecutablePath, "stop", "redis"},
-			))
-			// still running
-			Ω(commandRunner.commandsRan[1].Args).To(Equal(
-				[]string{monitExecutablePath, "summary"},
-			))
-			// not monitored
-			Ω(commandRunner.commandsRan[2].Args).To(Equal(
-				[]string{monitExecutablePath, "summary"},
-			))
-
-			Ω(commandRunner.commandsRan[3].Args).To(Equal(
-				[]string{monitExecutablePath, "start", "redis"},
-			))
-			// initializing
-			Ω(commandRunner.commandsRan[4].Args).To(Equal(
-				[]string{monitExecutablePath, "summary"},
-			))
-			// running
-			Ω(commandRunner.commandsRan[5].Args).To(Equal(
-				[]string{monitExecutablePath, "summary"},
-			))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(fakeMonit.StopAndWaitCallCount()).To(Equal(1))
+			Expect(fakeMonit.StartAndWaitCallCount()).To(Equal(1))
 		})
 
 		It("removes the AOF file", func() {

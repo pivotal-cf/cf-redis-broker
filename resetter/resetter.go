@@ -1,15 +1,13 @@
 package resetter
 
 import (
-	"errors"
-	"fmt"
 	"net"
 	"os"
 	"os/exec"
-	"strings"
 	"time"
 
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
+	"github.com/pivotal-cf/redisutils/monit"
 )
 
 type checker interface {
@@ -27,13 +25,16 @@ type Resetter struct {
 	commandRunner       runner
 	monitExecutablePath string
 	timeout             time.Duration
+	monit               monit.Monit
 }
 
 func New(defaultConfPath string,
 	liveConfPath string,
 	portChecker checker,
 	commandRunner runner,
-	monitExecutablePath string) *Resetter {
+	monitExecutablePath string,
+	monit monit.Monit,
+) *Resetter {
 	return &Resetter{
 		defaultConfPath:     defaultConfPath,
 		liveConfPath:        liveConfPath,
@@ -41,6 +42,7 @@ func New(defaultConfPath string,
 		commandRunner:       commandRunner,
 		monitExecutablePath: monitExecutablePath,
 		timeout:             time.Second * 30,
+		monit:               monit,
 	}
 }
 
@@ -85,60 +87,11 @@ const (
 )
 
 func (resetter *Resetter) stopRedis() error {
-	resetter.commandRunner.Run(exec.Command(resetter.monitExecutablePath, monitStop, redisServer))
-
-	return resetter.loopWithTimeout("stopped", func() bool {
-		redisServerStatus := resetter.redisProcessStatus()
-		return redisServerStatus == monitNotMonitoredStatus
-	})
+	return resetter.monit.StopAndWait("redis")
 }
 
 func (resetter *Resetter) startRedis() error {
-	resetter.commandRunner.Run(exec.Command(resetter.monitExecutablePath, monitStart, redisServer))
-
-	return resetter.loopWithTimeout("started", func() bool {
-		redisServerStatus := resetter.redisProcessStatus()
-		return redisServerStatus == monitRunningStatus
-	})
-}
-
-func (resetter *Resetter) redisProcessStatus() string {
-	output, _ := resetter.commandRunner.Run(exec.Command(resetter.monitExecutablePath, monitSummary))
-	lines := strings.Split(string(output), "\n")
-
-	for _, line := range lines {
-		if strings.HasPrefix(line, monitRedisProcessPrefix) {
-			status := strings.Replace(line, monitRedisProcessPrefix, "", 1)
-			return strings.TrimSpace(status)
-		}
-	}
-
-	return ""
-}
-
-func (resetter *Resetter) loopWithTimeout(desiredState string, redisProcessAction func() bool) error {
-	redisProcessInDesiredState := make(chan bool)
-
-	go func(successChan chan<- bool) {
-		for {
-			if redisProcessAction() {
-				successChan <- true
-				return
-			}
-			time.Sleep(time.Millisecond * 100)
-		}
-	}(redisProcessInDesiredState)
-
-	timer := time.NewTimer(resetter.timeout)
-	defer timer.Stop()
-	select {
-	case <-redisProcessInDesiredState:
-		break
-	case <-timer.C:
-		return errors.New(fmt.Sprintf("timed out waiting for redis process to be %s by monit after %d seconds", desiredState, resetter.timeout/time.Second))
-	}
-
-	return nil
+	return resetter.monit.StartAndWait("redis")
 }
 
 func (_ *Resetter) deleteData() error {

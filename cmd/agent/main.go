@@ -8,13 +8,14 @@ import (
 	"os/exec"
 	"time"
 
+	"code.cloudfoundry.org/lager"
 	"github.com/pivotal-cf/brokerapi/auth"
 	"github.com/pivotal-cf/cf-redis-broker/agentapi"
 	"github.com/pivotal-cf/cf-redis-broker/agentconfig"
 	"github.com/pivotal-cf/cf-redis-broker/availability"
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 	"github.com/pivotal-cf/cf-redis-broker/resetter"
-	"code.cloudfoundry.org/lager"
+	"github.com/pivotal-cf/redisutils/monit"
 )
 
 type portChecker struct{}
@@ -46,12 +47,16 @@ func main() {
 
 	templateRedisConf(config, logger)
 
+	systemMonit := monit.New()
+	systemMonit.SetExecutable(config.MonitExecutablePath)
+
 	redisResetter := resetter.New(
 		config.DefaultConfPath,
 		config.ConfPath,
 		portChecker{},
 		commandRunner{},
 		config.MonitExecutablePath,
+		systemMonit,
 	)
 
 	handler := auth.NewWrapper(

@@ -15,6 +15,14 @@
 			"Rev": "62951a8009ab331bb21dc418074fa54e66eb9b6a"
 		},
 		{
+			"ImportPath": "github.com/BooleanCat/igo/ios",
+			"Rev": "7bd6d5c6db711409c6347cd42b2dc111cd400c5c"
+		},
+		{
+			"ImportPath": "github.com/BooleanCat/igo/ios/iexec",
+			"Rev": "7bd6d5c6db711409c6347cd42b2dc111cd400c5c"
+		},
+		{
 			"ImportPath": "github.com/cloudfoundry-incubator/candiedyaml",
 			"Rev": "150e4e8f749b21a7f0de8e3cfd885143fcea6b32"
 		},
@@ -225,6 +233,14 @@
 		{
 			"ImportPath": "github.com/pivotal-cf/brokerapi/auth",
 			"Rev": "0ea2a3913c148837e8615a1ef8bde757151934c3"
+		},
+		{
+			"ImportPath": "github.com/pivotal-cf/redisutils/monit",
+			"Rev": "b86503a5eff7e731998568180d3494bade7078ce"
+		},
+		{
+			"ImportPath": "github.com/pivotal-cf/redisutils/monit/fakes",
+			"Rev": "b86503a5eff7e731998568180d3494bade7078ce"
 		},
 		{
 			"ImportPath": "github.com/st3v/glager",
