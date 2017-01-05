@@ -18,20 +18,16 @@ type Resetter struct {
 	liveConfPath    string
 	portChecker     checker
 	timeout         time.Duration
-	monit           monit.Monit
+	Monit           monit.Monit
 }
 
-func New(defaultConfPath string,
-	liveConfPath string,
-	portChecker checker,
-	monit monit.Monit,
-) *Resetter {
+func New(defaultConfPath, liveConfPath string, portChecker checker) *Resetter {
 	return &Resetter{
 		defaultConfPath: defaultConfPath,
 		liveConfPath:    liveConfPath,
 		portChecker:     portChecker,
 		timeout:         time.Second * 30,
-		monit:           monit,
+		Monit:           monit.New(),
 	}
 }
 
@@ -66,11 +62,11 @@ func (resetter *Resetter) ResetRedis() error {
 }
 
 func (resetter *Resetter) stopRedis() error {
-	return resetter.monit.StopAndWait("redis")
+	return resetter.Monit.StopAndWait("redis")
 }
 
 func (resetter *Resetter) startRedis() error {
-	return resetter.monit.StartAndWait("redis")
+	return resetter.Monit.StartAndWait("redis")
 }
 
 func (_ *Resetter) deleteData() error {

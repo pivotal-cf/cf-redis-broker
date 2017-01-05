@@ -1,4 +1,4 @@
-package resetter_test
+package resetter
 
 import (
 	"errors"
@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
-	"github.com/pivotal-cf/cf-redis-broker/resetter"
 	monitFakes "github.com/pivotal-cf/redisutils/monit/fakes"
 
 	. "github.com/onsi/ginkgo"
@@ -29,7 +28,7 @@ func (portChecker *fakeChecker) Check(address *net.TCPAddr, timeout time.Duratio
 
 var _ = Describe("Client", func() {
 	var (
-		redisClient     *resetter.Resetter
+		redisClient     *Resetter
 		fakePortChecker *fakeChecker
 		aofPath         string
 		rdbPath         string
@@ -96,7 +95,8 @@ var _ = Describe("Client", func() {
 		_, err = os.Create(rdbPath)
 		Ω(err).ShouldNot(HaveOccurred())
 
-		redisClient = resetter.New(defaultConfPath, confPath, fakePortChecker, fakeMonit)
+		redisClient = New(defaultConfPath, confPath, fakePortChecker)
+		redisClient.Monit = fakeMonit
 	})
 
 	AfterEach(func() {
