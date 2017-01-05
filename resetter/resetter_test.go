@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"time"
 
@@ -28,38 +27,10 @@ func (portChecker *fakeChecker) Check(address *net.TCPAddr, timeout time.Duratio
 	return portChecker.checkErr
 }
 
-type fakeRunner struct {
-	commandsRan          []*exec.Cmd
-	summaryCallCount     int
-	summaryOutputStrings []string
-	redisProcessStatus   string
-}
-
-func (commandRunner *fakeRunner) Run(command *exec.Cmd) ([]byte, error) {
-	commandRunner.commandsRan = append(commandRunner.commandsRan, command)
-
-	if command.Args[1] == "stop" {
-		commandRunner.redisProcessStatus = "not monitored"
-	} else if command.Args[1] == "start" {
-		commandRunner.redisProcessStatus = "running"
-	} else if command.Args[1] == "summary" {
-		commandRunner.summaryCallCount++
-
-		if len(commandRunner.summaryOutputStrings) == 0 {
-			return []byte("Process 'redis' " + commandRunner.redisProcessStatus), nil
-		}
-
-		return []byte(commandRunner.summaryOutputStrings[commandRunner.summaryCallCount-1]), nil
-	}
-
-	return []byte{}, errors.New("Command not recognised by fake")
-}
-
 var _ = Describe("Client", func() {
 	var (
 		redisClient     *resetter.Resetter
 		fakePortChecker *fakeChecker
-		commandRunner   *fakeRunner
 		aofPath         string
 		rdbPath         string
 		redisPort       int
@@ -68,14 +39,11 @@ var _ = Describe("Client", func() {
 		conf            redisconf.Conf
 		fakeMonit       *monitFakes.FakeMonit
 
-		monitExecutablePath = "/path/to/monit"
-		redisPassword       = "somepassword"
+		redisPassword = "somepassword"
 	)
 
 	BeforeEach(func() {
 		fakeMonit = new(monitFakes.FakeMonit)
-		commandRunner = new(fakeRunner)
-		commandRunner.redisProcessStatus = "running"
 		fakePortChecker = new(fakeChecker)
 
 		tmpdir, err := ioutil.TempDir("", "redisconf-test")
@@ -128,7 +96,7 @@ var _ = Describe("Client", func() {
 		_, err = os.Create(rdbPath)
 		Ω(err).ShouldNot(HaveOccurred())
 
-		redisClient = resetter.New(defaultConfPath, confPath, fakePortChecker, commandRunner, monitExecutablePath, fakeMonit)
+		redisClient = resetter.New(defaultConfPath, confPath, fakePortChecker, fakeMonit)
 	})
 
 	AfterEach(func() {

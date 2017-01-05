@@ -3,7 +3,6 @@ package resetter
 import (
 	"net"
 	"os"
-	"os/exec"
 	"time"
 
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
@@ -14,35 +13,25 @@ type checker interface {
 	Check(address *net.TCPAddr, timeout time.Duration) error
 }
 
-type runner interface {
-	Run(command *exec.Cmd) ([]byte, error)
-}
-
 type Resetter struct {
-	defaultConfPath     string
-	liveConfPath        string
-	portChecker         checker
-	commandRunner       runner
-	monitExecutablePath string
-	timeout             time.Duration
-	monit               monit.Monit
+	defaultConfPath string
+	liveConfPath    string
+	portChecker     checker
+	timeout         time.Duration
+	monit           monit.Monit
 }
 
 func New(defaultConfPath string,
 	liveConfPath string,
 	portChecker checker,
-	commandRunner runner,
-	monitExecutablePath string,
 	monit monit.Monit,
 ) *Resetter {
 	return &Resetter{
-		defaultConfPath:     defaultConfPath,
-		liveConfPath:        liveConfPath,
-		portChecker:         portChecker,
-		commandRunner:       commandRunner,
-		monitExecutablePath: monitExecutablePath,
-		timeout:             time.Second * 30,
-		monit:               monit,
+		defaultConfPath: defaultConfPath,
+		liveConfPath:    liveConfPath,
+		portChecker:     portChecker,
+		timeout:         time.Second * 30,
+		monit:           monit,
 	}
 }
 
@@ -75,16 +64,6 @@ func (resetter *Resetter) ResetRedis() error {
 
 	return resetter.portChecker.Check(address, resetter.timeout)
 }
-
-const (
-	monitNotMonitoredStatus = "not monitored"
-	monitRedisProcessPrefix = "Process 'redis'"
-	monitRunningStatus      = "running"
-	monitStart              = "start"
-	monitStop               = "stop"
-	monitSummary            = "summary"
-	redisServer             = "redis"
-)
 
 func (resetter *Resetter) stopRedis() error {
 	return resetter.monit.StopAndWait("redis")

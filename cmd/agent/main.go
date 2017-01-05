@@ -5,7 +5,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"os/exec"
 	"time"
 
 	"code.cloudfoundry.org/lager"
@@ -22,12 +21,6 @@ type portChecker struct{}
 
 func (portChecker) Check(address *net.TCPAddr, timeout time.Duration) error {
 	return availability.Check(address, timeout)
-}
-
-type commandRunner struct{}
-
-func (commandRunner) Run(command *exec.Cmd) ([]byte, error) {
-	return command.CombinedOutput()
 }
 
 func main() {
@@ -54,8 +47,6 @@ func main() {
 		config.DefaultConfPath,
 		config.ConfPath,
 		portChecker{},
-		commandRunner{},
-		config.MonitExecutablePath,
 		systemMonit,
 	)
 
