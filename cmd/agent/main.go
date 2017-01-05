@@ -14,7 +14,6 @@ import (
 	"github.com/pivotal-cf/cf-redis-broker/availability"
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 	"github.com/pivotal-cf/cf-redis-broker/resetter"
-	"github.com/pivotal-cf/redisutils/monit"
 )
 
 type portChecker struct{}
@@ -40,15 +39,12 @@ func main() {
 
 	templateRedisConf(config, logger)
 
-	systemMonit := monit.New()
-	systemMonit.SetExecutable(config.MonitExecutablePath)
-
 	redisResetter := resetter.New(
 		config.DefaultConfPath,
 		config.ConfPath,
 		portChecker{},
-		systemMonit,
 	)
+	redisResetter.Monit.SetExecutable(config.MonitExecutablePath)
 
 	handler := auth.NewWrapper(
 		config.AuthConfiguration.Username,
