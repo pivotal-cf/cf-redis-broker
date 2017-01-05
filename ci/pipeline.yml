@@ -4,7 +4,7 @@ resources:
     type: git
     source:
       uri: https://github.com/pivotal-cf/cf-redis-broker
-      branch: v424
+      branch: master
 
 jobs:
 - name: tests
