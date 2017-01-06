@@ -127,13 +127,13 @@ func (monit *SysMonit) GetStatus(job string) (Status, error) {
 //Start is synonymous with `monit start {job}`
 func (monit *SysMonit) Start(job string) error {
 	cmd := monit.getMonitCommand("start", job)
-	return cmd.Run()
+	return monit.setErrorContentOf(cmd.CombinedOutput())
 }
 
 //Stop is synonymous with `monit stop {job}`
 func (monit *SysMonit) Stop(job string) error {
 	cmd := monit.getMonitCommand("stop", job)
-	return cmd.Run()
+	return monit.setErrorContentOf(cmd.CombinedOutput())
 }
 
 //StartAndWait runs Start(job) and waits for GetStatus(job) to report StatusRunning
@@ -177,6 +177,13 @@ func (monit *SysMonit) jobHasStatus(job string, status Status) (bool, error) {
 
 	currentStatus, err := monit.GetStatus(job)
 	return status == currentStatus, err
+}
+
+func (monit *SysMonit) setErrorContentOf(output []byte, err error) error {
+	if err != nil {
+		err = errors.New(string(output))
+	}
+	return err
 }
 
 func (monit *SysMonit) allJobsHaveStatus(status Status) (bool, error) {
