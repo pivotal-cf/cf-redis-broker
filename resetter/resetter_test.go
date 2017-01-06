@@ -112,6 +112,20 @@ var _ = Describe("Client", func() {
 			Expect(fakeMonit.StartAndWaitCallCount()).To(Equal(1))
 		})
 
+		It("monit start returns an error", func() {
+			monitStartError := errors.New("Monit has failed to start")
+			fakeMonit.StartAndWaitReturns(monitStartError)
+			err := redisClient.ResetRedis()
+			Expect(err).To(MatchError(monitStartError))
+		})
+
+		It("monit stop returns an error", func() {
+			monitStopError := errors.New("Monit has failed to stop")
+			fakeMonit.StopAndWaitReturns(monitStopError)
+			err := redisClient.ResetRedis()
+			Expect(err).To(MatchError(monitStopError))
+		})
+
 		It("removes the AOF file", func() {
 			err := redisClient.ResetRedis()
 			Ω(err).ShouldNot(HaveOccurred())
