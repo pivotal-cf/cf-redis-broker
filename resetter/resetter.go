@@ -13,6 +13,7 @@ type checker interface {
 	Check(address *net.TCPAddr, timeout time.Duration) error
 }
 
+//Resetter recycles a redis instance
 type Resetter struct {
 	defaultConfPath string
 	liveConfPath    string
@@ -21,6 +22,7 @@ type Resetter struct {
 	Monit           monit.Monit
 }
 
+//New is the correct way to instantiate a Resetter
 func New(defaultConfPath, liveConfPath string, portChecker checker) *Resetter {
 	return &Resetter{
 		defaultConfPath: defaultConfPath,
@@ -31,6 +33,7 @@ func New(defaultConfPath, liveConfPath string, portChecker checker) *Resetter {
 	}
 }
 
+//ResetRedis stops redis, clears the database and starts redis
 func (resetter *Resetter) ResetRedis() error {
 	if err := resetter.stopRedis(); err != nil {
 		return err
@@ -69,7 +72,7 @@ func (resetter *Resetter) startRedis() error {
 	return resetter.Monit.StartAndWait("redis")
 }
 
-func (_ *Resetter) deleteData() error {
+func (resetter *Resetter) deleteData() error {
 	if err := os.Remove("appendonly.aof"); err != nil {
 		return err
 	}
