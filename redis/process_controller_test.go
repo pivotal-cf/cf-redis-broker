@@ -9,14 +9,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pivotal-cf/cf-redis-broker/redis"
-	"github.com/pivotal-cf/cf-redis-broker/system"
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
+
+	"github.com/pivotal-cf/cf-redis-broker/redis"
+	"github.com/pivotal-cf/cf-redis-broker/system"
 )
 
 type fakeProcessChecker struct {
@@ -47,20 +47,22 @@ func (*fakeInstanceInformer) InstancePid(instanceId string) (int, error) {
 }
 
 var _ = Describe("Redis Process Controller", func() {
-	var processController *redis.OSProcessController
-	var instance *redis.Instance = &redis.Instance{}
-	var instanceInformer *fakeInstanceInformer
-	var logger *lagertest.TestLogger
-	var fakeProcessChecker *fakeProcessChecker = &fakeProcessChecker{}
-	var fakeProcessKiller *fakeProcessKiller = &fakeProcessKiller{}
-	var commandRunner *system.FakeCommandRunner
-	var connectionTimeoutErr error
+	var (
+		processController    *redis.OSProcessController
+		instance             *redis.Instance = new(redis.Instance)
+		instanceInformer     *fakeInstanceInformer
+		logger               *lagertest.TestLogger
+		fakeProcessChecker   *fakeProcessChecker = new(fakeProcessChecker)
+		fakeProcessKiller    *fakeProcessKiller  = new(fakeProcessKiller)
+		commandRunner        *system.FakeCommandRunner
+		connectionTimeoutErr error
+	)
 
 	BeforeEach(func() {
 		connectionTimeoutErr = nil
-		instanceInformer = &fakeInstanceInformer{}
+		instanceInformer = new(fakeInstanceInformer)
 		logger = lagertest.NewTestLogger("process-controller")
-		commandRunner = &system.FakeCommandRunner{}
+		commandRunner = new(system.FakeCommandRunner)
 	})
 
 	JustBeforeEach(func() {

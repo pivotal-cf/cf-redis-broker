@@ -4,13 +4,12 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net"
+	"testing"
 
 	. "github.com/onsi/ginkgo"
-	"github.com/onsi/ginkgo/reporters"
 	. "github.com/onsi/gomega"
-	"github.com/pivotal-cf/cf-redis-broker/redis"
 
-	"testing"
+	"github.com/pivotal-cf/cf-redis-broker/redis"
 )
 
 type Statefile struct {
@@ -21,15 +20,14 @@ type Statefile struct {
 
 func TestRedis(t *testing.T) {
 	RegisterFailHandler(Fail)
-	junitReporter := reporters.NewJUnitReporter("junit_redis.xml")
-	RunSpecsWithDefaultAndCustomReporters(t, "Redis Suite", []Reporter{junitReporter})
+	RunSpecs(t, "Redis Suite")
 }
 
 func getStatefileContents(path string) Statefile {
-	statefileBytes, err := ioutil.ReadFile(path)
+	statefileBytes, _ := ioutil.ReadFile(path)
 	statefileContents := Statefile{}
 
-	err = json.Unmarshal(statefileBytes, &statefileContents)
+	err := json.Unmarshal(statefileBytes, &statefileContents)
 	Expect(err).ToNot(HaveOccurred())
 	return statefileContents
 }
