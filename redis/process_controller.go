@@ -9,9 +9,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/pivotal-cf/cf-redis-broker/redis/client"
 	"code.cloudfoundry.org/lager"
 
+	"github.com/pivotal-cf/cf-redis-broker/redis/client"
 	"github.com/pivotal-cf/cf-redis-broker/system"
 )
 
