@@ -4,15 +4,15 @@ import (
 	"net"
 	"time"
 
-	"github.com/pivotal-cf/cf-redis-broker/availability"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/pivotal-cf/cf-redis-broker/availability"
 )
 
 func listen(address net.TCPAddr, delayBeforeListening time.Duration, terminate, closed chan struct{}) {
 	listener, err := net.ListenTCP("tcp", &address)
-	Ω(err).ShouldNot(HaveOccurred())
+	Expect(err).NotTo(HaveOccurred())
 	go func() {
 		select {
 		case <-terminate:
@@ -25,19 +25,18 @@ func listen(address net.TCPAddr, delayBeforeListening time.Duration, terminate, 
 }
 
 var _ = Describe("waiting for a port to become available", func() {
-
 	var address *net.TCPAddr
 
 	BeforeEach(func() {
 		var err error
 		address, err = net.ResolveTCPAddr("tcp", "localhost:19000")
-		Ω(err).ShouldNot(HaveOccurred())
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	Context("when nothing is listening at the specified address", func() {
 		It("errors", func() {
 			err := availability.Check(address, time.Second*1)
-			Ω(err).Should(HaveOccurred())
+			Expect(err).To(HaveOccurred())
 		})
 	})
 
@@ -59,7 +58,7 @@ var _ = Describe("waiting for a port to become available", func() {
 
 		It("does not error", func() {
 			err := availability.Check(address, time.Second*1)
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 		})
 	})
 
@@ -82,7 +81,7 @@ var _ = Describe("waiting for a port to become available", func() {
 
 		It("does not error", func() {
 			err := availability.Check(address, time.Second*1)
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 		})
 	})
 })
