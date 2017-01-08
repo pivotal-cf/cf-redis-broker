@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
+	sysProcess "github.com/pivotal-cf/cf-redis-broker/process"
 )
 
 func BuildExecutable(sourcePath string) string {
@@ -43,5 +44,6 @@ func KillRedisProcess(instanceID string, brokerConfig brokerconfig.Config) {
 	err = process.Kill()
 	Ω(err).ToNot(HaveOccurred())
 
-	process.Wait()
+	processChecker := new(sysProcess.ProcessChecker)
+	Eventually(func() bool { return processChecker.Alive(int(pid)) }).Should(BeFalse())
 }
