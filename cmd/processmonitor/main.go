@@ -12,7 +12,6 @@ import (
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
 	"github.com/pivotal-cf/cf-redis-broker/process"
 	"github.com/pivotal-cf/cf-redis-broker/redis"
-	"github.com/pivotal-cf/cf-redis-broker/system"
 )
 
 func main() {
@@ -40,14 +39,9 @@ func main() {
 
 	repo := redis.NewLocalRepository(config.RedisConfiguration, logger)
 
-	commandRunner := system.OSCommandRunner{
-		Logger: logger,
-	}
-
 	processController := redis.NewOSProcessController(
 		logger,
 		repo,
-		commandRunner,
 		new(process.ProcessChecker),
 		new(process.ProcessKiller),
 		redis.PingServer,
