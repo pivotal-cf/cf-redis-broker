@@ -48,16 +48,15 @@ func main() {
 
 	localRepo.AllInstancesVerbose()
 
-	processController := redis.NewOSProcessController(
-		brokerLogger,
-		localRepo,
-		commandRunner,
-		new(process.ProcessChecker),
-		new(process.ProcessKiller),
-		redis.PingServer,
-		availability.Check,
-		"",
-	)
+	processController := &redis.OSProcessController{
+		CommandRunner:            commandRunner,
+		InstanceInformer:         localRepo,
+		Logger:                   brokerLogger,
+		ProcessChecker:           &process.ProcessChecker{},
+		ProcessKiller:            &process.ProcessKiller{},
+		PingFunc:                 redis.PingServer,
+		WaitUntilConnectableFunc: availability.Check,
+	}
 
 	localCreator := &redis.LocalInstanceCreator{
 		FindFreePort:            system.FindFreePort,

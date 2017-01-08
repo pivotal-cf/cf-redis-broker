@@ -40,28 +40,6 @@ type OSProcessController struct {
 	RedisServerExecutablePath string
 }
 
-func NewOSProcessController(
-	logger lager.Logger,
-	instanceInformer InstanceInformer,
-	commandRunner system.CommandRunner,
-	processChecker ProcessChecker,
-	processKiller ProcessKiller,
-	pingFunc PingServerFunc,
-	waitUntilConnectableFunc WaitUntilConnectableFunc,
-	redisServerExecutablePath string,
-) *OSProcessController {
-	return &OSProcessController{
-		Logger:                    logger,
-		InstanceInformer:          instanceInformer,
-		CommandRunner:             commandRunner,
-		ProcessChecker:            processChecker,
-		ProcessKiller:             processKiller,
-		PingFunc:                  pingFunc,
-		WaitUntilConnectableFunc:  waitUntilConnectableFunc,
-		RedisServerExecutablePath: redisServerExecutablePath,
-	}
-}
-
 func PingServer(instance *Instance) error {
 	client, err := client.Connect(
 		client.Host(instance.Host),
