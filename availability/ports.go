@@ -26,6 +26,9 @@ func Check(address *net.TCPAddr, timeout time.Duration) error {
 }
 
 func isListening(address *net.TCPAddr) bool {
-	_, err := net.DialTCP("tcp", nil, address)
+	connection, err := net.DialTCP("tcp", nil, address)
+	if connection != nil {
+		connection.Close()
+	}
 	return err == nil
 }
