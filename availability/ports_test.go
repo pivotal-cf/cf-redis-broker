@@ -11,8 +11,7 @@ import (
 )
 
 func listen(address net.TCPAddr, delayBeforeListening time.Duration, terminate, closed chan struct{}) {
-	listener, err := net.ListenTCP("tcp", &address)
-	Expect(err).NotTo(HaveOccurred())
+	listener := listenTCP("tcp", &address)
 	go func() {
 		select {
 		case <-terminate:
@@ -28,9 +27,7 @@ var _ = Describe("waiting for a port to become available", func() {
 	var address *net.TCPAddr
 
 	BeforeEach(func() {
-		var err error
-		address, err = net.ResolveTCPAddr("tcp", "localhost:19000")
-		Expect(err).NotTo(HaveOccurred())
+		address = resolveTCPAddr("tcp", "localhost:19000")
 	})
 
 	Context("when nothing is listening at the specified address", func() {
