@@ -65,19 +65,20 @@ var _ = Describe("Redis Process Controller", func() {
 	})
 
 	JustBeforeEach(func() {
-		processController = &OSProcessController{
-			Logger:           logger,
-			InstanceInformer: instanceInformer,
-			CommandRunner:    commandRunner,
-			ProcessChecker:   fakeProcessChecker,
-			ProcessKiller:    fakeProcessKiller,
-			PingFunc: func(instance *Instance) error {
+		processController = NewOSProcessController(
+			logger,
+			instanceInformer,
+			commandRunner,
+			fakeProcessChecker,
+			fakeProcessKiller,
+			func(instance *Instance) error {
 				return errors.New("what")
 			},
-			WaitUntilConnectableFunc: func(*net.TCPAddr, time.Duration) error {
+			func(*net.TCPAddr, time.Duration) error {
 				return connectionTimeoutErr
 			},
-		}
+			"",
+		)
 	})
 
 	itStartsARedisProcess := func(executablePath string) {
