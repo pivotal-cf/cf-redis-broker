@@ -1,8 +1,7 @@
-package redis_test
+package redis
 
 import (
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"net"
 	"os"
@@ -11,12 +10,10 @@ import (
 
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
+	"github.com/BooleanCat/igo/ios/iexec"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
-
-	"github.com/pivotal-cf/cf-redis-broker/redis"
-	"github.com/pivotal-cf/cf-redis-broker/system"
 )
 
 type fakeProcessChecker struct {
@@ -42,19 +39,19 @@ func (fakeProcessKiller *fakeProcessKiller) Kill(pid int) error {
 
 type fakeInstanceInformer struct{}
 
-func (*fakeInstanceInformer) InstancePid(instanceId string) (int, error) {
+func (*fakeInstanceInformer) InstancePid(instanceID string) (int, error) {
 	return 123, nil
 }
 
 var _ = Describe("Redis Process Controller", func() {
 	var (
-		processController    *redis.OSProcessController
-		instance             *redis.Instance = new(redis.Instance)
+		processController    *OSProcessController
+		instance             *Instance = new(Instance)
 		instanceInformer     *fakeInstanceInformer
 		logger               *lagertest.TestLogger
 		fakeProcessChecker   *fakeProcessChecker = new(fakeProcessChecker)
 		fakeProcessKiller    *fakeProcessKiller  = new(fakeProcessKiller)
-		commandRunner        *system.FakeCommandRunner
+		pureFake             *iexec.PureFake
 		connectionTimeoutErr error
 	)
 
@@ -62,29 +59,31 @@ var _ = Describe("Redis Process Controller", func() {
 		connectionTimeoutErr = nil
 		instanceInformer = new(fakeInstanceInformer)
 		logger = lagertest.NewTestLogger("process-controller")
-		commandRunner = new(system.FakeCommandRunner)
+		pureFake = iexec.NewPureFake()
 	})
 
 	JustBeforeEach(func() {
-		processController = &redis.OSProcessController{
-			Logger:           logger,
-			InstanceInformer: instanceInformer,
-			CommandRunner:    commandRunner,
-			ProcessChecker:   fakeProcessChecker,
-			ProcessKiller:    fakeProcessKiller,
-			PingFunc: func(instance *redis.Instance) error {
+		processController = NewOSProcessController(
+			logger,
+			instanceInformer,
+			fakeProcessChecker,
+			fakeProcessKiller,
+			func(instance *Instance) error {
 				return errors.New("what")
 			},
-			WaitUntilConnectableFunc: func(*net.TCPAddr, time.Duration) error {
+			func(*net.TCPAddr, time.Duration) error {
 				return connectionTimeoutErr
 			},
-		}
+			"",
+		)
+		processController.exec = pureFake.Exec
 	})
 
 	itStartsARedisProcess := func(executablePath string) {
-		Ω(commandRunner.Commands).To(Equal([]string{
-			fmt.Sprintf("%s configFilePath --pidfile pidFilePath --dir instanceDataDir --logfile logFilePath", executablePath),
-		}))
+		command, args := pureFake.Exec.CommandArgsForCall(0)
+		joinedArgs := strings.Join(args, " ")
+		Expect(command).To(Equal(executablePath))
+		Expect(joinedArgs).To(Equal("configFilePath --pidfile pidFilePath --dir instanceDataDir --logfile logFilePath"))
 	}
 
 	Describe("StartAndWaitUntilReady", func() {
@@ -95,7 +94,7 @@ var _ = Describe("Redis Process Controller", func() {
 
 		It("returns no error", func() {
 			err := processController.StartAndWaitUntilReady(instance, "", "", "", "", time.Second*1)
-			Ω(err).NotTo(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		Context("when the redis process fails to start", func() {
@@ -105,13 +104,12 @@ var _ = Describe("Redis Process Controller", func() {
 
 			It("returns the same error that the WaitUntilConnectableFunc returns", func() {
 				err := processController.StartAndWaitUntilReady(instance, "", "", "", "", time.Second*1)
-				Ω(err).To(Equal(connectionTimeoutErr))
+				Expect(err).To(Equal(connectionTimeoutErr))
 			})
 		})
 	})
 
 	Describe("StartAndWaitUntilReadyWithConfig", func() {
-
 		Context("When using a custom redis-server executable", func() {
 			It("runs the right command to start redis", func() {
 				processController.RedisServerExecutablePath = "custom/path/to/redis"
@@ -140,7 +138,7 @@ var _ = Describe("Redis Process Controller", func() {
 
 		It("returns no error", func() {
 			err := processController.StartAndWaitUntilReadyWithConfig(instance, []string{}, time.Second*1)
-			Ω(err).NotTo(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		Context("when the redis process fails to start", func() {
@@ -150,7 +148,7 @@ var _ = Describe("Redis Process Controller", func() {
 
 			It("returns the same error that the WaitUntilConnectableFunc returns", func() {
 				err := processController.StartAndWaitUntilReadyWithConfig(instance, []string{}, time.Second*1)
-				Ω(err).To(Equal(connectionTimeoutErr))
+				Expect(err).To(Equal(connectionTimeoutErr))
 			})
 		})
 	})
@@ -158,17 +156,19 @@ var _ = Describe("Redis Process Controller", func() {
 	Describe("Kill", func() {
 		It("kills the correct process", func() {
 			err := processController.Kill(instance)
-			Ω(err).NotTo(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 
-			Ω(fakeProcessKiller.killed).Should(BeTrue())
-			Ω(fakeProcessKiller.lastPidKilled).Should(Equal(123))
+			Expect(fakeProcessKiller.killed).To(BeTrue())
+			Expect(fakeProcessKiller.lastPidKilled).To(Equal(123))
 		})
 	})
 
 	Describe("EnsureRunning", func() {
 		Context("if the process is already running", func() {
-			var controller *redis.OSProcessController
-			var log *gbytes.Buffer
+			var (
+				controller *OSProcessController
+				log        *gbytes.Buffer
+			)
 
 			BeforeEach(func() {
 				fakeProcessChecker.alive = true
@@ -185,7 +185,7 @@ var _ = Describe("Redis Process Controller", func() {
 					var err error
 
 					JustBeforeEach(func() {
-						processController.PingFunc = func(instance *redis.Instance) error {
+						processController.PingFunc = func(instance *Instance) error {
 							return nil
 						}
 						err = controller.EnsureRunning(instance, "", "", "", "")
@@ -201,8 +201,10 @@ var _ = Describe("Redis Process Controller", func() {
 				})
 
 				Context("and is not the correct redis instance", func() {
-					var err error
-					var file *os.File
+					var (
+						err  error
+						file *os.File
+					)
 
 					BeforeEach(func() {
 						var statErr error
@@ -230,8 +232,11 @@ var _ = Describe("Redis Process Controller", func() {
 
 					It("should restart the redis-server", func() {
 						ran := false
-						for _, command := range commandRunner.Commands {
-							if strings.Contains(command, "redis-server /my/lovely/config") {
+						callCount := pureFake.Exec.CommandCallCount()
+						for i := 0; i < callCount; i++ {
+							command, args := pureFake.Exec.CommandArgsForCall(i)
+							joinedArgs := strings.Join(args, " ")
+							if command == "redis-server" && strings.Contains(joinedArgs, "/my/lovely/config") {
 								ran = true
 								break
 							}
@@ -256,8 +261,10 @@ var _ = Describe("Redis Process Controller", func() {
 			})
 
 			Context("and is not a redis server", func() {
-				var err error
-				var file *os.File
+				var (
+					err  error
+					file *os.File
+				)
 
 				BeforeEach(func() {
 					var statErr error
@@ -285,8 +292,11 @@ var _ = Describe("Redis Process Controller", func() {
 
 				It("should restart the redis-server", func() {
 					ran := false
-					for _, command := range commandRunner.Commands {
-						if strings.Contains(command, "redis-server /my/config") {
+					callCount := pureFake.Exec.CommandCallCount()
+					for i := 0; i < callCount; i++ {
+						command, args := pureFake.Exec.CommandArgsForCall(i)
+						joinedArgs := strings.Join(args, " ")
+						if command == "redis-server" && strings.Contains(joinedArgs, "/my/config") {
 							ran = true
 							break
 						}
@@ -317,19 +327,19 @@ var _ = Describe("Redis Process Controller", func() {
 
 			It("starts it", func() {
 				err := processController.EnsureRunning(instance, "configFilePath", "instanceDataDir", "pidFilePath", "logFilePath")
-				Ω(err).ShouldNot(HaveOccurred())
+				Expect(err).NotTo(HaveOccurred())
 
 				itStartsARedisProcess("redis-server")
 			})
 
 			Context("and it can not be started", func() {
 				BeforeEach(func() {
-					commandRunner.RunError = errors.New("run error")
+					pureFake.Cmd.RunReturns(errors.New("run error"))
 				})
 
 				It("should return error", func() {
 					err := processController.EnsureRunning(instance, "", "", "", "")
-					Ω(err).Should(HaveOccurred())
+					Expect(err).To(HaveOccurred())
 				})
 			})
 		})
