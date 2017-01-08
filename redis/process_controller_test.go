@@ -2,6 +2,7 @@ package redis
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net"
 	"os"
@@ -10,10 +11,11 @@ import (
 
 	"code.cloudfoundry.org/lager"
 	"code.cloudfoundry.org/lager/lagertest"
-	"github.com/BooleanCat/igo/ios/iexec"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
+
+	"github.com/pivotal-cf/cf-redis-broker/system"
 )
 
 type fakeProcessChecker struct {
@@ -51,7 +53,7 @@ var _ = Describe("Redis Process Controller", func() {
 		logger               *lagertest.TestLogger
 		fakeProcessChecker   *fakeProcessChecker = new(fakeProcessChecker)
 		fakeProcessKiller    *fakeProcessKiller  = new(fakeProcessKiller)
-		pureFake             *iexec.PureFake
+		commandRunner        *system.FakeCommandRunner
 		connectionTimeoutErr error
 	)
 
@@ -59,13 +61,14 @@ var _ = Describe("Redis Process Controller", func() {
 		connectionTimeoutErr = nil
 		instanceInformer = new(fakeInstanceInformer)
 		logger = lagertest.NewTestLogger("process-controller")
-		pureFake = iexec.NewPureFake()
+		commandRunner = new(system.FakeCommandRunner)
 	})
 
 	JustBeforeEach(func() {
 		processController = NewOSProcessController(
 			logger,
 			instanceInformer,
+			commandRunner,
 			fakeProcessChecker,
 			fakeProcessKiller,
 			func(instance *Instance) error {
@@ -76,14 +79,12 @@ var _ = Describe("Redis Process Controller", func() {
 			},
 			"",
 		)
-		processController.exec = pureFake.Exec
 	})
 
 	itStartsARedisProcess := func(executablePath string) {
-		command, args := pureFake.Exec.CommandArgsForCall(0)
-		joinedArgs := strings.Join(args, " ")
-		Expect(command).To(Equal(executablePath))
-		Expect(joinedArgs).To(Equal("configFilePath --pidfile pidFilePath --dir instanceDataDir --logfile logFilePath"))
+		Expect(commandRunner.Commands).To(Equal([]string{
+			fmt.Sprintf("%s configFilePath --pidfile pidFilePath --dir instanceDataDir --logfile logFilePath", executablePath),
+		}))
 	}
 
 	Describe("StartAndWaitUntilReady", func() {
@@ -232,11 +233,8 @@ var _ = Describe("Redis Process Controller", func() {
 
 					It("should restart the redis-server", func() {
 						ran := false
-						callCount := pureFake.Exec.CommandCallCount()
-						for i := 0; i < callCount; i++ {
-							command, args := pureFake.Exec.CommandArgsForCall(i)
-							joinedArgs := strings.Join(args, " ")
-							if command == "redis-server" && strings.Contains(joinedArgs, "/my/lovely/config") {
+						for _, command := range commandRunner.Commands {
+							if strings.Contains(command, "redis-server /my/lovely/config") {
 								ran = true
 								break
 							}
@@ -292,11 +290,8 @@ var _ = Describe("Redis Process Controller", func() {
 
 				It("should restart the redis-server", func() {
 					ran := false
-					callCount := pureFake.Exec.CommandCallCount()
-					for i := 0; i < callCount; i++ {
-						command, args := pureFake.Exec.CommandArgsForCall(i)
-						joinedArgs := strings.Join(args, " ")
-						if command == "redis-server" && strings.Contains(joinedArgs, "/my/config") {
+					for _, command := range commandRunner.Commands {
+						if strings.Contains(command, "redis-server /my/config") {
 							ran = true
 							break
 						}
@@ -334,7 +329,7 @@ var _ = Describe("Redis Process Controller", func() {
 
 			Context("and it can not be started", func() {
 				BeforeEach(func() {
-					pureFake.Cmd.RunReturns(errors.New("run error"))
+					commandRunner.RunError = errors.New("run error")
 				})
 
 				It("should return error", func() {
