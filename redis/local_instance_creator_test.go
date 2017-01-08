@@ -3,15 +3,14 @@ package redis_test
 import (
 	"errors"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	"github.com/pborman/uuid"
-
 	"github.com/pivotal-cf/brokerapi"
+
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
 	"github.com/pivotal-cf/cf-redis-broker/redis"
 	"github.com/pivotal-cf/cf-redis-broker/redis/fakes"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 var freePortsFound int
@@ -22,16 +21,16 @@ func fakeFreePortFinder() (int, error) {
 }
 
 var _ = Describe("Local Redis Creator", func() {
-
-	var instanceID string
-	var fakeProcessController *fakes.FakeProcessController
-	var fakeLocalRepository *fakes.FakeLocalRepository
-	var localInstanceCreator *redis.LocalInstanceCreator
+	var (
+		instanceID            string
+		fakeProcessController *fakes.FakeProcessController
+		fakeLocalRepository   *fakes.FakeLocalRepository
+		localInstanceCreator  *redis.LocalInstanceCreator
+	)
 
 	BeforeEach(func() {
 		instanceID = uuid.NewRandom().String()
-		fakeProcessController = &fakes.FakeProcessController{}
-
+		fakeProcessController = new(fakes.FakeProcessController)
 		fakeLocalRepository = new(fakes.FakeLocalRepository)
 
 		localInstanceCreator = &redis.LocalInstanceCreator{
@@ -52,7 +51,7 @@ var _ = Describe("Local Redis Creator", func() {
 
 			It("should return an error if unable to retrieve instance count", func() {
 				err := localInstanceCreator.Create(instanceID)
-				Ω(err).To(HaveOccurred())
+				Expect(err).To(HaveOccurred())
 			})
 		})
 
@@ -63,17 +62,16 @@ var _ = Describe("Local Redis Creator", func() {
 
 			It("finds a free port", func() {
 				err := localInstanceCreator.Create(instanceID)
-				Ω(err).ToNot(HaveOccurred())
-
-				Ω(freePortsFound).To(Equal(1))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(freePortsFound).To(Equal(1))
 			})
 
 			It("starts a new Redis instance", func() {
 				err := localInstanceCreator.Create(instanceID)
-				Ω(err).ToNot(HaveOccurred())
+				Expect(err).NotTo(HaveOccurred())
 
-				Ω(len(fakeProcessController.StartedInstances)).To(Equal(1))
-				Ω(fakeProcessController.StartedInstances[0].ID).To(Equal(instanceID))
+				Expect(len(fakeProcessController.StartedInstances)).To(Equal(1))
+				Expect(fakeProcessController.StartedInstances[0].ID).To(Equal(instanceID))
 			})
 
 			It("calls Unlock on local repository with correct instance ID", func() {
@@ -92,12 +90,12 @@ var _ = Describe("Local Redis Creator", func() {
 			It("does not start a new Redis instance", func() {
 				localInstanceCreator.Create(instanceID)
 
-				Ω(len(fakeProcessController.StartedInstances)).To(Equal(0))
+				Expect(len(fakeProcessController.StartedInstances)).To(Equal(0))
 			})
 
 			It("returns an InstanceLimitMet error", func() {
 				err := localInstanceCreator.Create(instanceID)
-				Ω(err).To(Equal(brokerapi.ErrInstanceLimitMet))
+				Expect(err).To(Equal(brokerapi.ErrInstanceLimitMet))
 			})
 		})
 	})
@@ -124,8 +122,8 @@ var _ = Describe("Local Redis Creator", func() {
 			})
 
 			It("kills the instance", func() {
-				Ω(len(fakeProcessController.KilledInstances)).To(Equal(1))
-				Ω(fakeProcessController.KilledInstances[0].ID).To(Equal(instanceID))
+				Expect(len(fakeProcessController.KilledInstances)).To(Equal(1))
+				Expect(fakeProcessController.KilledInstances[0].ID).To(Equal(instanceID))
 			})
 
 			It("deletes the instance data directory", func() {
@@ -146,11 +144,11 @@ var _ = Describe("Local Redis Creator", func() {
 			})
 
 			It("returns an error", func() {
-				Ω(destroyErr).To(HaveOccurred())
+				Expect(destroyErr).To(HaveOccurred())
 			})
 
 			It("does not try to kill instance processes", func() {
-				Ω(fakeProcessController.KilledInstances).To(BeEmpty())
+				Expect(fakeProcessController.KilledInstances).To(BeEmpty())
 			})
 
 			It("does not try to delete instances from the instance repository", func() {
