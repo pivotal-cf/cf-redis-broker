@@ -1,4 +1,4 @@
-package redis
+package redis_test
 
 import (
 	"errors"
@@ -15,6 +15,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 
+	"github.com/pivotal-cf/cf-redis-broker/redis"
 	"github.com/pivotal-cf/cf-redis-broker/system"
 )
 
@@ -41,14 +42,14 @@ func (fakeProcessKiller *fakeProcessKiller) Kill(pid int) error {
 
 type fakeInstanceInformer struct{}
 
-func (*fakeInstanceInformer) InstancePid(instanceID string) (int, error) {
+func (*fakeInstanceInformer) InstancePid(instanceId string) (int, error) {
 	return 123, nil
 }
 
 var _ = Describe("Redis Process Controller", func() {
 	var (
-		processController    *OSProcessController
-		instance             *Instance = new(Instance)
+		processController    *redis.OSProcessController
+		instance             *redis.Instance = new(redis.Instance)
 		instanceInformer     *fakeInstanceInformer
 		logger               *lagertest.TestLogger
 		fakeProcessChecker   *fakeProcessChecker = new(fakeProcessChecker)
@@ -65,13 +66,13 @@ var _ = Describe("Redis Process Controller", func() {
 	})
 
 	JustBeforeEach(func() {
-		processController = &OSProcessController{
+		processController = &redis.OSProcessController{
 			Logger:           logger,
 			InstanceInformer: instanceInformer,
 			CommandRunner:    commandRunner,
 			ProcessChecker:   fakeProcessChecker,
 			ProcessKiller:    fakeProcessKiller,
-			PingFunc: func(instance *Instance) error {
+			PingFunc: func(instance *redis.Instance) error {
 				return errors.New("what")
 			},
 			WaitUntilConnectableFunc: func(*net.TCPAddr, time.Duration) error {
@@ -166,7 +167,7 @@ var _ = Describe("Redis Process Controller", func() {
 
 	Describe("EnsureRunning", func() {
 		Context("if the process is already running", func() {
-			var controller *OSProcessController
+			var controller *redis.OSProcessController
 			var log *gbytes.Buffer
 
 			BeforeEach(func() {
@@ -184,7 +185,7 @@ var _ = Describe("Redis Process Controller", func() {
 					var err error
 
 					JustBeforeEach(func() {
-						processController.PingFunc = func(instance *Instance) error {
+						processController.PingFunc = func(instance *redis.Instance) error {
 							return nil
 						}
 						err = controller.EnsureRunning(instance, "", "", "", "")
