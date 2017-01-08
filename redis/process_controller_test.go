@@ -81,7 +81,7 @@ var _ = Describe("Redis Process Controller", func() {
 	})
 
 	itStartsARedisProcess := func(executablePath string) {
-		Expect(commandRunner.Commands).To(Equal([]string{
+		Ω(commandRunner.Commands).To(Equal([]string{
 			fmt.Sprintf("%s configFilePath --pidfile pidFilePath --dir instanceDataDir --logfile logFilePath", executablePath),
 		}))
 	}
@@ -94,7 +94,7 @@ var _ = Describe("Redis Process Controller", func() {
 
 		It("returns no error", func() {
 			err := processController.StartAndWaitUntilReady(instance, "", "", "", "", time.Second*1)
-			Expect(err).NotTo(HaveOccurred())
+			Ω(err).NotTo(HaveOccurred())
 		})
 
 		Context("when the redis process fails to start", func() {
@@ -104,12 +104,13 @@ var _ = Describe("Redis Process Controller", func() {
 
 			It("returns the same error that the WaitUntilConnectableFunc returns", func() {
 				err := processController.StartAndWaitUntilReady(instance, "", "", "", "", time.Second*1)
-				Expect(err).To(Equal(connectionTimeoutErr))
+				Ω(err).To(Equal(connectionTimeoutErr))
 			})
 		})
 	})
 
 	Describe("StartAndWaitUntilReadyWithConfig", func() {
+
 		Context("When using a custom redis-server executable", func() {
 			It("runs the right command to start redis", func() {
 				processController.RedisServerExecutablePath = "custom/path/to/redis"
@@ -138,7 +139,7 @@ var _ = Describe("Redis Process Controller", func() {
 
 		It("returns no error", func() {
 			err := processController.StartAndWaitUntilReadyWithConfig(instance, []string{}, time.Second*1)
-			Expect(err).NotTo(HaveOccurred())
+			Ω(err).NotTo(HaveOccurred())
 		})
 
 		Context("when the redis process fails to start", func() {
@@ -148,7 +149,7 @@ var _ = Describe("Redis Process Controller", func() {
 
 			It("returns the same error that the WaitUntilConnectableFunc returns", func() {
 				err := processController.StartAndWaitUntilReadyWithConfig(instance, []string{}, time.Second*1)
-				Expect(err).To(Equal(connectionTimeoutErr))
+				Ω(err).To(Equal(connectionTimeoutErr))
 			})
 		})
 	})
@@ -156,19 +157,17 @@ var _ = Describe("Redis Process Controller", func() {
 	Describe("Kill", func() {
 		It("kills the correct process", func() {
 			err := processController.Kill(instance)
-			Expect(err).NotTo(HaveOccurred())
+			Ω(err).NotTo(HaveOccurred())
 
-			Expect(fakeProcessKiller.killed).To(BeTrue())
-			Expect(fakeProcessKiller.lastPidKilled).To(Equal(123))
+			Ω(fakeProcessKiller.killed).Should(BeTrue())
+			Ω(fakeProcessKiller.lastPidKilled).Should(Equal(123))
 		})
 	})
 
 	Describe("EnsureRunning", func() {
 		Context("if the process is already running", func() {
-			var (
-				controller *OSProcessController
-				log        *gbytes.Buffer
-			)
+			var controller *OSProcessController
+			var log *gbytes.Buffer
 
 			BeforeEach(func() {
 				fakeProcessChecker.alive = true
@@ -201,10 +200,8 @@ var _ = Describe("Redis Process Controller", func() {
 				})
 
 				Context("and is not the correct redis instance", func() {
-					var (
-						err  error
-						file *os.File
-					)
+					var err error
+					var file *os.File
 
 					BeforeEach(func() {
 						var statErr error
@@ -258,10 +255,8 @@ var _ = Describe("Redis Process Controller", func() {
 			})
 
 			Context("and is not a redis server", func() {
-				var (
-					err  error
-					file *os.File
-				)
+				var err error
+				var file *os.File
 
 				BeforeEach(func() {
 					var statErr error
@@ -321,7 +316,7 @@ var _ = Describe("Redis Process Controller", func() {
 
 			It("starts it", func() {
 				err := processController.EnsureRunning(instance, "configFilePath", "instanceDataDir", "pidFilePath", "logFilePath")
-				Expect(err).NotTo(HaveOccurred())
+				Ω(err).ShouldNot(HaveOccurred())
 
 				itStartsARedisProcess("redis-server")
 			})
@@ -333,7 +328,7 @@ var _ = Describe("Redis Process Controller", func() {
 
 				It("should return error", func() {
 					err := processController.EnsureRunning(instance, "", "", "", "")
-					Expect(err).To(HaveOccurred())
+					Ω(err).Should(HaveOccurred())
 				})
 			})
 		})
