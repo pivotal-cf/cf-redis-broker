@@ -1,28 +1,21 @@
 package availability
 
 import (
+	"errors"
 	"net"
 	"time"
 )
 
+const checkInteral = time.Millisecond * 10
+
 func Check(address *net.TCPAddr, timeout time.Duration) error {
-	action := func(successChan chan<- struct{}, terminate <-chan struct{}) {
-		for {
-			select {
-			case <-terminate:
-				return
-			case <-time.After(10 * time.Millisecond):
-				if isListening(address) {
-					close(successChan)
-					return
-				}
-			}
+	for elapsed := time.Duration(0); elapsed < timeout; elapsed = elapsed + checkInteral {
+		if isListening(address) {
+			return nil
 		}
+		time.Sleep(checkInteral)
 	}
-	enforcer := DeadlineEnforcer{
-		Action: action,
-	}
-	return enforcer.DoWithin(timeout)
+	return errors.New("timeout")
 }
 
 func isListening(address *net.TCPAddr) bool {
