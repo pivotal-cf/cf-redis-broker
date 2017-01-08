@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/lager"
+	"github.com/BooleanCat/igo/ios/iexec"
 
 	"github.com/pivotal-cf/cf-redis-broker/redis/client"
-	"github.com/pivotal-cf/cf-redis-broker/system"
 )
 
 const redisStartTimeout time.Duration = 10 * time.Second
@@ -32,12 +32,34 @@ type InstanceInformer interface {
 type OSProcessController struct {
 	Logger                    lager.Logger
 	InstanceInformer          InstanceInformer
-	CommandRunner             system.CommandRunner
 	ProcessChecker            ProcessChecker
 	ProcessKiller             ProcessKiller
 	PingFunc                  PingServerFunc
 	WaitUntilConnectableFunc  WaitUntilConnectableFunc
 	RedisServerExecutablePath string
+
+	exec iexec.Exec
+}
+
+func NewOSProcessController(
+	logger lager.Logger,
+	instanceInformer InstanceInformer,
+	processChecker ProcessChecker,
+	processKiller ProcessKiller,
+	pingFunc PingServerFunc,
+	waitUntilConnectableFunc WaitUntilConnectableFunc,
+	redisServerExecutablePath string,
+) *OSProcessController {
+	return &OSProcessController{
+		Logger:                    logger,
+		InstanceInformer:          instanceInformer,
+		ProcessChecker:            processChecker,
+		ProcessKiller:             processKiller,
+		PingFunc:                  pingFunc,
+		WaitUntilConnectableFunc:  waitUntilConnectableFunc,
+		RedisServerExecutablePath: redisServerExecutablePath,
+		exec: new(iexec.ExecWrap),
+	}
 }
 
 func PingServer(instance *Instance) error {
@@ -72,7 +94,7 @@ func (controller *OSProcessController) StartAndWaitUntilReadyWithConfig(instance
 		executable = controller.RedisServerExecutablePath
 	}
 
-	err := controller.CommandRunner.Run(executable, instanceCommandArgs...)
+	err := controller.exec.Command(executable, instanceCommandArgs...).Run()
 	if err != nil {
 		return fmt.Errorf("redis failed to start: %s", err)
 	}

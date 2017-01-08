@@ -7,12 +7,11 @@ import (
 	"syscall"
 	"time"
 
+	"code.cloudfoundry.org/lager"
 	"github.com/pivotal-cf/cf-redis-broker/availability"
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
 	"github.com/pivotal-cf/cf-redis-broker/process"
 	"github.com/pivotal-cf/cf-redis-broker/redis"
-	"github.com/pivotal-cf/cf-redis-broker/system"
-	"code.cloudfoundry.org/lager"
 )
 
 func main() {
@@ -40,19 +39,15 @@ func main() {
 
 	repo := redis.NewLocalRepository(config.RedisConfiguration, logger)
 
-	commandRunner := system.OSCommandRunner{
-		Logger: logger,
-	}
-
-	processController := &redis.OSProcessController{
-		Logger:                   logger,
-		InstanceInformer:         repo,
-		CommandRunner:            commandRunner,
-		ProcessChecker:           &process.ProcessChecker{},
-		ProcessKiller:            &process.ProcessKiller{},
-		PingFunc:                 redis.PingServer,
-		WaitUntilConnectableFunc: availability.Check,
-	}
+	processController := redis.NewOSProcessController(
+		logger,
+		repo,
+		new(process.ProcessChecker),
+		new(process.ProcessKiller),
+		redis.PingServer,
+		availability.Check,
+		"",
+	)
 
 	checkInterval := config.RedisConfiguration.ProcessCheckIntervalSeconds
 
