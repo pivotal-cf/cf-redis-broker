@@ -40,10 +40,6 @@ func main() {
 		})
 	}
 
-	commandRunner := system.OSCommandRunner{
-		Logger: brokerLogger,
-	}
-
 	localRepo := redis.NewLocalRepository(config.RedisConfiguration, brokerLogger)
 
 	localRepo.AllInstancesVerbose()
@@ -51,7 +47,6 @@ func main() {
 	processController := redis.NewOSProcessController(
 		brokerLogger,
 		localRepo,
-		commandRunner,
 		new(process.ProcessChecker),
 		new(process.ProcessKiller),
 		redis.PingServer,
