@@ -10,6 +10,7 @@ type OS interface {
 	Chown(string, int, int) error
 	OpenFile(string, int, os.FileMode) (*os.File, error)
 	Stat(string) (os.FileInfo, error)
+	FindProcess(int) (Process, error)
 }
 
 //OSWrap is a wrapper around os that implements ios.OS
@@ -43,4 +44,10 @@ func (osw *OSWrap) OpenFile(name string, flag int, perm os.FileMode) (*os.File, 
 //Stat is a wrapper around os.Stat()
 func (osw *OSWrap) Stat(name string) (os.FileInfo, error) {
 	return os.Stat(name)
+}
+
+//FindProcess is a wrapper around os.FindProcess()
+func (osw *OSWrap) FindProcess(pid int) (Process, error) {
+	process, err := os.FindProcess(pid)
+	return &ProcessWrap{process: process}, err
 }

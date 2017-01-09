@@ -16,11 +16,11 @@
 		},
 		{
 			"ImportPath": "github.com/BooleanCat/igo/ios",
-			"Rev": "7bd6d5c6db711409c6347cd42b2dc111cd400c5c"
+			"Rev": "27d84aa65b3471ee843326dae6582cc6a43851c6"
 		},
 		{
 			"ImportPath": "github.com/BooleanCat/igo/ios/iexec",
-			"Rev": "7bd6d5c6db711409c6347cd42b2dc111cd400c5c"
+			"Rev": "27d84aa65b3471ee843326dae6582cc6a43851c6"
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry-incubator/candiedyaml",

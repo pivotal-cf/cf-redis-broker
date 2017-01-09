@@ -66,6 +66,15 @@ type OSFake struct {
 		result1 os.FileInfo
 		result2 error
 	}
+	FindProcessStub        func(int) (Process, error)
+	findProcessMutex       sync.RWMutex
+	findProcessArgsForCall []struct {
+		arg1 int
+	}
+	findProcessReturns struct {
+		result1 Process
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -294,6 +303,43 @@ func (fake *OSFake) StatReturns(result1 os.FileInfo, result2 error) {
 	}{result1, result2}
 }
 
+//FindProcess ...
+func (fake *OSFake) FindProcess(arg1 int) (Process, error) {
+	fake.findProcessMutex.Lock()
+	fake.findProcessArgsForCall = append(fake.findProcessArgsForCall, struct {
+		arg1 int
+	}{arg1})
+	fake.recordInvocation("FindProcess", []interface{}{arg1})
+	fake.findProcessMutex.Unlock()
+	if fake.FindProcessStub != nil {
+		return fake.FindProcessStub(arg1)
+	}
+	return fake.findProcessReturns.result1, fake.findProcessReturns.result2
+}
+
+//FindProcessCallCount ...
+func (fake *OSFake) FindProcessCallCount() int {
+	fake.findProcessMutex.RLock()
+	defer fake.findProcessMutex.RUnlock()
+	return len(fake.findProcessArgsForCall)
+}
+
+//FindProcessArgsForCall ...
+func (fake *OSFake) FindProcessArgsForCall(i int) int {
+	fake.findProcessMutex.RLock()
+	defer fake.findProcessMutex.RUnlock()
+	return fake.findProcessArgsForCall[i].arg1
+}
+
+//FindProcessReturns ...
+func (fake *OSFake) FindProcessReturns(result1 Process, result2 error) {
+	fake.FindProcessStub = nil
+	fake.findProcessReturns = struct {
+		result1 Process
+		result2 error
+	}{result1, result2}
+}
+
 //Invocations ...
 func (fake *OSFake) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
@@ -310,6 +356,8 @@ func (fake *OSFake) Invocations() map[string][][]interface{} {
 	defer fake.openFileMutex.RUnlock()
 	fake.statMutex.RLock()
 	defer fake.statMutex.RUnlock()
+	fake.findProcessMutex.RLock()
+	defer fake.findProcessMutex.RUnlock()
 	return fake.invocations
 }
 
