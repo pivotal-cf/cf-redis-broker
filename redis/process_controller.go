@@ -58,7 +58,7 @@ func NewOSProcessController(
 		PingFunc:                  pingFunc,
 		WaitUntilConnectableFunc:  waitUntilConnectableFunc,
 		RedisServerExecutablePath: redisServerExecutablePath,
-		exec: new(iexec.ExecWrap),
+		exec: iexec.New(),
 	}
 }
 

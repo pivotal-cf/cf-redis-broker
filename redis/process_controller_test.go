@@ -51,7 +51,7 @@ var _ = Describe("Redis Process Controller", func() {
 		logger               *lagertest.TestLogger
 		fakeProcessChecker   *fakeProcessChecker = new(fakeProcessChecker)
 		fakeProcessKiller    *fakeProcessKiller  = new(fakeProcessKiller)
-		pureFake             *iexec.PureFake
+		fakes                *iexec.NestedCommandFake
 		connectionTimeoutErr error
 	)
 
@@ -59,7 +59,7 @@ var _ = Describe("Redis Process Controller", func() {
 		connectionTimeoutErr = nil
 		instanceInformer = new(fakeInstanceInformer)
 		logger = lagertest.NewTestLogger("process-controller")
-		pureFake = iexec.NewPureFake()
+		fakes = iexec.NewNestedCommandFake()
 	})
 
 	JustBeforeEach(func() {
@@ -76,11 +76,11 @@ var _ = Describe("Redis Process Controller", func() {
 			},
 			"",
 		)
-		processController.exec = pureFake.Exec
+		processController.exec = fakes.Exec
 	})
 
 	itStartsARedisProcess := func(executablePath string) {
-		command, args := pureFake.Exec.CommandArgsForCall(0)
+		command, args := fakes.Exec.CommandArgsForCall(0)
 		joinedArgs := strings.Join(args, " ")
 		Expect(command).To(Equal(executablePath))
 		Expect(joinedArgs).To(Equal("configFilePath --pidfile pidFilePath --dir instanceDataDir --logfile logFilePath"))
@@ -232,9 +232,9 @@ var _ = Describe("Redis Process Controller", func() {
 
 					It("should restart the redis-server", func() {
 						ran := false
-						callCount := pureFake.Exec.CommandCallCount()
+						callCount := fakes.Exec.CommandCallCount()
 						for i := 0; i < callCount; i++ {
-							command, args := pureFake.Exec.CommandArgsForCall(i)
+							command, args := fakes.Exec.CommandArgsForCall(i)
 							joinedArgs := strings.Join(args, " ")
 							if command == "redis-server" && strings.Contains(joinedArgs, "/my/lovely/config") {
 								ran = true
@@ -292,9 +292,9 @@ var _ = Describe("Redis Process Controller", func() {
 
 				It("should restart the redis-server", func() {
 					ran := false
-					callCount := pureFake.Exec.CommandCallCount()
+					callCount := fakes.Exec.CommandCallCount()
 					for i := 0; i < callCount; i++ {
-						command, args := pureFake.Exec.CommandArgsForCall(i)
+						command, args := fakes.Exec.CommandArgsForCall(i)
 						joinedArgs := strings.Join(args, " ")
 						if command == "redis-server" && strings.Contains(joinedArgs, "/my/config") {
 							ran = true
@@ -334,7 +334,7 @@ var _ = Describe("Redis Process Controller", func() {
 
 			Context("and it can not be started", func() {
 				BeforeEach(func() {
-					pureFake.Cmd.RunReturns(errors.New("run error"))
+					fakes.Cmd.RunReturns(errors.New("run error"))
 				})
 
 				It("should return error", func() {

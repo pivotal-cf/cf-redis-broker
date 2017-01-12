@@ -192,6 +192,11 @@ type CmdFake struct {
 	invocationsMutex sync.RWMutex
 }
 
+//NewCmdFake is the preffered way to initialise a CmdFake
+func NewCmdFake() *CmdFake {
+	return new(CmdFake)
+}
+
 //CombinedOutput ...
 func (fake *CmdFake) CombinedOutput() ([]byte, error) {
 	fake.combinedOutputMutex.Lock()
