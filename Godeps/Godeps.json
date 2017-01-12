@@ -1,7 +1,7 @@
 {
 	"ImportPath": "github.com/pivotal-cf/cf-redis-broker",
 	"GoVersion": "go1.7",
-	"GodepVersion": "v75",
+	"GodepVersion": "v76",
 	"Packages": [
 		"./..."
 	],
@@ -16,11 +16,11 @@
 		},
 		{
 			"ImportPath": "github.com/BooleanCat/igo/ios",
-			"Rev": "27d84aa65b3471ee843326dae6582cc6a43851c6"
+			"Rev": "61e7b9157ee3038f6a1737d399f0fc126f62b143"
 		},
 		{
 			"ImportPath": "github.com/BooleanCat/igo/ios/iexec",
-			"Rev": "27d84aa65b3471ee843326dae6582cc6a43851c6"
+			"Rev": "61e7b9157ee3038f6a1737d399f0fc126f62b143"
 		},
 		{
 			"ImportPath": "github.com/cloudfoundry-incubator/candiedyaml",
@@ -236,11 +236,11 @@
 		},
 		{
 			"ImportPath": "github.com/pivotal-cf/redisutils/monit",
-			"Rev": "b62f30a409f53d0dc5e81a9c4837cfbeca8f1ff5"
+			"Rev": "2ccfa41b4e9df527ee6c794498fe219bffa54822"
 		},
 		{
 			"ImportPath": "github.com/pivotal-cf/redisutils/monit/fakes",
-			"Rev": "b62f30a409f53d0dc5e81a9c4837cfbeca8f1ff5"
+			"Rev": "2ccfa41b4e9df527ee6c794498fe219bffa54822"
 		},
 		{
 			"ImportPath": "github.com/st3v/glager",

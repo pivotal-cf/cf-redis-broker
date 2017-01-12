@@ -52,6 +52,11 @@ type ProcessFake struct {
 	invocationsMutex sync.RWMutex
 }
 
+//NewProcessFake is the preffered way to initialise a ProcessFake
+func NewProcessFake() *ProcessFake {
+	return new(ProcessFake)
+}
+
 //Kill ...
 func (fake *ProcessFake) Kill() error {
 	fake.killMutex.Lock()

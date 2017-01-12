@@ -85,11 +85,11 @@ func New() *SysMonit {
 		Executable: "monit",
 		interval:   time.Millisecond * 100,
 		timeout:    time.Second * 15,
-		exec:       new(iexec.ExecWrap),
+		exec:       iexec.New(),
 	}
 }
 
-//SetMonitExecutable updates monit's executable path
+//SetExecutable updates monit's executable path
 func (monit *SysMonit) SetExecutable(path string) {
 	monit.Executable = path
 }
