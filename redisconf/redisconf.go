@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -180,18 +181,20 @@ func parseParam(line string) (Param, error) {
 	}, nil
 }
 
-func CopyWithInstanceAdditions(fromPath, toPath, syslogIdentSuffix, port, password string) error {
+func CopyWithInstanceAdditions(fromPath, toPath, instanceID, port, password, pidDir string) error {
 	defaultConfig, err := Load(fromPath)
 	if err != nil {
 		return err
 	}
 
 	defaultConfig.Set("syslog-enabled", "yes")
-	defaultConfig.Set("syslog-ident", fmt.Sprintf("redis-server-%s", syslogIdentSuffix))
+	defaultConfig.Set("syslog-ident", fmt.Sprintf("redis-server-%s", instanceID))
 	defaultConfig.Set("syslog-facility", "local0")
 
 	defaultConfig.Set("port", port)
 	defaultConfig.Set("requirepass", password)
+
+	defaultConfig.Set("pidfile", filepath.Join(pidDir, instanceID+".pid"))
 
 	err = defaultConfig.Save(toPath)
 	if err != nil {

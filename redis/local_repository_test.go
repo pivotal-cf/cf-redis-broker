@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/pborman/uuid"
 	"code.cloudfoundry.org/lager/lagertest"
+	"github.com/pborman/uuid"
 
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
 	"github.com/pivotal-cf/cf-redis-broker/redis"

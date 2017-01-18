@@ -9,10 +9,10 @@ import (
 	"strconv"
 	"strings"
 
+	"code.cloudfoundry.org/lager"
 	"github.com/pivotal-cf/cf-redis-broker/broker"
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
-	"code.cloudfoundry.org/lager"
 )
 
 type LocalRepository struct {
@@ -21,6 +21,9 @@ type LocalRepository struct {
 }
 
 func NewLocalRepository(redisConf brokerconfig.ServiceConfiguration, logger lager.Logger) *LocalRepository {
+	if redisConf.PidfileDirectory == "" {
+		redisConf.PidfileDirectory = "/var/vcap/sys/run/shared-instance-pidfiles"
+	}
 	return &LocalRepository{
 		RedisConf: redisConf,
 		Logger:    logger,
@@ -258,6 +261,7 @@ func (repo *LocalRepository) WriteConfigFile(instance *Instance) error {
 		instance.ID,
 		strconv.Itoa(instance.Port),
 		instance.Password,
+		repo.RedisConf.PidfileDirectory,
 	)
 }
 

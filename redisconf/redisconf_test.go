@@ -198,29 +198,35 @@ var _ = Describe("redisconf", func() {
 	})
 
 	Describe("CopyWithInstanceAdditions", func() {
-		It("writes the instance configuration", func() {
-			fromPath, err := filepath.Abs(path.Join("assets", "redis.conf"))
-			Expect(err).ToNot(HaveOccurred())
+		var (
+			copyErr       error
+			resultingConf redisconf.Conf
+			dir           string
+			instanceID    = "an-instance-id"
+			port          = "1234"
+			password      = "an-password"
+		)
 
-			dir, err := ioutil.TempDir("", "redisconf-test")
-			Expect(err).ToNot(HaveOccurred())
+		BeforeEach(func() {
+			fromPath := absPath(path.Join("assets", "redis.conf"))
+			dir = tempDir("", "redisconf-test")
 			toPath := filepath.Join(dir, "redis.conf")
 
-			instanceID := "an-instance-id"
-			port := "1234"
-			password := "an-password"
+			copyErr = redisconf.CopyWithInstanceAdditions(fromPath, toPath, instanceID, port, password, dir)
+			resultingConf = loadRedisConf(toPath)
+		})
 
-			err = redisconf.CopyWithInstanceAdditions(fromPath, toPath, instanceID, port, password)
-			Ω(err).ToNot(HaveOccurred())
+		It("does not return an error", func() {
+			Expect(copyErr).NotTo(HaveOccurred())
+		})
 
-			resultingConf, err := redisconf.Load(toPath)
-			Expect(err).ToNot(HaveOccurred())
-
-			Ω(resultingConf.Get("syslog-enabled")).Should(Equal("yes"))
-			Ω(resultingConf.Get("syslog-ident")).Should(Equal(fmt.Sprintf("redis-server-%s", instanceID)))
-			Ω(resultingConf.Get("syslog-facility")).Should(Equal("local0"))
-			Ω(resultingConf.Get("port")).Should(Equal(port))
-			Ω(resultingConf.Get("requirepass")).Should(Equal(password))
+		It("writes the instance configuration", func() {
+			Expect(resultingConf.Get("syslog-enabled")).To(Equal("yes"))
+			Expect(resultingConf.Get("syslog-ident")).To(Equal(fmt.Sprintf("redis-server-%s", instanceID)))
+			Expect(resultingConf.Get("syslog-facility")).To(Equal("local0"))
+			Expect(resultingConf.Get("port")).To(Equal(port))
+			Expect(resultingConf.Get("requirepass")).To(Equal(password))
+			Expect(resultingConf.Get("pidfile")).To(Equal(filepath.Join(dir, instanceID+".pid")))
 		})
 	})
 })
