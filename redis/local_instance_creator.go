@@ -11,7 +11,7 @@ import (
 )
 
 type ProcessController interface {
-	StartAndWaitUntilReady(instance *Instance, configPath, instanceDataDir, pidfilePath, logfilePath string, timeout time.Duration) error
+	StartAndWaitUntilReady(instance *Instance, configPath, instanceDataDir, logfilePath string, timeout time.Duration) error
 	Kill(instance *Instance) error
 }
 
@@ -95,8 +95,7 @@ func (localInstanceCreator *LocalInstanceCreator) startLocalInstance(instance *I
 	configPath := localInstanceCreator.InstanceConfigPath(instance.ID)
 	instanceDataDir := localInstanceCreator.InstanceDataDir(instance.ID)
 	logfilePath := localInstanceCreator.InstanceLogFilePath(instance.ID)
-	pidfilePath := localInstanceCreator.InstancePidFilePath(instance.ID)
 
 	timeout := time.Duration(localInstanceCreator.RedisConfiguration.StartRedisTimeoutSeconds) * time.Second
-	return localInstanceCreator.ProcessController.StartAndWaitUntilReady(instance, configPath, instanceDataDir, pidfilePath, logfilePath, timeout)
+	return localInstanceCreator.ProcessController.StartAndWaitUntilReady(instance, configPath, instanceDataDir, logfilePath, timeout)
 }

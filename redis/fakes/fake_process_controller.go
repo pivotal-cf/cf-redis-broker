@@ -13,7 +13,7 @@ type FakeProcessController struct {
 	DoOnInstanceStop  func()
 }
 
-func (fakeProcessController *FakeProcessController) StartAndWaitUntilReady(instance *redis.Instance, configPath, instanceDataDir, pidfilePath, logfilePath string, timeout time.Duration) error {
+func (fakeProcessController *FakeProcessController) StartAndWaitUntilReady(instance *redis.Instance, configPath, instanceDataDir, logfilePath string, timeout time.Duration) error {
 	fakeProcessController.StartedInstances = append(fakeProcessController.StartedInstances, *instance)
 	if fakeProcessController.DoOnInstanceStart != nil {
 		fakeProcessController.DoOnInstanceStart()

@@ -88,12 +88,12 @@ var _ = Describe("Redis Process Controller", func() {
 
 	Describe("StartAndWaitUntilReady", func() {
 		It("runs the right command to start redis", func() {
-			processController.StartAndWaitUntilReady(instance, "configFilePath", "instanceDataDir", "pidFilePath", "logFilePath", time.Second*1)
+			processController.StartAndWaitUntilReady(instance, "configFilePath", "instanceDataDir", "logFilePath", time.Second*1)
 			itStartsARedisProcess("redis-server")
 		})
 
 		It("returns no error", func() {
-			err := processController.StartAndWaitUntilReady(instance, "", "", "", "", time.Second*1)
+			err := processController.StartAndWaitUntilReady(instance, "", "", "", time.Second*1)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -103,7 +103,7 @@ var _ = Describe("Redis Process Controller", func() {
 			})
 
 			It("returns the same error that the WaitUntilConnectableFunc returns", func() {
-				err := processController.StartAndWaitUntilReady(instance, "", "", "", "", time.Second*1)
+				err := processController.StartAndWaitUntilReady(instance, "", "", "", time.Second*1)
 				Expect(err).To(Equal(connectionTimeoutErr))
 			})
 		})

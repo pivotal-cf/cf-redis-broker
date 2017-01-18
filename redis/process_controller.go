@@ -78,7 +78,7 @@ func PingServer(instance *Instance) error {
 type PingServerFunc func(instance *Instance) error
 type WaitUntilConnectableFunc func(address *net.TCPAddr, timeout time.Duration) error
 
-func (controller *OSProcessController) StartAndWaitUntilReady(instance *Instance, configPath, instanceDataDir, pidfilePath, logfilePath string, timeout time.Duration) error {
+func (controller *OSProcessController) StartAndWaitUntilReady(instance *Instance, configPath, instanceDataDir, logfilePath string, timeout time.Duration) error {
 	instanceCommandArgs := []string{
 		configPath,
 		"--dir", instanceDataDir,
@@ -128,7 +128,6 @@ func (controller *OSProcessController) EnsureRunning(instance *Instance, configP
 			err,
 			lager.Data{"instance": instance.ID},
 		)
-
 		deleteErr := os.Remove(pidfilePath)
 		if deleteErr != nil {
 			controller.Logger.Error(
@@ -144,7 +143,7 @@ func (controller *OSProcessController) EnsureRunning(instance *Instance, configP
 			lager.Data{"instance": instance.ID},
 		)
 
-		return controller.StartAndWaitUntilReady(instance, configPath, instanceDataDir, pidfilePath, logfilePath, redisStartTimeout)
+		return controller.StartAndWaitUntilReady(instance, configPath, instanceDataDir, logfilePath, redisStartTimeout)
 	}
 
 	if err != nil {
@@ -164,7 +163,7 @@ func (controller *OSProcessController) EnsureRunning(instance *Instance, configP
 		},
 	)
 
-	return controller.StartAndWaitUntilReady(instance, configPath, instanceDataDir, pidfilePath, logfilePath, redisStartTimeout)
+	return controller.StartAndWaitUntilReady(instance, configPath, instanceDataDir, logfilePath, redisStartTimeout)
 }
 
 func getRedisPort(name string) (int, error) {
