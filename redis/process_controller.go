@@ -81,7 +81,6 @@ type WaitUntilConnectableFunc func(address *net.TCPAddr, timeout time.Duration) 
 func (controller *OSProcessController) StartAndWaitUntilReady(instance *Instance, configPath, instanceDataDir, pidfilePath, logfilePath string, timeout time.Duration) error {
 	instanceCommandArgs := []string{
 		configPath,
-		"--pidfile", pidfilePath,
 		"--dir", instanceDataDir,
 		"--logfile", logfilePath,
 	}

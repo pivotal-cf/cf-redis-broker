@@ -83,7 +83,7 @@ var _ = Describe("Redis Process Controller", func() {
 		command, args := fakes.Exec.CommandArgsForCall(0)
 		joinedArgs := strings.Join(args, " ")
 		Expect(command).To(Equal(executablePath))
-		Expect(joinedArgs).To(Equal("configFilePath --pidfile pidFilePath --dir instanceDataDir --logfile logFilePath"))
+		Expect(joinedArgs).To(Equal("configFilePath --dir instanceDataDir --logfile logFilePath"))
 	}
 
 	Describe("StartAndWaitUntilReady", func() {
@@ -116,7 +116,6 @@ var _ = Describe("Redis Process Controller", func() {
 
 				args := []string{
 					"configFilePath",
-					"--pidfile", "pidFilePath",
 					"--dir", "instanceDataDir",
 					"--logfile", "logFilePath",
 				}
@@ -128,7 +127,6 @@ var _ = Describe("Redis Process Controller", func() {
 		It("runs the right command to start redis", func() {
 			args := []string{
 				"configFilePath",
-				"--pidfile", "pidFilePath",
 				"--dir", "instanceDataDir",
 				"--logfile", "logFilePath",
 			}

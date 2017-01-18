@@ -38,7 +38,7 @@ func main() {
 	logger.Info("Starting process monitor")
 
 	repo := redis.NewLocalRepository(config.RedisConfiguration, logger)
-
+	setPidDir(repo)
 	processController := redis.NewOSProcessController(
 		logger,
 		repo,
@@ -115,4 +115,11 @@ func configPath() string {
 		panic("BROKER_CONFIG_PATH not set")
 	}
 	return brokerConfigYamlPath
+}
+
+func setPidDir(localRepo *redis.LocalRepository) {
+	pidDir := os.Getenv("SHARED_PID_DIR")
+	if pidDir != "" {
+		localRepo.RedisConf.PidfileDirectory = pidDir
+	}
 }

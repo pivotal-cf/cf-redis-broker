@@ -3,6 +3,7 @@ package integration
 import (
 	"os"
 	"os/exec"
+	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -27,7 +28,11 @@ func BuildBroker() string {
 func LaunchProcessWithBrokerConfig(executablePath string, brokerConfigName string) *gexec.Session {
 	brokerConfigFile := helpers.AssetPath(brokerConfigName)
 
+	assetDir, err := filepath.Abs("assets")
+	Expect(err).NotTo(HaveOccurred())
+
 	os.Setenv("BROKER_CONFIG_PATH", brokerConfigFile)
+	os.Setenv("SHARED_PID_DIR", assetDir)
 	processCmd := exec.Command(executablePath)
 	processCmd.Stdout = GinkgoWriter
 	processCmd.Stderr = GinkgoWriter

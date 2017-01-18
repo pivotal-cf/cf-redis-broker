@@ -9,7 +9,7 @@ redis:
   start_redis_timeout: 3
   data_directory: /tmp/redis-data-dir
   log_directory: /tmp/redis-log-dir
-  pidfile_directory: /tmp/pidfiles
+  pidfile_directory: assets
   service_instance_limit: 3
   documentation_url: http://docs.pivotal.io/p1-services/Redis.html
   support_url: http://support.pivotal.io
