@@ -1,40 +1,38 @@
 package brokerintegration_test
 
 import (
+	"encoding/json"
 	"net/http"
 	"os/exec"
 	"strconv"
 	"strings"
 	"testing"
 
-	"encoding/json"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gexec"
 
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
 	"github.com/pivotal-cf/cf-redis-broker/debug"
 	"github.com/pivotal-cf/cf-redis-broker/integration"
 	"github.com/pivotal-cf/cf-redis-broker/integration/helpers"
-
-	. "github.com/onsi/ginkgo"
-	"github.com/onsi/ginkgo/reporters"
-	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gexec"
 )
 
-var brokerPort uint = 3000
-
-var brokerSession *gexec.Session
-var monitorSession *gexec.Session
-var brokerExecutablePath string
-var backupExecutablePath string
-var brokerConfig brokerconfig.Config
-var brokerClient *integration.BrokerClient
-var agentRequests []*http.Request
-var agentResponseStatus = http.StatusOK
+var (
+	brokerSession        *gexec.Session
+	monitorSession       *gexec.Session
+	brokerExecutablePath string
+	backupExecutablePath string
+	brokerConfig         brokerconfig.Config
+	brokerClient         *integration.BrokerClient
+	agentRequests        []*http.Request
+	agentResponseStatus       = http.StatusOK
+	brokerPort           uint = 3000
+)
 
 func TestBrokerintegration(t *testing.T) {
 	RegisterFailHandler(Fail)
-	junitReporter := reporters.NewJUnitReporter("junit_brokerintegration.xml")
-	RunSpecsWithDefaultAndCustomReporters(t, "Broker Integration Suite", []Reporter{junitReporter})
+	RunSpecs(t, "Broker Integration Suite")
 }
 
 var _ = BeforeEach(func() {
