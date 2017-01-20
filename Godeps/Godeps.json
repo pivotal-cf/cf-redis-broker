@@ -236,11 +236,11 @@
 		},
 		{
 			"ImportPath": "github.com/pivotal-cf/redisutils/monit",
-			"Rev": "d87f717577f2d44e55df45666759c543c74c06eb"
+			"Rev": "8515a1873b9f55f23f9bc2f32957c789361fcf26"
 		},
 		{
 			"ImportPath": "github.com/pivotal-cf/redisutils/monit/fakes",
-			"Rev": "d87f717577f2d44e55df45666759c543c74c06eb"
+			"Rev": "8515a1873b9f55f23f9bc2f32957c789361fcf26"
 		},
 		{
 			"ImportPath": "github.com/st3v/glager",
