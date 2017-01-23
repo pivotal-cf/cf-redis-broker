@@ -33,11 +33,13 @@
 		},
 		{
 			"ImportPath": "github.com/garyburd/redigo/internal",
-			"Rev": "535138d7bcd717d6531c701ef5933d98b1866257"
+			"Comment": "v1.0.0-17-g908534c",
+			"Rev": "908534c8b97586a4597e3fa195875d2d26502b97"
 		},
 		{
 			"ImportPath": "github.com/garyburd/redigo/redis",
-			"Rev": "535138d7bcd717d6531c701ef5933d98b1866257"
+			"Comment": "v1.0.0-17-g908534c",
+			"Rev": "908534c8b97586a4597e3fa195875d2d26502b97"
 		},
 		{
 			"ImportPath": "github.com/goamz/goamz/aws",
@@ -235,16 +237,16 @@
 			"Rev": "0ea2a3913c148837e8615a1ef8bde757151934c3"
 		},
 		{
-			"ImportPath": "github.com/pivotal-cf/redisutils/iredis",
-			"Rev": "8515a1873b9f55f23f9bc2f32957c789361fcf26"
-		},
-		{
 			"ImportPath": "github.com/pivotal-cf/redisutils/monit",
-			"Rev": "8515a1873b9f55f23f9bc2f32957c789361fcf26"
+			"Rev": "e4870e0d3a591fce1f68bf631688e749872c959f"
 		},
 		{
 			"ImportPath": "github.com/pivotal-cf/redisutils/monit/fakes",
-			"Rev": "8515a1873b9f55f23f9bc2f32957c789361fcf26"
+			"Rev": "e4870e0d3a591fce1f68bf631688e749872c959f"
+		},
+		{
+			"ImportPath": "github.com/pivotal-cf/redisutils/redis",
+			"Rev": "e4870e0d3a591fce1f68bf631688e749872c959f"
 		},
 		{
 			"ImportPath": "github.com/st3v/glager",
@@ -254,36 +256,6 @@
 		{
 			"ImportPath": "github.com/vaughan0/go-ini",
 			"Rev": "a98ad7ee00ec53921f08832bc06ecf7fd600e6a1"
-		},
-		{
-			"ImportPath": "gopkg.in/redis.v5",
-			"Comment": "v5.1.7",
-			"Rev": "8fcba2ea878201b70c5a63dd416141d4ddbc601a"
-		},
-		{
-			"ImportPath": "gopkg.in/redis.v5/internal",
-			"Comment": "v5.1.7",
-			"Rev": "8fcba2ea878201b70c5a63dd416141d4ddbc601a"
-		},
-		{
-			"ImportPath": "gopkg.in/redis.v5/internal/consistenthash",
-			"Comment": "v5.1.7",
-			"Rev": "8fcba2ea878201b70c5a63dd416141d4ddbc601a"
-		},
-		{
-			"ImportPath": "gopkg.in/redis.v5/internal/hashtag",
-			"Comment": "v5.1.7",
-			"Rev": "8fcba2ea878201b70c5a63dd416141d4ddbc601a"
-		},
-		{
-			"ImportPath": "gopkg.in/redis.v5/internal/pool",
-			"Comment": "v5.1.7",
-			"Rev": "8fcba2ea878201b70c5a63dd416141d4ddbc601a"
-		},
-		{
-			"ImportPath": "gopkg.in/redis.v5/internal/proto",
-			"Comment": "v5.1.7",
-			"Rev": "8fcba2ea878201b70c5a63dd416141d4ddbc601a"
 		},
 		{
 			"ImportPath": "gopkg.in/yaml.v2",
