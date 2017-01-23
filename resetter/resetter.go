@@ -7,11 +7,10 @@ import (
 	"strings"
 	"time"
 
-	redis "gopkg.in/redis.v5"
-
+	redigo "github.com/garyburd/redigo/redis"
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
-	"github.com/pivotal-cf/redisutils/iredis"
 	"github.com/pivotal-cf/redisutils/monit"
+	"github.com/pivotal-cf/redisutils/redis"
 )
 
 type checker interface {
@@ -25,7 +24,7 @@ type Resetter struct {
 	portChecker     checker
 	timeout         time.Duration
 	Monit           monit.Monit
-	redis           iredis.Redis
+	redis           redis.Redis
 }
 
 //New is the correct way to instantiate a Resetter
@@ -36,7 +35,7 @@ func New(defaultConfPath, liveConfPath string, portChecker checker) *Resetter {
 		portChecker:     portChecker,
 		timeout:         time.Second * 30,
 		Monit:           monit.New(),
-		redis:           iredis.New(),
+		redis:           redis.New(),
 	}
 }
 
@@ -72,23 +71,54 @@ func (resetter *Resetter) ResetRedis() error {
 }
 
 func (resetter *Resetter) stopRedis() error {
-	liveConf, err := redisconf.Load(resetter.liveConfPath)
+	err := resetter.killScript()
 	if err != nil {
 		return err
 	}
 
-	options := &redis.Options{
-		Addr:     fmt.Sprintf("%s:%d", liveConf.Host(), liveConf.Port()),
-		Password: liveConf.Password(),
-	}
-	client := resetter.redis.NewClient(options)
+	return resetter.Monit.StopAndWait("redis")
+}
 
-	_, err = client.ScriptKill().Result()
-	if err != nil && !strings.Contains(err.Error(), "No scripts in execution right now") {
+func (resetter *Resetter) killScript() error {
+	connection, err := resetter.getAuthenticatedRedisConn()
+	if err != nil {
+		return err
+	}
+	defer connection.Close()
+
+	_, err = connection.Do("SCRIPT", "KILL")
+	if err != nil && !isNoScriptErr(err) {
+		err = fmt.Errorf("failed to kill redis script: %s", err.Error())
 		return err
 	}
 
-	return resetter.Monit.StopAndWait("redis")
+	return nil
+}
+
+func (resetter *Resetter) getAuthenticatedRedisConn() (redigo.Conn, error) {
+	liveConf, err := redisconf.Load(resetter.liveConfPath)
+	if err != nil {
+		return nil, err
+	}
+
+	address := fmt.Sprintf("%s:%d", liveConf.Host(), liveConf.Port())
+
+	connection, err := resetter.redis.Dial("tcp", address)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = connection.Do("AUTH", liveConf.Password())
+	if err != nil {
+		connection.Close()
+		return nil, err
+	}
+
+	return connection, nil
+}
+
+func isNoScriptErr(err error) bool {
+	return strings.Contains(err.Error(), "No scripts in execution right now")
 }
 
 func (resetter *Resetter) startRedis() error {

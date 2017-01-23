@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
-	"github.com/pivotal-cf/redisutils/iredis"
 	monitFakes "github.com/pivotal-cf/redisutils/monit/fakes"
+	"github.com/pivotal-cf/redisutils/redis"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -38,18 +38,16 @@ var _ = Describe("Client", func() {
 		defaultConfPath string
 		conf            redisconf.Conf
 		fakeMonit       *monitFakes.FakeMonit
-		redisFake       *iredis.Fake
-		clientFake      *iredis.ClientFake
-		statusCmdFake   *iredis.StatusCmdFake
+		redisFake       *redis.Fake
+		connFake        *redis.ConnFake
 
 		redisPassword = "somepassword"
 	)
 
 	BeforeEach(func() {
-		redisFake = iredis.NewFake()
-		clientFake = iredis.NewClientFake()
-		statusCmdFake = iredis.NewStatusCmdFake()
-		redisFake.NewClientReturns(clientFake)
+		redisFake = redis.NewFake()
+		connFake = redis.NewConnFake()
+		redisFake.DialReturns(connFake, nil)
 		fakeMonit = new(monitFakes.FakeMonit)
 		fakePortChecker = new(fakeChecker)
 
@@ -104,6 +102,7 @@ var _ = Describe("Client", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		redisClient = New(defaultConfPath, confPath, fakePortChecker)
+		redisClient.redis = redisFake
 		redisClient.Monit = fakeMonit
 	})
 
@@ -115,12 +114,6 @@ var _ = Describe("Client", func() {
 	Describe("#ResetRedis", func() {
 		var resetErr error
 
-		BeforeEach(func() {
-			redisClient.redis = redisFake
-			statusCmdFake.ResultReturns("", nil)
-			clientFake.ScriptKillReturns(statusCmdFake)
-		})
-
 		JustBeforeEach(func() {
 			resetErr = redisClient.ResetRedis()
 		})
@@ -130,19 +123,60 @@ var _ = Describe("Client", func() {
 		})
 
 		It("invokes script kill", func() {
-			Expect(clientFake.ScriptKillCallCount()).To(Equal(1))
-			Expect(statusCmdFake.ResultCallCount()).To(Equal(1))
+			Expect(connFake.DoCallCount()).To(BeNumerically(">", 1))
+			response, args := connFake.DoArgsForCall(1)
+			Expect(response).To(Equal("SCRIPT"))
+			Expect(args).To(Equal([]interface{}{"KILL"}))
+		})
+
+		It("closes the redis connection", func() {
+			Expect(connFake.CloseCallCount()).To(Equal(1))
+		})
+
+		Context("when auth returns an error", func() {
+			authErr := errors.New("failed to authenticate")
+
+			BeforeEach(func() {
+				connFake.DoReturns(nil, authErr)
+			})
+
+			It("returns the error", func() {
+				Expect(resetErr).To(MatchError(authErr))
+			})
+
+			It("closes the redis connection", func() {
+				Expect(connFake.CloseCallCount()).To(Equal(1))
+			})
 		})
 
 		Context("when script kill returns an error", func() {
 			scriptKillErr := errors.New("Failed to script kill")
 
 			BeforeEach(func() {
-				statusCmdFake.ResultReturns("", scriptKillErr)
+				connFake.DoStub = doReturns([]interfaceAndErr{
+					{nil, nil},
+					{nil, scriptKillErr},
+				}).sequentially
 			})
 
 			It("returns the error", func() {
-				Expect(resetErr).To(MatchError(scriptKillErr))
+				expected := fmt.Errorf("failed to kill redis script: %s", scriptKillErr.Error())
+				Expect(resetErr).To(MatchError(expected))
+			})
+		})
+
+		Context("when there's no script running", func() {
+			scriptKillErr := errors.New("No scripts in execution right now")
+
+			BeforeEach(func() {
+				connFake.DoStub = doReturns([]interfaceAndErr{
+					{nil, nil},
+					{nil, scriptKillErr},
+				}).sequentially
+			})
+
+			It("does not return an error", func() {
+				Expect(resetErr).NotTo(HaveOccurred())
 			})
 		})
 
