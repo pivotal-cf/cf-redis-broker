@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
+	"github.com/pivotal-cf/redisutils/iredis"
 	monitFakes "github.com/pivotal-cf/redisutils/monit/fakes"
 
 	. "github.com/onsi/ginkgo"
@@ -37,11 +38,18 @@ var _ = Describe("Client", func() {
 		defaultConfPath string
 		conf            redisconf.Conf
 		fakeMonit       *monitFakes.FakeMonit
+		redisFake       *iredis.Fake
+		clientFake      *iredis.ClientFake
+		statusCmdFake   *iredis.StatusCmdFake
 
 		redisPassword = "somepassword"
 	)
 
 	BeforeEach(func() {
+		redisFake = iredis.NewFake()
+		clientFake = iredis.NewClientFake()
+		statusCmdFake = iredis.NewStatusCmdFake()
+		redisFake.NewClientReturns(clientFake)
 		fakeMonit = new(monitFakes.FakeMonit)
 		fakePortChecker = new(fakeChecker)
 
@@ -105,47 +113,78 @@ var _ = Describe("Client", func() {
 	})
 
 	Describe("#ResetRedis", func() {
+		var resetErr error
+
+		BeforeEach(func() {
+			redisClient.redis = redisFake
+			statusCmdFake.ResultReturns("", nil)
+			clientFake.ScriptKillReturns(statusCmdFake)
+		})
+
+		JustBeforeEach(func() {
+			resetErr = redisClient.ResetRedis()
+		})
+
+		It("does not return an error", func() {
+			Expect(resetErr).NotTo(HaveOccurred())
+		})
+
+		It("invokes script kill", func() {
+			Expect(clientFake.ScriptKillCallCount()).To(Equal(1))
+			Expect(statusCmdFake.ResultCallCount()).To(Equal(1))
+		})
+
+		Context("when script kill returns an error", func() {
+			scriptKillErr := errors.New("Failed to script kill")
+
+			BeforeEach(func() {
+				statusCmdFake.ResultReturns("", scriptKillErr)
+			})
+
+			It("returns the error", func() {
+				Expect(resetErr).To(MatchError(scriptKillErr))
+			})
+		})
+
 		It("stops and starts redis with monit", func() {
-			err := redisClient.ResetRedis()
-			Expect(err).NotTo(HaveOccurred())
+			Expect(resetErr).NotTo(HaveOccurred())
 			Expect(fakeMonit.StopAndWaitCallCount()).To(Equal(1))
 			Expect(fakeMonit.StartAndWaitCallCount()).To(Equal(1))
 		})
 
-		It("monit start returns an error", func() {
+		Context("when `monit start` fails", func() {
 			monitStartError := errors.New("Monit has failed to start")
-			fakeMonit.StartAndWaitReturns(monitStartError)
-			err := redisClient.ResetRedis()
-			Expect(err).To(MatchError(monitStartError))
+
+			BeforeEach(func() {
+				fakeMonit.StartAndWaitReturns(monitStartError)
+			})
+
+			It("monit start returns an error", func() {
+				Expect(resetErr).To(MatchError(monitStartError))
+			})
 		})
 
-		It("monit stop returns an error", func() {
+		Context("when `monit stop` fails", func() {
 			monitStopError := errors.New("Monit has failed to stop")
-			fakeMonit.StopAndWaitReturns(monitStopError)
-			err := redisClient.ResetRedis()
-			Expect(err).To(MatchError(monitStopError))
+
+			BeforeEach(func() {
+				fakeMonit.StopAndWaitReturns(monitStopError)
+			})
+
+			It("monit stop returns an error", func() {
+				Expect(resetErr).To(MatchError(monitStopError))
+			})
 		})
 
 		It("removes the AOF file", func() {
-			err := redisClient.ResetRedis()
-			Expect(err).NotTo(HaveOccurred())
-
-			_, err = os.Stat(aofPath)
-			Expect(os.IsNotExist(err)).To(BeTrue())
+			Expect(aofPath).NotTo(BeAnExistingFile())
 		})
 
 		It("removes the RDB file", func() {
-			err := redisClient.ResetRedis()
-			Expect(err).NotTo(HaveOccurred())
-
-			_, err = os.Stat(rdbPath)
-			Expect(os.IsNotExist(err)).To(BeTrue())
+			Expect(rdbPath).NotTo(BeAnExistingFile())
 		})
 
 		It("nukes the config file and replaces it with one containing a new password", func() {
-			err := redisClient.ResetRedis()
-			Expect(err).NotTo(HaveOccurred())
-
 			newConfig, err := redisconf.Load(confPath)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -155,9 +194,6 @@ var _ = Describe("Client", func() {
 		})
 
 		It("does not return until redis is available again", func() {
-			err := redisClient.ResetRedis()
-			Expect(err).NotTo(HaveOccurred())
-
 			address, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("localhost:%d", redisPort))
 			Expect(err).NotTo(HaveOccurred())
 
@@ -165,21 +201,25 @@ var _ = Describe("Client", func() {
 		})
 
 		Context("when redis fails to become available again within the timeout period", func() {
+			checkErr := errors.New("I timed out")
+
+			BeforeEach(func() {
+				fakePortChecker.checkErr = checkErr
+			})
+
 			It("returns the error from the checker", func() {
-				fakePortChecker.checkErr = errors.New("I timed out")
-				err := redisClient.ResetRedis()
-				Expect(err).To(MatchError("I timed out"))
+				Expect(resetErr).To(MatchError(checkErr))
 			})
 		})
 
 		Context("when the AOF file cannot be removed", func() {
-			JustBeforeEach(func() {
+			BeforeEach(func() {
 				err := os.Remove(aofPath)
 				Expect(err).NotTo(HaveOccurred())
 			})
 
 			It("returns error", func() {
-				Expect(redisClient.ResetRedis()).To(HaveOccurred())
+				Expect(resetErr).To(HaveOccurred())
 			})
 		})
 	})

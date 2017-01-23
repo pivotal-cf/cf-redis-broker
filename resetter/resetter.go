@@ -1,11 +1,16 @@
 package resetter
 
 import (
+	"fmt"
 	"net"
 	"os"
+	"strings"
 	"time"
 
+	redis "gopkg.in/redis.v5"
+
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
+	"github.com/pivotal-cf/redisutils/iredis"
 	"github.com/pivotal-cf/redisutils/monit"
 )
 
@@ -20,6 +25,7 @@ type Resetter struct {
 	portChecker     checker
 	timeout         time.Duration
 	Monit           monit.Monit
+	redis           iredis.Redis
 }
 
 //New is the correct way to instantiate a Resetter
@@ -30,6 +36,7 @@ func New(defaultConfPath, liveConfPath string, portChecker checker) *Resetter {
 		portChecker:     portChecker,
 		timeout:         time.Second * 30,
 		Monit:           monit.New(),
+		redis:           iredis.New(),
 	}
 }
 
@@ -65,6 +72,22 @@ func (resetter *Resetter) ResetRedis() error {
 }
 
 func (resetter *Resetter) stopRedis() error {
+	liveConf, err := redisconf.Load(resetter.liveConfPath)
+	if err != nil {
+		return err
+	}
+
+	options := &redis.Options{
+		Addr:     fmt.Sprintf("%s:%d", liveConf.Host(), liveConf.Port()),
+		Password: liveConf.Password(),
+	}
+	client := resetter.redis.NewClient(options)
+
+	_, err = client.ScriptKill().Result()
+	if err != nil && !strings.Contains(err.Error(), "No scripts in execution right now") {
+		return err
+	}
+
 	return resetter.Monit.StopAndWait("redis")
 }
 
