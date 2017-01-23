@@ -77,13 +77,8 @@ func (resetter *Resetter) stopRedis() error {
 		return err
 	}
 
-	defaultConf, _ := redisconf.Load(resetter.defaultConfPath)
-	if err != nil {
-		return err
-	}
-
 	options := &redis.Options{
-		Addr:     fmt.Sprintf("%s:%d", defaultConf.Host(), defaultConf.Port()),
+		Addr:     fmt.Sprintf("%s:%d", liveConf.Host(), liveConf.Port()),
 		Password: liveConf.Password(),
 	}
 	client := resetter.redis.NewClient(options)
