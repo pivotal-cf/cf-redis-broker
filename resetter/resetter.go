@@ -39,54 +39,88 @@ func New(defaultConfPath, liveConfPath string, portChecker checker) *Resetter {
 	}
 }
 
+// Several times try:
+//   SCRIPT KILL
+//   Atomically:
+//     SET PASSWORD (memory)
+//     Disconnect users
+// SET PASSWORD (disk)
+// FLUSHALL
+// SAVE
+// BGREWRITEAOF
+
 //ResetRedis stops redis, clears the database and starts redis
 func (resetter *Resetter) ResetRedis() error {
-	if err := resetter.stopRedis(); err != nil {
-		return err
-	}
+	conf, _ := redisconf.Load(resetter.liveConfPath)
+	address := fmt.Sprintf("%s:%d", conf.Host(), conf.Port())
+	connection, err := resetter.redis.Dial("tcp", address)
 
-	if err := resetter.deleteData(); err != nil {
-		return err
-	}
-
-	if err := resetter.resetConfigWithNewPassword(); err != nil {
-		return err
-	}
-
-	if err := resetter.startRedis(); err != nil {
-		return err
-	}
-
-	conf, err := redisconf.Load(resetter.liveConfPath)
 	if err != nil {
 		return err
 	}
 
-	address, err := net.ResolveTCPAddr("tcp", "127.0.0.1:"+conf.Get("port"))
-	if err != nil {
-		return err
-	}
+	connection.Do("AUTH", conf.Password())
 
-	return resetter.portChecker.Check(address, resetter.timeout)
+	return nil
 }
 
-func (resetter *Resetter) stopRedis() error {
-	err := resetter.killScript()
+func (resetter *Resetter) stopRedis(conf redisconf.Conf) (redisconf.Conf, error) {
+	// MULTI
+	connection, err := resetter.getAuthenticatedRedisConn(conf)
 	if err != nil {
-		return err
-	}
-
-	return resetter.Monit.StopAndWait("redis")
-}
-
-func (resetter *Resetter) killScript() error {
-	connection, err := resetter.getAuthenticatedRedisConn()
-	if err != nil {
-		return err
+		return nil, err
 	}
 	defer connection.Close()
 
-	_, err = connection.Do("SCRIPT", "KILL")
+	conf.SetRandomPassword()
+
+	err = resetter.killScript(connection)
+	if err != nil {
+		return nil, err
+	}
+
+	commandsToRun := []string{
+		"CONFIG SET requirepass " + conf.Password(),
+	}
+
+	err = resetter.doAtomically(connection, commandsToRun)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// SCRIPT KILL
+	// RE-AUTH
+	// SCRIPT FLUSH
+	// CLIENT KILL skipme yes
+	// CONFIG REWRITE
+	// FLUSHALL
+	// SAVE
+	// BGREWRITEAOF
+	// shutdown
+	// EXEC
+
+	return conf, resetter.Monit.StopAndWait("redis")
+}
+
+func (resetter *Resetter) doAtomically(connection redigo.Conn, commandsToRun []string) error {
+	_, err := connection.Do("MULTI")
+	if err != nil {
+		return err
+	}
+
+	for _, command := range commandsToRun {
+		_, err := connection.Do(command)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (resetter *Resetter) killScript(connection redigo.Conn) error {
+	_, err := connection.Do("SCRIPT", "KILL")
 	if err != nil && !isNoScriptErr(err) {
 		err = fmt.Errorf("failed to kill redis script: %s", err.Error())
 		return err
@@ -95,20 +129,15 @@ func (resetter *Resetter) killScript() error {
 	return nil
 }
 
-func (resetter *Resetter) getAuthenticatedRedisConn() (redigo.Conn, error) {
-	liveConf, err := redisconf.Load(resetter.liveConfPath)
-	if err != nil {
-		return nil, err
-	}
-
-	address := fmt.Sprintf("%s:%d", liveConf.Host(), liveConf.Port())
+func (resetter *Resetter) getAuthenticatedRedisConn(conf redisconf.Conf) (redigo.Conn, error) {
+	address := fmt.Sprintf("%s:%d", conf.Host(), conf.Port())
 
 	connection, err := resetter.redis.Dial("tcp", address)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = connection.Do("AUTH", liveConf.Password())
+	_, err = connection.Do("AUTH", conf.Password())
 	if err != nil {
 		connection.Close()
 		return nil, err

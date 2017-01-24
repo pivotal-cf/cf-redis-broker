@@ -207,7 +207,7 @@ func CopyWithInstanceAdditions(fromPath, toPath, instanceID, port, password, pid
 func (c *Conf) InitForDedicatedNode(password ...string) error {
 	switch len(password) {
 	case 0:
-		c.setRandomPassword()
+		c.SetRandomPassword()
 	case 1:
 		c.setPassword(password[0])
 	default:
@@ -240,7 +240,7 @@ func (c *Conf) setMaxMemory() error {
 	return nil
 }
 
-func (c *Conf) setRandomPassword() {
+func (c *Conf) SetRandomPassword() {
 	c.setPassword(uuid.NewRandom().String())
 }
 
