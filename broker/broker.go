@@ -160,7 +160,7 @@ func (redisServiceBroker *RedisServiceBroker) plans() map[string]*brokerapi.Serv
 		plans["shared"] = &brokerapi.ServicePlan{
 			ID:          redisServiceBroker.Config.RedisConfiguration.SharedVMPlanID,
 			Name:        PlanNameShared,
-			Description: "This plan provides a single Redis process on a shared VM, which is suitable for development and testing workloads",
+			Description: "This plan provides a Redis server on a shared VM configured for data persistence.",
 			Metadata: &brokerapi.ServicePlanMetadata{
 				Bullets: []string{
 					"Each instance shares the same VM",
@@ -176,7 +176,7 @@ func (redisServiceBroker *RedisServiceBroker) plans() map[string]*brokerapi.Serv
 		plans["dedicated"] = &brokerapi.ServicePlan{
 			ID:          redisServiceBroker.Config.RedisConfiguration.DedicatedVMPlanID,
 			Name:        PlanNameDedicated,
-			Description: "This plan provides a single Redis process on a dedicated VM, which is suitable for production workloads",
+			Description: "This plan provides a Redis server configured for data persistence. ",
 			Metadata: &brokerapi.ServicePlanMetadata{
 				Bullets: []string{
 					"Dedicated VM per instance",

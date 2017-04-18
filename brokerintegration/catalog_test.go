@@ -71,7 +71,7 @@ var _ = Describe("Catalog", func() {
 			})
 
 			It("displays the correct description", func() {
-				Ω(plan.Description).Should(Equal("This plan provides a single Redis process on a shared VM, which is suitable for development and testing workloads"))
+				Ω(plan.Description).Should(Equal("This plan provides a Redis server on a shared VM configured for data persistence."))
 			})
 
 			It("displays the correct metadata bullet points", func() {
@@ -99,7 +99,7 @@ var _ = Describe("Catalog", func() {
 			})
 
 			It("displays the correct description", func() {
-				Ω(plan.Description).Should(Equal("This plan provides a single Redis process on a dedicated VM, which is suitable for production workloads"))
+				Ω(plan.Description).Should(Equal("This plan provides a Redis server configured for data persistence. "))
 			})
 
 			It("displays the correct metadata bullet points", func() {
