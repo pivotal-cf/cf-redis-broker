@@ -106,7 +106,7 @@ var _ = Describe("Redis service broker", func() {
 		Context("when the plan is recognized", func() {
 			It("creates an instance", func() {
 				_, err := redisBroker.Provision(instanceID, brokerapi.ProvisionDetails{PlanID: sharedPlanID}, false)
-				Ω(err).ToNot(HaveOccurred())
+				Expect(err).NotTo(HaveOccurred())
 
 				Expect(len(someCreatorAndBinder.createdInstanceIds)).To(Equal(1))
 				Expect(someCreatorAndBinder.createdInstanceIds[0]).To(Equal(instanceID))
@@ -115,7 +115,7 @@ var _ = Describe("Redis service broker", func() {
 			Context("when the instance already exists", func() {
 				BeforeEach(func() {
 					_, err := redisBroker.Provision(instanceID, brokerapi.ProvisionDetails{PlanID: sharedPlanID}, false)
-					Ω(err).ToNot(HaveOccurred())
+					Expect(err).NotTo(HaveOccurred())
 				})
 
 				It("gives an error when trying to use the same instanceID", func() {
@@ -139,21 +139,21 @@ var _ = Describe("Redis service broker", func() {
 		Context("when the plan is not recognized", func() {
 			It("returns a suitable error", func() {
 				_, err := redisBroker.Provision(instanceID, brokerapi.ProvisionDetails{PlanID: "not_a_plan_id"}, false)
-				Ω(err).To(MatchError("plan_id not recognized"))
+				Expect(err).To(MatchError("plan_id not recognized"))
 			})
 		})
 
 		Context("when the plan id is not provided", func() {
 			It("returns a suitable error", func() {
 				_, err := redisBroker.Provision(instanceID, brokerapi.ProvisionDetails{}, false)
-				Ω(err).To(MatchError("plan_id required"))
+				Expect(err).To(MatchError("plan_id required"))
 			})
 		})
 
 		Context("when the plan is recognized, but the broker has not been configured with the appropriate instance creator", func() {
 			It("returns a suitable error", func() {
 				_, err := redisBroker.Provision(instanceID, brokerapi.ProvisionDetails{PlanID: dedicatedPlanID}, false)
-				Ω(err).To(MatchError("instance creator not found for plan"))
+				Expect(err).To(MatchError("instance creator not found for plan"))
 			})
 		})
 	})
@@ -161,12 +161,12 @@ var _ = Describe("Redis service broker", func() {
 	Describe(".Deprovision", func() {
 		BeforeEach(func() {
 			_, err := redisBroker.Provision(instanceID, brokerapi.ProvisionDetails{PlanID: sharedPlanID}, false)
-			Ω(err).ToNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("destroys the instance", func() {
 			_, err := redisBroker.Deprovision(instanceID, brokerapi.DeprovisionDetails{}, false)
-			Expect(err).ToNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 
 			Expect(someCreatorAndBinder.destroyedInstanceIds).To(ContainElement(instanceID))
 		})
@@ -198,7 +198,7 @@ var _ = Describe("Redis service broker", func() {
 				bindingID := "bindingID"
 
 				credentials, err := redisBroker.Bind(instanceID, bindingID, brokerapi.BindDetails{})
-				Ω(err).NotTo(HaveOccurred())
+				Expect(err).NotTo(HaveOccurred())
 
 				expectedCredentials := brokerapi.Binding{
 					Credentials: map[string]interface{}{
@@ -210,7 +210,7 @@ var _ = Describe("Redis service broker", func() {
 					RouteServiceURL: "",
 				}
 
-				Ω(credentials).To(Equal(expectedCredentials))
+				Expect(credentials).To(Equal(expectedCredentials))
 			})
 		})
 
@@ -219,7 +219,7 @@ var _ = Describe("Redis service broker", func() {
 				bindingID := "bindingID"
 
 				_, err := redisBroker.Bind(instanceID, bindingID, brokerapi.BindDetails{})
-				Ω(err).To(Equal(brokerapi.ErrInstanceDoesNotExist))
+				Expect(err).To(Equal(brokerapi.ErrInstanceDoesNotExist))
 			})
 		})
 	})
@@ -228,19 +228,19 @@ var _ = Describe("Redis service broker", func() {
 		BeforeEach(func() {
 			someCreatorAndBinder.Create(instanceID)
 			_, err := redisBroker.Bind(instanceID, "EXISTANT-BINDING", brokerapi.BindDetails{})
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("returns successfully if binding existed", func() {
 			someCreatorAndBinder.bindingExists = true
 			err := redisBroker.Unbind(instanceID, "EXISTANT-BINDING", brokerapi.UnbindDetails{})
-			Ω(err).ShouldNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("returns brokerapi.ErrBindingDoesNotExist if binding did not exist", func() {
 			someCreatorAndBinder.bindingExists = false
 			err := redisBroker.Unbind(instanceID, "NON-EXISTANT-BINDING", brokerapi.UnbindDetails{})
-			Ω(err).Should(MatchError(brokerapi.ErrBindingDoesNotExist))
+			Expect(err).To(MatchError(brokerapi.ErrBindingDoesNotExist))
 		})
 	})
 })
