@@ -10,7 +10,6 @@ export PATH=$RBENV_ROOT/bin:$RBENV_ROOT/shims:$GOROOT/bin:$GOPATH/bin:$PATH
 main() {
   setup_go
   run_go_vet
-  run_golint
   run_tests
 }
 
@@ -27,14 +26,6 @@ __message() {
   local _message=$1
   echo -e "${_message}..."
 }
-
-run_golint() {
-  __message "Running golint"
-  golint_result=$(
-    all_go_code_except_Godeps \
-      | xargs golint \
-      | awk '! /should have comment.* or be unexported/ { print $0 }'
-  )
 
   if [[ -n $golint_result ]]
   then
