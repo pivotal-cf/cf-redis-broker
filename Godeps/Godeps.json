@@ -1,7 +1,7 @@
 {
 	"ImportPath": "github.com/pivotal-cf/cf-redis-broker",
 	"GoVersion": "go1.7",
-	"GodepVersion": "v73",
+	"GodepVersion": "v79",
 	"Packages": [
 		"./..."
 	],
@@ -238,15 +238,15 @@
 		},
 		{
 			"ImportPath": "github.com/pivotal-cf/redisutils/monit",
-			"Rev": "e4870e0d3a591fce1f68bf631688e749872c959f"
+			"Rev": "2b1039d36b385a6333392dca471d1c84a112ccf6"
 		},
 		{
 			"ImportPath": "github.com/pivotal-cf/redisutils/monit/fakes",
-			"Rev": "e4870e0d3a591fce1f68bf631688e749872c959f"
+			"Rev": "2b1039d36b385a6333392dca471d1c84a112ccf6"
 		},
 		{
 			"ImportPath": "github.com/pivotal-cf/redisutils/redis",
-			"Rev": "e4870e0d3a591fce1f68bf631688e749872c959f"
+			"Rev": "2b1039d36b385a6333392dca471d1c84a112ccf6"
 		},
 		{
 			"ImportPath": "github.com/st3v/glager",
