@@ -1,15 +1,13 @@
-package system_test
+package system
 
 import (
-	. "github.com/onsi/ginkgo"
-	"github.com/onsi/ginkgo/reporters"
-	. "github.com/onsi/gomega"
-
 	"testing"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 func TestSystem(t *testing.T) {
 	RegisterFailHandler(Fail)
-	junitReporter := reporters.NewJUnitReporter("junit_system.xml")
-	RunSpecsWithDefaultAndCustomReporters(t, "System Suite", []Reporter{junitReporter})
+	RunSpecs(t, "System Suite")
 }
