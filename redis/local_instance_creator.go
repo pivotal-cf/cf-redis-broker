@@ -46,7 +46,11 @@ func (localInstanceCreator *LocalInstanceCreator) Create(instanceID string) erro
 		return brokerapi.ErrInstanceLimitMet
 	}
 
-	port, _ := localInstanceCreator.FindFreePort()
+	port, err := localInstanceCreator.FindFreePort()
+	if err != nil {
+		return err
+	}
+
 	instance := &Instance{
 		ID:       instanceID,
 		Port:     port,
@@ -54,7 +58,7 @@ func (localInstanceCreator *LocalInstanceCreator) Create(instanceID string) erro
 		Password: uuid.NewRandom().String(),
 	}
 
-	err := localInstanceCreator.Setup(instance)
+	err = localInstanceCreator.Setup(instance)
 	if err != nil {
 		return err
 	}
