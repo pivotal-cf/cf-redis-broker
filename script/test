@@ -27,13 +27,6 @@ __message() {
   echo -e "${_message}..."
 }
 
-  if [[ -n $golint_result ]]
-  then
-    echo "$golint_result"
-    exit 1
-  fi
-}
-
 run_tests() {
   __message "Running tests"
 
