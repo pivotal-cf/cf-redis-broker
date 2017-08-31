@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"regexp"
+	"strings"
 
 	"github.com/cloudfoundry-incubator/candiedyaml"
 )
@@ -91,6 +93,11 @@ func ValidateConfig(config ServiceConfiguration) error {
 		return err
 	}
 
+	err = checkDedicatedNodesAreIPs(config.Dedicated.Nodes)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -102,6 +109,19 @@ func checkPathExists(path string, description string) error {
 			path,
 			description)
 		return errors.New(errMessage)
+	}
+	return nil
+}
+
+func checkDedicatedNodesAreIPs(dedicatedNodes []string) error {
+	valid_ip_field := "(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)"
+	ip_regex := fmt.Sprintf("^(%[1]s\\.){3}%[1]s$", valid_ip_field)
+
+	for _, nodeAddress := range dedicatedNodes {
+		match, _ := regexp.MatchString(ip_regex, strings.TrimSpace(nodeAddress))
+		if !match {
+			return errors.New("The broker only supports IP addresses for dedicated nodes")
+		}
 	}
 	return nil
 }

@@ -237,5 +237,23 @@ var _ = Describe("parsing the broker config file", func() {
 				})
 			})
 		})
+
+		Describe("DedicatedNodesKnownByIP", func() {
+			Context("when redis.dedicated.nodes contains entries that aren't IPv4  addresses", func() {
+				BeforeEach(func() {
+					config.Dedicated = brokerconfig.Dedicated{
+						Nodes:         []string{"10.1.3.4", "10.1.3.40", "instance-id-50.dedicated-node.redis-z1.cf-cfapps-io2-redis.bosh"},
+						Port:          12345,
+						StatefilePath: "statefilepath",
+					}
+				})
+
+				It("returns an error", func() {
+					err := brokerconfig.ValidateConfig(config)
+					Ω(err).To(HaveOccurred())
+					Ω(err.Error()).To(Equal("The broker only supports IP addresses for dedicated nodes"))
+				})
+			})
+		})
 	})
 })
