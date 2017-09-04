@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"code.cloudfoundry.org/lager"
 	redigo "github.com/garyburd/redigo/redis"
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 	"github.com/pivotal-cf/redisutils/monit"
@@ -25,10 +26,11 @@ type Resetter struct {
 	timeout         time.Duration
 	Monit           monit.Monit
 	redis           redis.Redis
+	logger          lager.Logger
 }
 
 //New is the correct way to instantiate a Resetter
-func New(defaultConfPath, liveConfPath string, portChecker checker) *Resetter {
+func New(defaultConfPath, liveConfPath string, portChecker checker, logger lager.Logger) *Resetter {
 	return &Resetter{
 		defaultConfPath: defaultConfPath,
 		liveConfPath:    liveConfPath,
@@ -36,6 +38,7 @@ func New(defaultConfPath, liveConfPath string, portChecker checker) *Resetter {
 		timeout:         time.Second * 30,
 		Monit:           monit.New(),
 		redis:           redis.New(),
+		logger:          logger,
 	}
 }
 
@@ -85,6 +88,11 @@ func (resetter *Resetter) killScript() error {
 		return err
 	}
 	defer connection.Close()
+
+	_, err = connection.Do("FLUSHALL")
+	if err != nil {
+		resetter.logger.Error("failed to flushall", err)
+	}
 
 	_, err = connection.Do("SCRIPT", "KILL")
 	if err != nil && !isNoScriptErr(err) {

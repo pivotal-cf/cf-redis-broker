@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"code.cloudfoundry.org/lager/lagertest"
+	"github.com/onsi/gomega/gbytes"
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 	monitFakes "github.com/pivotal-cf/redisutils/monit/fakes"
 	"github.com/pivotal-cf/redisutils/redis"
@@ -40,8 +42,8 @@ var _ = Describe("Client", func() {
 		fakeMonit       *monitFakes.FakeMonit
 		redisFake       *redis.Fake
 		connFake        *redis.ConnFake
-
-		redisPassword = "somepassword"
+		logger          *lagertest.TestLogger
+		redisPassword   = "somepassword"
 	)
 
 	BeforeEach(func() {
@@ -101,7 +103,10 @@ var _ = Describe("Client", func() {
 		_, err = os.Create(rdbPath)
 		Expect(err).NotTo(HaveOccurred())
 
-		redisClient = New(defaultConfPath, confPath, fakePortChecker)
+		logger = lagertest.NewTestLogger("reset-logger")
+		// logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.DEBUG))
+		// logger.RegisterSink(lager.NewWriterSink(os.Stderr, lager.ERROR))
+		redisClient = New(defaultConfPath, confPath, fakePortChecker, logger)
 		redisClient.redis = redisFake
 		redisClient.Monit = fakeMonit
 	})
@@ -122,9 +127,15 @@ var _ = Describe("Client", func() {
 			Expect(resetErr).NotTo(HaveOccurred())
 		})
 
-		It("invokes script kill", func() {
+		It("flushes the database", func() {
 			Expect(connFake.DoCallCount()).To(BeNumerically(">", 1))
-			response, args := connFake.DoArgsForCall(1)
+			response, _ := connFake.DoArgsForCall(1)
+			Expect(response).To(Equal("FLUSHALL"))
+		})
+
+		It("invokes script kill", func() {
+			Expect(connFake.DoCallCount()).To(BeNumerically(">", 1)) //TODO why not the number?
+			response, args := connFake.DoArgsForCall(2)
 			Expect(response).To(Equal("SCRIPT"))
 			Expect(args).To(Equal([]interface{}{"KILL"}))
 		})
@@ -149,11 +160,30 @@ var _ = Describe("Client", func() {
 			})
 		})
 
+		Context("when flushall returns an error", func() {
+			flushAllErr := errors.New("failed to flushall")
+
+			BeforeEach(func() {
+				connFake.DoStub = doReturns([]interfaceAndErr{
+					{nil, nil},
+					{nil, flushAllErr},
+					{nil, nil},
+				}).sequentially
+			})
+
+			It("returns the error", func() {
+				Expect(logger).To(gbytes.Say("failed to flushall"))
+			})
+
+		})
+
+		//TODO could we extract BeforeEach into common snippet?
 		Context("when script kill returns an error", func() {
 			scriptKillErr := errors.New("Failed to script kill")
 
 			BeforeEach(func() {
 				connFake.DoStub = doReturns([]interfaceAndErr{
+					{nil, nil},
 					{nil, nil},
 					{nil, scriptKillErr},
 				}).sequentially
@@ -170,6 +200,7 @@ var _ = Describe("Client", func() {
 
 			BeforeEach(func() {
 				connFake.DoStub = doReturns([]interfaceAndErr{
+					{nil, nil},
 					{nil, nil},
 					{nil, scriptKillErr},
 				}).sequentially
