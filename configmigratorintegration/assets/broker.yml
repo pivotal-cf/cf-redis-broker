@@ -12,9 +12,9 @@ redis:
   service_instance_limit: 3
   dedicated:
     nodes:
-    - server1.lvh.me
-    - server2.lvh.me
-    - server3.lvh.me
+    - 127.0.0.1
+    - 127.0.0.01
+    - 127.0.0.001
     port: 6379
     statefile_path: /tmp/redis-config-dir/statefile.json
 auth:

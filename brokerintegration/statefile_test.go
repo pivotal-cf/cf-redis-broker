@@ -35,7 +35,7 @@ var _ = Describe("Provision dedicated instance", func() {
 			Ω(len(debugInfo.Allocated.Clusters)).Should(Equal(1))
 
 			host := debugInfo.Allocated.Clusters[0].Hosts[0]
-			Ω(host).Should(MatchRegexp("server[1-3]\\.lvh\\.me"))
+			Ω(host).Should(MatchRegexp(`127\.0\.0\.(1|01|001)`))
 
 			Ω(debugInfo.Pool.Clusters).ShouldNot(ContainElement([]string{host}))
 		})
@@ -61,10 +61,10 @@ var _ = Describe("Provision dedicated instance", func() {
 			Ω(len(debugInfo.Allocated.Clusters)).Should(Equal(1))
 
 			host := debugInfo.Allocated.Clusters[0].Hosts[0]
-			Ω(host).Should(MatchRegexp("server[1-3]\\.lvh\\.me"))
+			Ω(host).Should(MatchRegexp(`127\.0\.0\.(1|01|001)`))
 
 			Ω(debugInfo.Pool.Clusters).ShouldNot(ContainElement([]string{host}))
-			Ω(debugInfo.Pool.Clusters).Should(ContainElement([]string{"server4.lvh.me"}))
+			Ω(debugInfo.Pool.Clusters).Should(ContainElement([]string{"127.0.0.2"}))
 		})
 
 	})

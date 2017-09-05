@@ -17,9 +17,9 @@ redis:
   description: Redis service to provide a key-value store
   dedicated:
     nodes:
-    - server1.127.0.0.1.xip.io
-    - server2.127.0.0.1.xip.io
-    - server3.127.0.0.1.xip.io
+    - 127.0.0.1
+    - 127.0.0.01
+    - 127.0.0.001
     port: 6379
     statefile_path: /tmp/redis-config-dir/statefile.json
 auth:
