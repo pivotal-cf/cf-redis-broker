@@ -35,7 +35,7 @@ run_tests() {
 }
 
 setup_go() {
-  eval "$(gimme 1.7.4)"
+  eval "$(gimme 1.9)"
   go get github.com/onsi/ginkgo/ginkgo \
   golang.org/x/tools/cmd/cover \
   github.com/golang/lint/golint \
