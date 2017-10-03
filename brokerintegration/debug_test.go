@@ -184,6 +184,8 @@ func executeHTTPRequest(method, uri string) (int, []byte) {
 	req, err := http.NewRequest(method, uri, nil)
 	Expect(err).NotTo(HaveOccurred())
 	resp, err := client.Do(req)
+    Expect(err).NotTo(HaveOccurred())
+
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)

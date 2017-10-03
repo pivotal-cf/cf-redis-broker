@@ -24,8 +24,8 @@ var _ = Describe("Broker Security", func() {
 			It("returns HTTP code 401", func() {
 				client := &http.Client{}
 				resp, err := client.Get("http://localhost:3000")
-				defer resp.Body.Close()
 				Ω(err).ToNot(HaveOccurred())
+				defer resp.Body.Close()
 				req, err := http.NewRequest("GET", "http://localhost:3000/v2/catalog", nil)
 				Ω(err).ToNot(HaveOccurred())
 				req.SetBasicAuth("admin", "badpassword")
@@ -41,8 +41,8 @@ var _ = Describe("Broker Security", func() {
 		It("is available on the localhost only", func() {
 			client := &http.Client{}
 			resp, err := client.Get("http://localhost:3000")
-			resp.Body.Close()
 			Ω(err).ToNot(HaveOccurred())
+			resp.Body.Close()
 
 			publicIPAddresses, err := integration.HostIP4Addresses()
 			Ω(err).ToNot(HaveOccurred())
