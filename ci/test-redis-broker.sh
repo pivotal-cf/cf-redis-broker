@@ -1,20 +1,12 @@
 #!/bin/bash
 
-set -eu
+export GOPATH=$PWD:$GOPATH
+export RBENV_ROOT=/home/vcap/.rbenv
 
-test_args=$@
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-ROOT="$( dirname $DIR )"
+cd src/github.com/pivotal-cf/cf-redis-broker
 
-eval "$(gimme 1.9)"
+# Run tests as vcap user
+useradd vcap
+sudo chown -R vcap:vcap /tmp
 
-GOPATH="$( mktemp -d )"
-mkdir -p $GOPATH/src/github.com/pivotal-cf
-cp -r $ROOT $GOPATH/src/github.com/pivotal-cf/
-
-pushd $GOPATH/src/github.com/pivotal-cf/cf-redis-broker
-  GOPATH=$PWD/Godeps/_workspace:$GOPATH
-  ginkgo -r -race --keepGoing -randomizeAllSpecs -skipMeasurements -failOnPending -cover $test_args
-popd
-
-rm -rf $GOPATH
+sudo -E -u vcap ./script/test

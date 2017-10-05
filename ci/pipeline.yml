@@ -12,7 +12,6 @@ jobs:
   - get: cf-redis-broker
     trigger: true
   - task: test-redis-broker
-    privileged: true
     config:
       platform: linux
       image_resource:
@@ -22,8 +21,9 @@ jobs:
           tag: stable
       inputs:
         - name: cf-redis-broker
+          path: src/github.com/pivotal-cf/cf-redis-broker
       params:
         AWS_ACCESS_KEY_ID: {{aws-access-key-id}}
         AWS_SECRET_ACCESS_KEY: {{aws-secret-access-key}}
       run:
-        path: cf-redis-broker/ci/test-redis-broker.sh
+        path: src/github.com/pivotal-cf/cf-redis-broker/ci/test-redis-broker.sh
