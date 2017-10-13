@@ -14,7 +14,7 @@ import (
 	redisclient "github.com/garyburd/redigo/redis"
 )
 
-var host = "127.0.0.1"
+var host = "0.0.0.0"
 var port = 6480
 var password = ""
 var pidFilePath string
@@ -27,7 +27,7 @@ var _ = Describe("Client", func() {
 		pidFile, err := ioutil.TempFile("", "pid")
 		Ω(err).ShouldNot(HaveOccurred())
 		pidFilePath = pidFile.Name()
-		redisArgs = []string{"--port", fmt.Sprintf("%d", port), "--pidfile", pidFilePath}
+		redisArgs = []string{"--bind", "0.0.0.0", "--port", fmt.Sprintf("%d", port), "--pidfile", pidFilePath}
 	})
 
 	AfterEach(func() {
@@ -43,7 +43,7 @@ var _ = Describe("Client", func() {
 				)
 
 				// on OS X, "getsockopt:" is also present in the error message from the system
-				Ω(err).Should(MatchError(MatchRegexp("dial tcp 127.0.0.1:6480: (getsockopt: )?connection refused")))
+				Ω(err).Should(MatchError(MatchRegexp("dial tcp 0.0.0.0:6480: getsockopt: connection refused")))
 			})
 		})
 

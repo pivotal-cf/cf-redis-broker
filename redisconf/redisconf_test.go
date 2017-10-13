@@ -77,7 +77,8 @@ var _ = Describe("redisconf", func() {
 				"appendonly yes\n" +
 				"client-output-buffer-limit normal 0 0 0\n" +
 				"save 900 1\n" +
-				"save 300 10\n"
+				"save 300 10\n" +
+				"bind 0.0.0.0\n"
 
 			Expect(string(input.Encode())).To(Equal(expectedOutput))
 		})

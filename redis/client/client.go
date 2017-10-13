@@ -72,7 +72,7 @@ func CmdAliases(aliases map[string]string) Option {
 
 func Connect(options ...Option) (Client, error) {
 	c := &client{
-		host:    "127.0.0.1",
+		host:    "0.0.0.0",
 		port:    redisconf.DefaultPort,
 		aliases: map[string]string{},
 	}
