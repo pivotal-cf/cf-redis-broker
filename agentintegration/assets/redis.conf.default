@@ -2,3 +2,4 @@ daemonize no
 pidfile /var/run/redis.pid
 port 6379
 appendonly yes
+bind 0.0.0.0
