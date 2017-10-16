@@ -5,10 +5,13 @@ set -e
 set -o pipefail
 
 test_args=$@
-export PATH=$RBENV_ROOT/bin:$RBENV_ROOT/shims:$GOROOT/bin:$GOPATH/bin:$PATH
+
+export PATH=$GOROOT/bin:$GOPATH/bin:$PATH
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_DIR="$( dirname $SCRIPT_DIR )"
 
 main() {
-  setup_go
   run_go_vet
   run_tests
 }
@@ -30,17 +33,10 @@ __message() {
 run_tests() {
   __message "Running tests"
 
-  GOPATH=$PWD/Godeps/_workspace:$GOPATH \
+  GOPATH=$PROJECT_DIR/Godeps/_workspace:$GOPATH \
     ginkgo -r -race --keepGoing -randomizeAllSpecs -skipMeasurements -failOnPending -cover $test_args
 }
 
-setup_go() {
-  eval "$(gimme 1.9)"
-  go get github.com/onsi/ginkgo/ginkgo \
-  golang.org/x/tools/cmd/cover \
-  github.com/golang/lint/golint \
-  github.com/tools/godep \
-  github.com/progrium/basht
-}
-
-main
+pushd $PROJECT_DIR
+  main
+popd

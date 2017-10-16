@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_DIR="$( dirname $SCRIPT_DIR )"
+
+# Run tests as vcap user
+useradd vcap
+sudo chown -R vcap:vcap /tmp
+sudo chown -R vcap:vcap $GOPATH
+
+sudo -E -u vcap $SCRIPT_DIR/test
