@@ -64,7 +64,7 @@ var _ = Describe("Startup", func() {
 		})
 
 		Describe("The copied redis.conf file", func() {
-			It("has it's original password", func() {
+			It("has its original password", func() {
 				newRedisConf, err := redisconf.Load(redisConfPath)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(newRedisConf.Get("requirepass")).To(Equal("someotherpassword"))
