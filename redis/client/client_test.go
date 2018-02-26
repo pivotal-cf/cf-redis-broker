@@ -42,8 +42,7 @@ var _ = Describe("Client", func() {
 					client.Port(port),
 				)
 
-				// on OS X, "getsockopt:" is also present in the error message from the system
-				Ω(err).Should(MatchError(MatchRegexp("dial tcp 0.0.0.0:6480: getsockopt: connection refused")))
+				Ω(err).Should(MatchError(MatchRegexp("dial tcp 0.0.0.0:6480: connect: connection refused")))
 			})
 		})
 
