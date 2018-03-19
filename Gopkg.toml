@@ -1,0 +1,12 @@
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/pivotal-cf/redisutils"
+
+[[constraint]]
+  name = "github.com/st3v/glager"
+  version = "0.3.0"
+
+[prune]
+  go-tests = true
+  unused-packages = true

@@ -12,17 +12,13 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_DIR="$( dirname $SCRIPT_DIR )"
 
 main() {
-  run_go_vet
+  run_dep
   run_tests
 }
 
-run_go_vet() {
-  __message "Running go vet"
-  all_go_code_except_Godeps | xargs go tool vet
-}
-
-all_go_code_except_Godeps() {
-  find . -maxdepth 1 -type d -not -path "*/Godeps*" -a -not -path '*/.git*' -a -not -path '.'
+run_dep() {
+  __message "Running dep"
+  dep ensure
 }
 
 __message() {
