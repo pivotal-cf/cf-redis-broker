@@ -9,8 +9,9 @@ import (
 )
 
 const (
-	PlanNameShared    = "shared-vm"
-	PlanNameDedicated = "dedicated-vm"
+	InstanceTypeShared    = "shared-vm"
+	InstanceTypeDedicated = "dedicated-vm"
+	InstanceTypeOnDemand = "on-demand"
 )
 
 type InstanceCredentials struct {
@@ -159,7 +160,7 @@ func (redisServiceBroker *RedisServiceBroker) plans() map[string]*brokerapi.Serv
 	if redisServiceBroker.Config.SharedEnabled() {
 		plans["shared"] = &brokerapi.ServicePlan{
 			ID:          redisServiceBroker.Config.RedisConfiguration.SharedVMPlanID,
-			Name:        PlanNameShared,
+			Name:        InstanceTypeShared,
 			Description: "This plan provides a Redis server on a shared VM configured for data persistence.",
 			Metadata: &brokerapi.ServicePlanMetadata{
 				Bullets: []string{
@@ -175,7 +176,7 @@ func (redisServiceBroker *RedisServiceBroker) plans() map[string]*brokerapi.Serv
 	if redisServiceBroker.Config.DedicatedEnabled() {
 		plans["dedicated"] = &brokerapi.ServicePlan{
 			ID:          redisServiceBroker.Config.RedisConfiguration.DedicatedVMPlanID,
-			Name:        PlanNameDedicated,
+			Name:        InstanceTypeDedicated,
 			Description: "This plan provides a Redis server configured for data persistence. ",
 			Metadata: &brokerapi.ServicePlanMetadata{
 				Bullets: []string{

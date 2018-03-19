@@ -16,7 +16,7 @@ type TemplateData struct {
 	LogDir             string
 	AwsAccessKey       string
 	AwsSecretAccessKey string
-	PlanName           string
+	InstanceType       string
 	BrokerUrl          string
 }
 
