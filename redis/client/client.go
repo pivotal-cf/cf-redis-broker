@@ -13,6 +13,7 @@ import (
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 )
 
+//go:generate counterfeiter -o fakes/fake_client.go . Client
 type Client interface {
 	Disconnect() error
 	WaitUntilRedisNotLoading(timeoutMilliseconds int) error
