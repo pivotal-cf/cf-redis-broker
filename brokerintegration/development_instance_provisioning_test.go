@@ -71,14 +71,14 @@ var _ = Describe("Provision shared instance", func() {
 				Expect(err).NotTo(HaveOccurred())
 				logContents = string(logBytes)
 
-				if strings.Contains(logContents, "Server started") {
+				if strings.Contains(logContents, "Ready to accept connections") {
 					break
 				}
 
 				time.Sleep(time.Second)
 			}
 
-			Expect(logContents).To(ContainSubstring("Server started"))
+			Expect(logContents).To(ContainSubstring("Ready to accept connections"))
 		})
 	})
 
