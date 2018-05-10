@@ -11,26 +11,15 @@ export PATH=$GOROOT/bin:$GOPATH/bin:$PATH
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_DIR="$( dirname $SCRIPT_DIR )"
 
-main() {
-  run_dep
-  run_tests
-}
-
-run_dep() {
-  __message "Running dep"
-  dep ensure
-}
-
 __message() {
   local _message=$1
   echo -e "${_message}..."
 }
 
-run_tests() {
+main() {
   __message "Running tests"
 
-  GOPATH=$PROJECT_DIR/Godeps/_workspace:$GOPATH \
-    ginkgo -r -race --keepGoing -randomizeAllSpecs -skipMeasurements -failOnPending -cover $test_args
+  ginkgo -r -race --keepGoing -randomizeAllSpecs -skipMeasurements -failOnPending -cover $test_args
 }
 
 pushd $PROJECT_DIR
