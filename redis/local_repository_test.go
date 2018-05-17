@@ -49,15 +49,6 @@ var _ = Describe("Local Repository", func() {
 		}
 
 		repo = redis.NewLocalRepository(redisConf, logger)
-
-		err := os.MkdirAll(tmpInstanceDataDir, 0755)
-		Ω(err).ToNot(HaveOccurred())
-
-		err = os.MkdirAll(tmpPidFileDir, 0755)
-		Ω(err).ToNot(HaveOccurred())
-
-		err = os.MkdirAll(tmpInstanceLogDir, 0755)
-		Ω(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -81,6 +72,7 @@ var _ = Describe("Local Repository", func() {
 			}
 
 			BeforeEach(func() {
+				repo.EnsureDirectoriesExist(&instance)
 				pid := "1234"
 				pidFilePath := tmpPidFileDir + "/" + instanceID + ".pid"
 				ioutil.WriteFile(pidFilePath, []byte(pid), 0644)
@@ -126,7 +118,8 @@ var _ = Describe("Local Repository", func() {
 
 				dataDir := path.Join(tmpInstanceDataDir, instanceID, "db")
 
-				_, err := os.Stat(dataDir)
+				info, err := os.Stat(dataDir)
+				Ω(getPermissions(info)).To(Equal(0750))
 				Ω(err).NotTo(HaveOccurred())
 			})
 
@@ -144,7 +137,16 @@ var _ = Describe("Local Repository", func() {
 
 				logDir := path.Join(tmpInstanceLogDir, instanceID)
 
-				_, err := os.Stat(logDir)
+				info, err := os.Stat(logDir)
+				Ω(getPermissions(info)).To(Equal(0750))
+				Ω(err).NotTo(HaveOccurred())
+			})
+
+			It("creates the instance pid directory", func() {
+				newTestInstance(instanceID, repo)
+
+				info, err := os.Stat(tmpPidFileDir)
+				Ω(getPermissions(info)).To(Equal(0750))
 				Ω(err).NotTo(HaveOccurred())
 			})
 		})
@@ -153,12 +155,21 @@ var _ = Describe("Local Repository", func() {
 			var instance *redis.Instance
 
 			BeforeEach(func() {
+				err := os.MkdirAll(tmpInstanceDataDir, 0750)
+				Ω(err).ToNot(HaveOccurred())
+
+				err = os.MkdirAll(tmpPidFileDir, 0750)
+				Ω(err).ToNot(HaveOccurred())
+
+				err = os.MkdirAll(tmpInstanceLogDir, 0750)
+				Ω(err).ToNot(HaveOccurred())
+
 				instance = newTestInstance(instanceID, repo)
 			})
 
 			It("overwrites the config file", func() {
 				originalConfigContents := []byte("my custom config")
-				err := ioutil.WriteFile(repo.InstanceConfigPath(instance.ID), originalConfigContents, 0755)
+				err := ioutil.WriteFile(repo.InstanceConfigPath(instance.ID), originalConfigContents, 0750)
 				Ω(err).NotTo(HaveOccurred())
 
 				writeInstance(instance, repo)
@@ -172,7 +183,7 @@ var _ = Describe("Local Repository", func() {
 				dataFilePath := filepath.Join(repo.InstanceDataDir(instance.ID), "appendonly.aof")
 
 				originalDataFileContents := []byte("DATA FILE")
-				err := ioutil.WriteFile(dataFilePath, originalDataFileContents, 0755)
+				err := ioutil.WriteFile(dataFilePath, originalDataFileContents, 0750)
 				Ω(err).NotTo(HaveOccurred())
 
 				writeInstance(instance, repo)
@@ -186,7 +197,7 @@ var _ = Describe("Local Repository", func() {
 				logFilePath := filepath.Join(repo.InstanceLogDir(instance.ID), "redis-server.log")
 
 				originalLogFileContents := []byte("LOG FILE")
-				err := ioutil.WriteFile(logFilePath, originalLogFileContents, 0755)
+				err := ioutil.WriteFile(logFilePath, originalLogFileContents, 0750)
 				Ω(err).NotTo(HaveOccurred())
 
 				writeInstance(instance, repo)
@@ -287,6 +298,10 @@ var _ = Describe("Local Repository", func() {
 
 	Describe("InstanceCount", func() {
 		Context("when there are no instances", func() {
+			BeforeEach(func(){
+				err := os.MkdirAll(tmpInstanceDataDir, 0750)
+				Ω(err).ToNot(HaveOccurred())
+			})
 			It("returns 0", func() {
 				instanceCount, errs := repo.InstanceCount()
 				Ω(errs).To(BeEmpty())
@@ -325,6 +340,9 @@ var _ = Describe("Local Repository", func() {
 			var instances []*redis.Instance
 
 			JustBeforeEach(func() {
+				err := os.MkdirAll(tmpInstanceDataDir, 0750)
+				Ω(err).ToNot(HaveOccurred())
+
 				var allInstancesErrors []error
 				instances, allInstancesErrors = repo.AllInstancesVerbose()
 				Expect(allInstancesErrors).To(BeEmpty())
@@ -465,6 +483,10 @@ var _ = Describe("Local Repository", func() {
 		})
 
 		Context("when there are no instances", func() {
+			BeforeEach(func(){
+				err := os.MkdirAll(tmpInstanceDataDir, 0750)
+				Ω(err).ToNot(HaveOccurred())
+			})
 			It("returns an empty instance slice", func() {
 				instances, errs := repo.AllInstances()
 				Ω(errs).To(BeEmpty())
@@ -603,11 +625,11 @@ var _ = Describe("Setup", func() {
 	var instance redis.Instance
 
 	BeforeEach(func() {
-		err := os.MkdirAll(tmpDataDir, 0755)
+		err := os.MkdirAll(tmpDataDir, 0750)
 		Expect(err).ToNot(HaveOccurred())
-		err = os.MkdirAll(tmpPidfileDir, 0755)
+		err = os.MkdirAll(tmpPidfileDir, 0750)
 		Expect(err).ToNot(HaveOccurred())
-		err = os.MkdirAll(tmpLogDir, 0755)
+		err = os.MkdirAll(tmpLogDir, 0750)
 		Expect(err).ToNot(HaveOccurred())
 		_, createFileErr := os.Create(tmpConfigFilePath)
 		Expect(createFileErr).ToNot(HaveOccurred())
@@ -710,9 +732,9 @@ var _ = Describe("Setup", func() {
 			})
 
 			AfterEach(func() {
-				err := os.Chmod(tmpDataDir, 0755)
+				err := os.Chmod(tmpDataDir, 0750)
 				Expect(err).NotTo(HaveOccurred())
-				err = os.Chmod(tmpLogDir, 0755)
+				err = os.Chmod(tmpLogDir, 0750)
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
@@ -762,4 +784,9 @@ func writeInstance(instance *redis.Instance, repo *redis.LocalRepository) {
 	err = ioutil.WriteFile(repo.InstancePidFilePath(instance.ID), pid, 0644)
 	Ω(err).NotTo(HaveOccurred())
 	file.Close()
+}
+
+func getPermissions(fileInfo os.FileInfo) int {
+	fileMode := fileInfo.Mode()
+	return int(os.FileMode(int(fileMode)).Perm())
 }

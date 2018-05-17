@@ -236,17 +236,17 @@ func (repo *LocalRepository) Delete(instanceID string) error {
 }
 
 func (repo *LocalRepository) EnsureDirectoriesExist(instance *Instance) error {
-	err := os.MkdirAll(repo.InstanceDataDir(instance.ID), 0755)
+	err := os.MkdirAll(repo.InstanceDataDir(instance.ID), 0750)
 	if err != nil {
 		return err
 	}
 
-	err = os.MkdirAll(repo.RedisConf.PidfileDirectory, 0755)
+	err = os.MkdirAll(repo.RedisConf.PidfileDirectory, 0750)
 	if err != nil {
 		return err
 	}
 
-	err = os.MkdirAll(repo.InstanceLogDir(instance.ID), 0755)
+	err = os.MkdirAll(repo.InstanceLogDir(instance.ID), 0750)
 	if err != nil {
 		return err
 	}

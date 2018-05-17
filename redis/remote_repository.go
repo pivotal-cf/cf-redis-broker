@@ -266,7 +266,7 @@ func (repo *RemoteRepository) PersistStatefile() error {
 		return err
 	}
 
-	return ioutil.WriteFile(repo.statefilePath, stateBytes, 0644)
+	return ioutil.WriteFile(repo.statefilePath, stateBytes, 0640)
 }
 
 func (repo *RemoteRepository) IDForHost(host string) string {

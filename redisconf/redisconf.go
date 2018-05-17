@@ -13,6 +13,7 @@ import (
 	"github.com/pborman/uuid"
 
 	"github.com/cloudfoundry/gosigar"
+	"os"
 )
 
 type Param struct {
@@ -197,6 +198,7 @@ func CopyWithInstanceAdditions(fromPath, toPath, instanceID, port, password, pid
 	defaultConfig.Set("pidfile", filepath.Join(pidDir, instanceID+".pid"))
 
 	err = defaultConfig.Save(toPath)
+	os.Chmod(toPath, 0640)
 	if err != nil {
 		return err
 	}

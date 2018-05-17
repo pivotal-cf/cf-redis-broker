@@ -666,6 +666,12 @@ var _ = Describe("RemoteRepository", func() {
 			Expect(len(statefileContents.InstanceBindings["foo"])).To(Equal(1))
 			Expect(statefileContents.InstanceBindings["foo"][0]).To(Equal("foo-binding"))
 		})
+
+		It("sets the statefile permissions", func(){
+			info, _ := os.Stat(statefilePath)
+			Expect(getPermissions(info)).To(Equal(0640))
+
+		})
 	})
 
 	Describe("#IDForHost", func() {
