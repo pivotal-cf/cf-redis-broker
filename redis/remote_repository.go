@@ -139,6 +139,7 @@ func (repo *RemoteRepository) Create(instanceID string) error {
 		return brokerapi.ErrInstanceAlreadyExists
 	}
 
+	return errors.New("Dedicated vm is deprecated")
 	instance := repo.allocateInstance(instanceID)
 
 	err := repo.PersistStatefile()
