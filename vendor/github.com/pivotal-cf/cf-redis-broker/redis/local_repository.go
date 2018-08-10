@@ -9,13 +9,6 @@ import (
 	"strconv"
 	"strings"
 
-	"bytes"
-
-	"io"
-
-	"code.cloudfoundry.org/garden"
-	"code.cloudfoundry.org/garden/client"
-	"code.cloudfoundry.org/garden/client/connection"
 	"code.cloudfoundry.org/lager"
 	"github.com/pivotal-cf/cf-redis-broker/broker"
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
@@ -25,20 +18,15 @@ import (
 type LocalRepository struct {
 	RedisConf brokerconfig.ServiceConfiguration
 	Logger    lager.Logger
-	garden    garden.Client
 }
 
 func NewLocalRepository(redisConf brokerconfig.ServiceConfiguration, logger lager.Logger) *LocalRepository {
 	if redisConf.PidfileDirectory == "" {
 		redisConf.PidfileDirectory = "/var/vcap/sys/run/shared-instance-pidfiles"
 	}
-	gardenClient := client.New(connection.New("tcp", "127.0.0.1:7777"))
-	logger.Info("garden-client", lager.Data{"message": "connected to guardian on 7777"})
-
 	return &LocalRepository{
 		RedisConf: redisConf,
 		Logger:    logger,
-		garden:    gardenClient,
 	}
 }
 
@@ -100,55 +88,11 @@ func (repo *LocalRepository) Setup(instance *Instance) error {
 		})
 		return err
 	}
-	container, err := repo.garden.Create(garden.ContainerSpec{})
-	if err != nil {
-		repo.Logger.Error("provision-container", err, lager.Data{
-			"instance_id": instance.ID,
-		})
-		return err
-	}
-	buffer := &bytes.Buffer{}
-	process, err := container.Run(garden.ProcessSpec{
-		Path: "echo",
-		Args: []string{"hello from the container"},
-	}, garden.ProcessIO{
-		Stdout: buffer,
-		Stderr: buffer,
-	})
-	if err != nil {
-		repo.Logger.Error("run-process-container", err, lager.Data{
-			"instance_id": instance.ID,
-		})
-	}
-
-	exitCode, err := process.Wait()
-	if err != nil {
-		repo.Logger.Error("wait-process-container", err, lager.Data{
-			"instance_id": instance.ID,
-		})
-	}
-
-	repo.Logger.Info("container-instance", lager.Data{
-		"exitcode": exitCode,
-		"message":  buffer.String(),
-	})
-	var reader io.ReadCloser // reader needs to contain the redis-server binary
-	wrappedReader := &ReadSizer{Reader: reader}
-
-	container.StreamIn(garden.StreamInSpec{Path: "redis-test", TarStream: wrappedReader})
-	if err != nil {
-		repo.Logger.Error("stream-in-failed", err, lager.Data{
-			"destination": "redis-test",
-		})
-		return err
-	}
-
-	repo.Logger.Info("stream-in-complete", lager.Data{"size": wrappedReader.BytesRead()})
 
 	repo.Logger.Info("provision-instance", lager.Data{
 		"instance_id": instance.ID,
 		"plan":        "shared-vm",
-		"message":     "Successfully provisioned Redis instance *******************************************************************************************",
+		"message":     "Successfully provisioned Redis instance",
 	})
 
 	return nil
@@ -362,19 +306,4 @@ func (repo *LocalRepository) InstancePid(instanceID string) (pid int, err error)
 	}
 
 	return int(parsedPid), err
-}
-
-type ReadSizer struct {
-	bytesRead int
-	io.Reader
-}
-
-func (r *ReadSizer) Read(dest []byte) (int, error) {
-	n, err := r.Reader.Read(dest)
-	r.bytesRead += n
-	return n, err
-}
-
-func (r *ReadSizer) BytesRead() int {
-	return r.bytesRead
 }
