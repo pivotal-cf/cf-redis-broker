@@ -78,7 +78,6 @@ var _ = Describe("S3Upload", func() {
 			expectedSourcePath = "path/to/source"
 			expectedTargetPath = "path/to/target"
 			expectedBucketName = "some-bucket-name"
-			artifactOut        task.Artifact
 			runErr             error
 			client             *fakeS3Client
 			bucket             *fakeS3Bucket
@@ -86,7 +85,7 @@ var _ = Describe("S3Upload", func() {
 		)
 
 		JustBeforeEach(func() {
-			artifactOut, runErr = upload.Run(task.NewArtifact(expectedSourcePath))
+			_, runErr = upload.Run(task.NewArtifact(expectedSourcePath))
 		})
 
 		BeforeEach(func() {
