@@ -5,7 +5,7 @@ PROJECT_DIR="$( dirname $SCRIPT_DIR )"
 
 # Run tests as vcap user
 useradd vcap
-chown -R vcap:vcap /tmp
-chown -R vcap:vcap $GOPATH
+sudo chown -R vcap:vcap /tmp
+sudo chown -R vcap:vcap $GOPATH
 
-su -c $SCRIPT_DIR/test vcap
+sudo -E -u vcap $SCRIPT_DIR/test
