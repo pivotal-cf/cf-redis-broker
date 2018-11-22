@@ -1,16 +1,11 @@
 language: go
 
 go:
-- 1.4
-- 1.4.1
-- 1.4.2
-
-before_install:
-- export PATH=$HOME/gopath/bin:$PWD/Godeps/_workspace/bin:$PATH
-- export GOPATH=$PWD/Godeps/_workspace:$GOPATH
+  - 1.7
 
 install:
-- go install github.com/onsi/ginkgo/ginkgo
+  - go get -v github.com/tools/godep
+  - godep restore
+  - go get -v github.com/onsi/ginkgo/ginkgo
 
-script:
-- ginkgo -r
+script: ginkgo -r

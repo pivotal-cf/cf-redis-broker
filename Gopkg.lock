@@ -2,93 +2,72 @@
 
 
 [[projects]]
-  digest = "1:631f60cd27dd8dffd6a369cc30e442fb879c4918594a11b41563cf59001a6bde"
   name = "code.cloudfoundry.org/lager"
   packages = [
     ".",
-    "lagertest",
+    "lagertest"
   ]
-  pruneopts = "UT"
   revision = "62951a8009ab331bb21dc418074fa54e66eb9b6a"
 
 [[projects]]
-  digest = "1:e7894e308f9fa928c9aa0cb731856f16e20ff0ce37ebcc839f8ae63381d58a4c"
   name = "github.com/BooleanCat/igo"
   packages = [
     "ios",
-    "ios/iexec",
+    "ios/iexec"
   ]
-  pruneopts = "UT"
   revision = "61e7b9157ee3038f6a1737d399f0fc126f62b143"
 
 [[projects]]
-  digest = "1:7f0bb98dd82608b9c6ac1cf520db4f2f9df62b0216687de6ac025996d18644ba"
   name = "github.com/cloudfoundry-incubator/candiedyaml"
   packages = ["."]
-  pruneopts = "UT"
   revision = "150e4e8f749b21a7f0de8e3cfd885143fcea6b32"
 
 [[projects]]
-  digest = "1:f419d1922258757f0725a18bb4c6ea1b9c30fa243452c0b90cfce317ba5e152c"
   name = "github.com/cloudfoundry/gosigar"
   packages = ["."]
-  pruneopts = "UT"
   revision = "3ed7c74352dae6dc00bdc8c74045375352e3ec05"
 
 [[projects]]
-  digest = "1:fe2b04bb878929f48e87214de8af5849001e4d7f1a8b486e05d868713409db21"
   name = "github.com/garyburd/redigo"
   packages = [
     "internal",
-    "redis",
+    "redis"
   ]
-  pruneopts = "UT"
   revision = "908534c8b97586a4597e3fa195875d2d26502b97"
 
 [[projects]]
-  digest = "1:58c3e237b5b7543ea34ea7b9cf00008cb13939dcc6568242818b1106d6255b00"
   name = "github.com/goamz/goamz"
   packages = [
     "aws",
-    "s3",
+    "s3"
   ]
-  pruneopts = "UT"
   revision = "760aa2f8a491b6019dcf2df81d913927cb25fbc6"
 
 [[projects]]
-  digest = "1:08628a37c6a261a427999a480459a082c5e4e967d95b642e7040306e1cc2734c"
   name = "github.com/golang/protobuf"
   packages = ["proto"]
-  pruneopts = "UT"
   revision = "1f49d83d9aa00e6ce4fc8258c71cc7786aec968a"
 
 [[projects]]
-  digest = "1:874ca00e54068a78ce555979489511ec62cd4682bf068134dc4355753827895c"
   name = "github.com/gorilla/context"
   packages = ["."]
-  pruneopts = "UT"
   revision = "215affda49addc4c8ef7e2534915df2c8c35c6cd"
 
 [[projects]]
-  digest = "1:c661dee65a46d437daf269e5f5f462bd9df6d8e7c9750ad1655fb2cafdb177a6"
   name = "github.com/gorilla/mux"
   packages = ["."]
-  pruneopts = "UT"
   revision = "e444e69cbd2e2e3e0749a2f3c717cec491552bbf"
 
 [[projects]]
-  digest = "1:70b439df7f1a4730e3865dabc7c0c4308fbd5dd97536abb8fa21a3194cb6964e"
   name = "github.com/mitchellh/goamz"
   packages = [
     "aws",
     "s3",
-    "s3/s3test",
+    "s3/s3test"
   ]
-  pruneopts = "UT"
   revision = "84d8b2b74375eda9f189283e5f0710e6bcc3fb47"
 
 [[projects]]
-  digest = "1:bbbff000ae1d7b0f5d88e2fa3f275592099f20e8e33f51cefbb5670168e20327"
   name = "github.com/onsi/ginkgo"
   packages = [
     ".",
@@ -105,13 +84,11 @@
     "internal/writer",
     "reporters",
     "reporters/stenographer",
-    "types",
+    "types"
   ]
-  pruneopts = "UT"
   revision = "7d3d52b3a3a79d745c2a03ee81b5bc2086642201"
 
 [[projects]]
-  digest = "1:2b36535108367fee0a68c41532a7b46b667672aac8aef302f4cd76ba84cd703f"
   name = "github.com/onsi/gomega"
   packages = [
     ".",
@@ -128,101 +105,53 @@
     "matchers/support/goraph/edge",
     "matchers/support/goraph/node",
     "matchers/support/goraph/util",
-    "types",
+    "types"
   ]
-  pruneopts = "UT"
   revision = "b48c9a8b2644326d0a44eaaacc8d83e35174a05d"
 
 [[projects]]
-  digest = "1:def181b5a85202caf6f0994be6680ed3d4ab42733ec9fdcf1c2df9dd0fae2b6f"
   name = "github.com/pborman/uuid"
   packages = ["."]
-  pruneopts = "UT"
   revision = "c55201b036063326c5b1b89ccfe45a184973d073"
 
 [[projects]]
-  branch = "arbitrary_params"
-  digest = "1:33de84bf13c40886bfd4236baf8fb4192644cc3041c456d5d8f68acea75d94ad"
   name = "github.com/pivotal-cf/brokerapi"
   packages = [
     ".",
-    "auth",
+    "auth"
   ]
-  pruneopts = "UT"
-  revision = "3c6889259b98dc489f552cd5a0ebeec117620219"
+  revision = "0ea2a3913c148837e8615a1ef8bde757151934c3"
 
 [[projects]]
   branch = "master"
-  digest = "1:7d889a3ad41d792f499492b38932388aec61d2ac269dddcf100f36e94aae094a"
   name = "github.com/pivotal-cf/redisutils"
   packages = [
     "monit",
     "monit/fakes",
-    "redis",
+    "redis"
   ]
-  pruneopts = "UT"
   revision = "2b1039d36b385a6333392dca471d1c84a112ccf6"
 
 [[projects]]
-  branch = "fix-large-token"
-  digest = "1:ed3ad17730f9bcd039b3509870e7f59830ca2494f163bdff61bc7d7e563c91ad"
-  name = "github.com/pivotal-golang/lager"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "ce912f1f6e007e955045546229ae42ba5ac66fa7"
-
-[[projects]]
-  digest = "1:73aebb74fcaae116d88105c7aa1c523aad8ce8f21d66dabcd3a3ae50c2a99bd1"
   name = "github.com/st3v/glager"
   packages = ["."]
-  pruneopts = "UT"
   revision = "958333349e60ac1d5688ac928ffefa6ecbac5bee"
   version = "v0.3.0"
 
 [[projects]]
   branch = "master"
-  digest = "1:8f70510b21fd07eba5bd4e0f84d49d932ea74c8b0ea20a5807e9492cc819928c"
   name = "github.com/vaughan0/go-ini"
   packages = ["."]
-  pruneopts = "UT"
   revision = "a98ad7ee00ec53921f08832bc06ecf7fd600e6a1"
 
 [[projects]]
-  digest = "1:10978cfda94a2069ac38ed0884b606aafe89f4578ff700b7845b02201a2d6b51"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
-  pruneopts = "UT"
   revision = "f7716cbe52baa25d2e9b0d0da546fcf909fc16b4"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  input-imports = [
-    "code.cloudfoundry.org/lager",
-    "code.cloudfoundry.org/lager/lagertest",
-    "github.com/BooleanCat/igo/ios/iexec",
-    "github.com/cloudfoundry-incubator/candiedyaml",
-    "github.com/cloudfoundry/gosigar",
-    "github.com/garyburd/redigo/redis",
-    "github.com/goamz/goamz/aws",
-    "github.com/goamz/goamz/s3",
-    "github.com/gorilla/mux",
-    "github.com/mitchellh/goamz/aws",
-    "github.com/mitchellh/goamz/s3",
-    "github.com/mitchellh/goamz/s3/s3test",
-    "github.com/onsi/ginkgo",
-    "github.com/onsi/ginkgo/reporters",
-    "github.com/onsi/gomega",
-    "github.com/onsi/gomega/gbytes",
-    "github.com/onsi/gomega/gexec",
-    "github.com/onsi/gomega/ghttp",
-    "github.com/pborman/uuid",
-    "github.com/pivotal-cf/brokerapi",
-    "github.com/pivotal-cf/brokerapi/auth",
-    "github.com/pivotal-cf/redisutils/monit",
-    "github.com/pivotal-cf/redisutils/monit/fakes",
-    "github.com/pivotal-cf/redisutils/redis",
-    "github.com/st3v/glager",
-  ]
+  inputs-digest = "94f2ae77150026c9c8040c6683daf84f85072fdbc25656a53922e31fdaa06a66"
   solver-name = "gps-cdcl"
   solver-version = 1
