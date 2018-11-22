@@ -43,7 +43,7 @@ var _ = Describe("Debug", func() {
 					}
 				}
 
-				status, _ = brokerClient.DeprovisionInstance("INSTANCE-3")
+				status, _ = brokerClient.DeprovisionInstance("INSTANCE-3", "dedicated")
 				Expect(status).To(Equal(http.StatusOK))
 
 				status, _ = brokerClient.ProvisionInstance("NEW-INSTANCE", "dedicated")
@@ -51,11 +51,11 @@ var _ = Describe("Debug", func() {
 			})
 
 			AfterEach(func() {
-				status, _ := brokerClient.DeprovisionInstance("NEW-INSTANCE")
+				status, _ := brokerClient.DeprovisionInstance("NEW-INSTANCE", "dedicated")
 				Expect(status).To(Equal(http.StatusOK))
-				status, _ = brokerClient.DeprovisionInstance("INSTANCE-2")
+				status, _ = brokerClient.DeprovisionInstance("INSTANCE-2", "dedicated")
 				Expect(status).To(Equal(http.StatusOK))
-				status, _ = brokerClient.DeprovisionInstance("INSTANCE-1")
+				status, _ = brokerClient.DeprovisionInstance("INSTANCE-1", "dedicated")
 				Expect(status).To(Equal(http.StatusOK))
 			})
 
@@ -86,7 +86,7 @@ var _ = Describe("Debug", func() {
 			})
 
 			AfterEach(func() {
-				status, _ := brokerClient.DeprovisionInstance("SOME-GUID")
+				status, _ := brokerClient.DeprovisionInstance("SOME-GUID", "dedicated")
 				Expect(status).To(Equal(http.StatusOK))
 			})
 
@@ -109,7 +109,7 @@ var _ = Describe("Debug", func() {
 
 			Context("then deprovisioned", func() {
 				BeforeEach(func() {
-					status, _ := brokerClient.DeprovisionInstance("SOME-GUID")
+					status, _ := brokerClient.DeprovisionInstance("SOME-GUID", "dedicated")
 					Expect(status).To(Equal(http.StatusOK))
 				})
 
@@ -134,7 +134,7 @@ var _ = Describe("Debug", func() {
 
 			Context("when the instance is bound to", func() {
 				BeforeEach(func() {
-					status, _ := brokerClient.BindInstance("SOME-GUID", "foo-binding")
+					status, _ := brokerClient.BindInstance("SOME-GUID", "foo-binding", "dedicated")
 					Expect(status).To(Equal(http.StatusCreated))
 				})
 
@@ -149,7 +149,7 @@ var _ = Describe("Debug", func() {
 
 				Context("then unbound", func() {
 					BeforeEach(func() {
-						status, _ := brokerClient.UnbindInstance("SOME-GUID", "foo-binding")
+						status, _ := brokerClient.UnbindInstance("SOME-GUID", "foo-binding", "dedicated")
 						Expect(status).To(Equal(http.StatusOK))
 					})
 
@@ -184,7 +184,7 @@ func executeHTTPRequest(method, uri string) (int, []byte) {
 	req, err := http.NewRequest(method, uri, nil)
 	Expect(err).NotTo(HaveOccurred())
 	resp, err := client.Do(req)
-    Expect(err).NotTo(HaveOccurred())
+	Expect(err).NotTo(HaveOccurred())
 
 	defer resp.Body.Close()
 

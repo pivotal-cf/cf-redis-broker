@@ -16,7 +16,8 @@ var _ = Describe("Deprovisioning shared instance", func() {
 		BeforeEach(func() {
 
 			instanceID = uuid.NewRandom().String()
-			httpInputs = HTTPExampleInputs{Method: "DELETE", URI: brokerClient.InstanceURI(instanceID)}
+			httpInputs = HTTPExampleInputs{Method: "DELETE",
+				URI: brokerClient.InstanceURI(instanceID) + "?plan_id=my-plan&service_id=my-service"}
 
 			code, _ := brokerClient.ProvisionInstance(instanceID, "shared")
 			Ω(code).To(Equal(201))
@@ -29,7 +30,7 @@ var _ = Describe("Deprovisioning shared instance", func() {
 
 			Ω(getRedisProcessCount()).To(Equal(1))
 
-			brokerClient.DeprovisionInstance(instanceID)
+			brokerClient.DeprovisionInstance(instanceID, "shared")
 			Ω(getRedisProcessCount()).To(Equal(0))
 		})
 	})
@@ -37,7 +38,7 @@ var _ = Describe("Deprovisioning shared instance", func() {
 	Context("Deprovision missing instance", func() {
 		It("should fail if the instance being deprovisioned is missing", func() {
 			missingInstanceID := uuid.NewRandom().String()
-			code, _ := brokerClient.DeprovisionInstance(missingInstanceID)
+			code, _ := brokerClient.DeprovisionInstance(missingInstanceID, "shared")
 			Ω(code).To(Equal(410))
 		})
 	})

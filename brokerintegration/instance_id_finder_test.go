@@ -11,14 +11,14 @@ import (
 var _ = Describe("Finding Instance IDs for Hosts", func() {
 	Context("when an instance is provisioned", func() {
 		AfterEach(func() {
-			status, _ := brokerClient.DeprovisionInstance("SOME-GUID")
+			status, _ := brokerClient.DeprovisionInstance("SOME-GUID", "dedicated")
 			Ω(status).Should(Equal(200))
 		})
 
 		It("returns the instance ID from the host", func() {
 			instanceID := "SOME-GUID"
 			brokerClient.ProvisionInstance(instanceID, "dedicated")
-			_, bindingResponse := brokerClient.BindInstance(instanceID, "someBindingID")
+			_, bindingResponse := brokerClient.BindInstance(instanceID, "someBindingID", "dedicated")
 			host := getHostFrom(bindingResponse)
 
 			code, body := brokerClient.InstanceIDFromHost(host)

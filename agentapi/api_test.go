@@ -124,7 +124,7 @@ var _ = Describe("redis agent HTTP API", func() {
 			})
 
 			It(method+" returns an http error", func() {
-				Expect(response.StatusCode).To(Equal(http.StatusNotFound))
+				Expect(response.StatusCode).To(Equal(http.StatusMethodNotAllowed))
 			})
 		}
 	})

@@ -1,6 +1,7 @@
 package broker
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -37,7 +38,7 @@ type RedisServiceBroker struct {
 	Config           brokerconfig.Config
 }
 
-func (redisServiceBroker *RedisServiceBroker) Services() []brokerapi.Service {
+func (redisServiceBroker *RedisServiceBroker) Services(ctx context.Context) ([]brokerapi.Service, error) {
 	planList := []brokerapi.ServicePlan{}
 	for _, plan := range redisServiceBroker.plans() {
 		planList = append(planList, *plan)
@@ -63,11 +64,11 @@ func (redisServiceBroker *RedisServiceBroker) Services() []brokerapi.Service {
 				"redis",
 			},
 		},
-	}
+	}, nil
 }
 
 //Provision ...
-func (redisServiceBroker *RedisServiceBroker) Provision(instanceID string, serviceDetails brokerapi.ProvisionDetails, asyncAllowed bool) (spec brokerapi.ProvisionedServiceSpec, err error) {
+func (redisServiceBroker *RedisServiceBroker) Provision(ctx context.Context, instanceID string, serviceDetails brokerapi.ProvisionDetails, asyncAllowed bool) (spec brokerapi.ProvisionedServiceSpec, err error) {
 	spec = brokerapi.ProvisionedServiceSpec{}
 
 	if redisServiceBroker.instanceExists(instanceID) {
@@ -103,7 +104,7 @@ func (redisServiceBroker *RedisServiceBroker) Provision(instanceID string, servi
 	return spec, nil
 }
 
-func (redisServiceBroker *RedisServiceBroker) Deprovision(instanceID string, details brokerapi.DeprovisionDetails, asyncAllowed bool) (brokerapi.DeprovisionServiceSpec, error) {
+func (redisServiceBroker *RedisServiceBroker) Deprovision(ctx context.Context, instanceID string, details brokerapi.DeprovisionDetails, asyncAllowed bool) (brokerapi.DeprovisionServiceSpec, error) {
 	spec := brokerapi.DeprovisionServiceSpec{}
 
 	for _, instanceCreator := range redisServiceBroker.InstanceCreators {
@@ -115,7 +116,7 @@ func (redisServiceBroker *RedisServiceBroker) Deprovision(instanceID string, det
 	return spec, brokerapi.ErrInstanceDoesNotExist
 }
 
-func (redisServiceBroker *RedisServiceBroker) Bind(instanceID, bindingID string, details brokerapi.BindDetails) (brokerapi.Binding, error) {
+func (redisServiceBroker *RedisServiceBroker) Bind(ctx context.Context, instanceID, bindingID string, details brokerapi.BindDetails, asyncAllowed bool) (brokerapi.Binding, error) {
 	binding := brokerapi.Binding{}
 
 	for _, repo := range redisServiceBroker.InstanceBinders {
@@ -138,19 +139,19 @@ func (redisServiceBroker *RedisServiceBroker) Bind(instanceID, bindingID string,
 	return brokerapi.Binding{}, brokerapi.ErrInstanceDoesNotExist
 }
 
-func (redisServiceBroker *RedisServiceBroker) Unbind(instanceID, bindingID string, details brokerapi.UnbindDetails) error {
+func (redisServiceBroker *RedisServiceBroker) Unbind(ctx context.Context, instanceID, bindingID string, details brokerapi.UnbindDetails, asyncAllowed bool) (brokerapi.UnbindSpec, error) {
 	for _, repo := range redisServiceBroker.InstanceBinders {
 		instanceExists, _ := repo.InstanceExists(instanceID)
 		if instanceExists {
 			err := repo.Unbind(instanceID, bindingID)
 			if err != nil {
-				return brokerapi.ErrBindingDoesNotExist
+				return brokerapi.UnbindSpec{}, brokerapi.ErrBindingDoesNotExist
 			}
-			return nil
+			return brokerapi.UnbindSpec{}, nil
 		}
 	}
 
-	return brokerapi.ErrInstanceDoesNotExist
+	return brokerapi.UnbindSpec{}, brokerapi.ErrInstanceDoesNotExist
 }
 
 func (redisServiceBroker *RedisServiceBroker) plans() map[string]*brokerapi.ServicePlan {
@@ -204,10 +205,22 @@ func (redisServiceBroker *RedisServiceBroker) instanceExists(instanceID string) 
 // LastOperation ...
 // If the broker provisions asynchronously, the Cloud Controller will poll this endpoint
 // for the status of the provisioning operation.
-func (redisServiceBroker *RedisServiceBroker) LastOperation(instanceID, operationData string) (brokerapi.LastOperation, error) {
-	return brokerapi.LastOperation{}, nil
+func (redisServiceBroker *RedisServiceBroker) LastOperation(ctx context.Context, instanceID string, details brokerapi.PollDetails) (brokerapi.LastOperation, error) {
+	return brokerapi.LastOperation{}, errors.New("not implemented")
 }
 
-func (redisServiceBroker *RedisServiceBroker) Update(instanceID string, details brokerapi.UpdateDetails, asyncAllowed bool) (brokerapi.UpdateServiceSpec, error) {
-	return brokerapi.UpdateServiceSpec{}, nil
+func (redisServiceBroker *RedisServiceBroker) Update(cxt context.Context, instanceID string, details brokerapi.UpdateDetails, asyncAllowed bool) (brokerapi.UpdateServiceSpec, error) {
+	return brokerapi.UpdateServiceSpec{}, errors.New("not implemented")
+}
+
+func (redisServiceBroker *RedisServiceBroker) GetBinding(ctx context.Context, instanceID, bindingID string) (brokerapi.GetBindingSpec, error) {
+	return brokerapi.GetBindingSpec{}, errors.New("not implemented")
+}
+
+func (redisServiceBroker *RedisServiceBroker) GetInstance(ctx context.Context, instanceID string) (brokerapi.GetInstanceDetailsSpec, error) {
+	return brokerapi.GetInstanceDetailsSpec{}, errors.New("not implemented")
+}
+
+func (redisServiceBroker *RedisServiceBroker) LastBindingOperation(ctx context.Context, instanceID, bindingID string, details brokerapi.PollDetails) (brokerapi.LastOperation, error) {
+	return brokerapi.LastOperation{}, errors.New("not implemented")
 }

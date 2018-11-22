@@ -24,7 +24,7 @@ var _ = Describe("Multiple users", func() {
 	It("assigns different ports for each instance", func() {
 		ports := []uint{}
 		for _, instanceID := range instanceIDs {
-			_, body := brokerClient.BindInstance(instanceID, "foo")
+			_, body := brokerClient.BindInstance(instanceID, "foo", "shared")
 
 			var parsedJSON map[string]interface{}
 			json.Unmarshal(body, &parsedJSON)
@@ -39,7 +39,7 @@ var _ = Describe("Multiple users", func() {
 
 	AfterEach(func() {
 		for _, instanceID := range instanceIDs {
-			brokerClient.DeprovisionInstance(instanceID)
+			brokerClient.DeprovisionInstance(instanceID, "shared")
 		}
 	})
 })

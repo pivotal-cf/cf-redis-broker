@@ -19,10 +19,7 @@ var _ = Describe("Shared instance binding", func() {
 	BeforeEach(func() {
 		instanceID = uuid.NewRandom().String()
 		bindingID = uuid.NewRandom().String()
-		httpInputs = HTTPExampleInputs{
-			Method: "PUT",
-			URI:    brokerClient.BindingURI(instanceID, bindingID),
-		}
+		httpInputs = NewPUTRequest(brokerClient.BindingURI(instanceID, bindingID), "service_id", "plan_id")
 	})
 
 	Context("when the instance already exists", func() {
@@ -32,7 +29,7 @@ var _ = Describe("Shared instance binding", func() {
 		})
 
 		AfterEach(func() {
-			brokerClient.DeprovisionInstance(instanceID)
+			brokerClient.DeprovisionInstance(instanceID, "shared")
 		})
 
 		HTTPResponseShouldContainExpectedHTTPStatusCode(&httpInputs, 201)
@@ -41,7 +38,7 @@ var _ = Describe("Shared instance binding", func() {
 			var client redigo.Conn
 
 			BeforeEach(func() {
-				_, body := brokerClient.BindInstance(instanceID, bindingID)
+				_, body := brokerClient.BindInstance(instanceID, bindingID, "shared")
 
 				var parsedJSON map[string]interface{}
 				json.Unmarshal(body, &parsedJSON)

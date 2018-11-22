@@ -18,7 +18,7 @@ var _ = Describe("Deprovisioning dedicated instance", func() {
 	Context("Deprovision running instance", func() {
 		BeforeEach(func() {
 			instanceID = uuid.NewRandom().String()
-			httpInputs = HTTPExampleInputs{Method: "DELETE", URI: brokerClient.InstanceURI(instanceID)}
+			httpInputs = HTTPExampleInputs{Method: "DELETE", URI: brokerClient.InstanceURI(instanceID) + "?plan_id=my-plan&service_id=my-service"}
 
 			code, _ := brokerClient.ProvisionInstance(instanceID, "dedicated")
 			Ω(code).Should(Equal(201))
@@ -29,7 +29,7 @@ var _ = Describe("Deprovisioning dedicated instance", func() {
 
 		It("tells node agent to deprovision instance", func() {
 			agentRequests = []*http.Request{}
-			brokerClient.DeprovisionInstance(instanceID)
+			brokerClient.DeprovisionInstance(instanceID, "dedicated")
 			Expect(agentRequests).To(HaveLen(1))
 			Expect(agentRequests[0].Method).To(Equal("DELETE"))
 			Expect(agentRequests[0].URL.Path).To(Equal("/"))
@@ -42,17 +42,17 @@ var _ = Describe("Deprovisioning dedicated instance", func() {
 
 			AfterEach(func() {
 				agentResponseStatus = http.StatusOK
-				brokerClient.DeprovisionInstance(instanceID)
+				brokerClient.DeprovisionInstance(instanceID, "dedicated")
 			})
 
 			It("returns failing error code", func() {
-				code, _ := brokerClient.DeprovisionInstance(instanceID)
+				code, _ := brokerClient.DeprovisionInstance(instanceID, "dedicated")
 				Ω(code).Should(Equal(500))
 			})
 
 			It("does not deallocate the instance", func() {
 				intialAllocatedCount := getDebugInfo().Allocated.Count
-				brokerClient.DeprovisionInstance(instanceID)
+				brokerClient.DeprovisionInstance(instanceID, "dedicated")
 				finalAllocatedCount := getDebugInfo().Allocated.Count
 				Ω(finalAllocatedCount).To(Equal(intialAllocatedCount))
 			})
@@ -62,7 +62,7 @@ var _ = Describe("Deprovisioning dedicated instance", func() {
 	Context("Deprovision missing instance", func() {
 		It("should fail if the instance being deprovisioned is missing", func() {
 			missingInstanceID := uuid.NewRandom().String()
-			code, _ := brokerClient.DeprovisionInstance(missingInstanceID)
+			code, _ := brokerClient.DeprovisionInstance(missingInstanceID, "dedicated")
 			Ω(code).Should(Equal(410))
 		})
 	})

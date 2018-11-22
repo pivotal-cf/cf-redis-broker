@@ -17,6 +17,9 @@ func ExecuteAuthenticatedHTTPRequestWithBody(method, uri, username, password str
 	req, err := http.NewRequest(method, uri, bytes.NewReader(body))
 	Ω(err).ToNot(HaveOccurred())
 	req.SetBasicAuth(username, password)
+
+	req.Header.Set("X-Broker-API-Version", "2.13")
+
 	resp, err := (&http.Client{}).Do(req)
 	Ω(err).ToNot(HaveOccurred())
 	defer resp.Body.Close()

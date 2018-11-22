@@ -1,11 +1,12 @@
 language: go
 
 go:
-  - 1.7
+  - 1.9.x
+  - 1.10.x
+  - 1.11.x
 
 install:
-  - go get -v github.com/tools/godep
-  - godep restore
+  - go get -v -t ./...
   - go get -v github.com/onsi/ginkgo/ginkgo
 
 script: ginkgo -r

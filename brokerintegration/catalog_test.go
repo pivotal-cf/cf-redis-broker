@@ -40,7 +40,7 @@ var _ = Describe("Catalog", func() {
 
 		It("displays the correct service name and id", func() {
 			Ω(service.Name).Should(Equal("my-redis"))
-			Ω(service.ID).Should(Equal("123456abcdef"))
+			Ω(service.ID).Should(Equal("7C257149-B342-4BFC-AE51-C195F376D669"))
 		})
 
 		It("displays the correct documentation URL", func() {

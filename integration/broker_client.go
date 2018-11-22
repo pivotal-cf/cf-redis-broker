@@ -26,9 +26,11 @@ func (brokerClient *BrokerClient) ProvisionInstance(instanceID string, plan stri
 	}
 
 	payload := struct {
-		PlanID string `json:"plan_id"`
+		PlanID    string `json:"plan_id"`
+		ServiceID string `json:"service_id"`
 	}{
-		PlanID: planID,
+		PlanID:    planID,
+		ServiceID: brokerClient.Config.RedisConfiguration.ServiceID,
 	}
 
 	payloadBytes, err := json.Marshal(&payload)
@@ -57,33 +59,73 @@ func (brokerClient *BrokerClient) MakeCatalogRequest() (int, []byte) {
 	return brokerClient.executeAuthenticatedRequest("GET", "http://localhost:3000/v2/catalog")
 }
 
-func (brokerClient *BrokerClient) BindInstance(instanceID, bindingID string) (int, []byte) {
+func (brokerClient *BrokerClient) BindInstance(instanceID, bindingID, plan string) (int, []byte) {
 	var status int
 	var response []byte
+
+	planID, found := map[string]string{
+		"shared":    "C210CA06-E7E5-4F5D-A5AA-7A2C51CC290E",
+		"dedicated": "74E8984C-5F8C-11E4-86BE-07807B3B2589",
+	}[plan]
+
+	if !found {
+		panic("invalid plan name:" + plan)
+	}
+
+	payload := struct {
+		PlanID    string `json:"plan_id"`
+		ServiceID string `json:"service_id"`
+	}{
+		PlanID:    planID,
+		ServiceID: brokerClient.Config.RedisConfiguration.ServiceID,
+	}
+
+	payloadBytes, err := json.Marshal(&payload)
+	if err != nil {
+		panic("unable to marshal the payload to provision instance")
+	}
 
 	status, response = ExecuteAuthenticatedHTTPRequestWithBody("PUT",
 		brokerClient.BindingURI(instanceID, bindingID),
 		brokerClient.Config.AuthConfiguration.Username,
 		brokerClient.Config.AuthConfiguration.Password,
-		[]byte("{}"))
+		payloadBytes)
 
 	return status, response
 }
 
-func (brokerClient *BrokerClient) UnbindInstance(instanceID, bindingID string) (int, []byte) {
+func (brokerClient *BrokerClient) UnbindInstance(instanceID, bindingID, plan string) (int, []byte) {
 	var status int
 	var response []byte
 
-	status, response = brokerClient.executeAuthenticatedRequest("DELETE", brokerClient.BindingURI(instanceID, bindingID))
+	planID, found := map[string]string{
+		"shared":    "C210CA06-E7E5-4F5D-A5AA-7A2C51CC290E",
+		"dedicated": "74E8984C-5F8C-11E4-86BE-07807B3B2589",
+	}[plan]
+
+	if !found {
+		panic("invalid plan name:" + plan)
+	}
+
+	status, response = brokerClient.executeAuthenticatedRequest("DELETE", brokerClient.BindingURI(instanceID, bindingID)+fmt.Sprintf("?plan_id=%s&service_id=%s", planID, brokerClient.Config.RedisConfiguration.ServiceID))
 
 	return status, response
 }
 
-func (brokerClient *BrokerClient) DeprovisionInstance(instanceID string) (int, []byte) {
+func (brokerClient *BrokerClient) DeprovisionInstance(instanceID, plan string) (int, []byte) {
 	var status int
 	var response []byte
 
-	status, response = brokerClient.executeAuthenticatedRequest("DELETE", brokerClient.InstanceURI(instanceID))
+	planID, found := map[string]string{
+		"shared":    "C210CA06-E7E5-4F5D-A5AA-7A2C51CC290E",
+		"dedicated": "74E8984C-5F8C-11E4-86BE-07807B3B2589",
+	}[plan]
+
+	if !found {
+		panic("invalid plan name:" + plan)
+	}
+
+	status, response = brokerClient.executeAuthenticatedRequest("DELETE", brokerClient.InstanceURI(instanceID)+fmt.Sprintf("?plan_id=%s&service_id=%s", planID, brokerClient.Config.RedisConfiguration.ServiceID))
 
 	return status, response
 }

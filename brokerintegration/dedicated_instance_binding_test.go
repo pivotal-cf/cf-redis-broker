@@ -16,13 +16,9 @@ var _ = Describe("Dedicated instance binding", func() {
 	var httpInputs HTTPExampleInputs
 
 	BeforeEach(func() {
-
 		instanceID = uuid.NewRandom().String()
 		bindingID = uuid.NewRandom().String()
-		httpInputs = HTTPExampleInputs{
-			Method: "PUT",
-			URI:    brokerClient.BindingURI(instanceID, bindingID),
-		}
+		httpInputs = NewPUTRequest(brokerClient.BindingURI(instanceID, bindingID), "service_id", "plan_id")
 	})
 
 	Context("when the instance already exists", func() {
@@ -32,7 +28,7 @@ var _ = Describe("Dedicated instance binding", func() {
 		})
 
 		AfterEach(func() {
-			brokerClient.DeprovisionInstance(instanceID)
+			brokerClient.DeprovisionInstance(instanceID, "dedicated")
 		})
 
 		HTTPResponseShouldContainExpectedHTTPStatusCode(&httpInputs, 201)
@@ -45,7 +41,7 @@ var _ = Describe("Dedicated instance binding", func() {
 			BeforeEach(func() {
 				debugInfo = getDebugInfo()
 
-				_, body := brokerClient.BindInstance(instanceID, bindingID)
+				_, body := brokerClient.BindInstance(instanceID, bindingID, "dedicated")
 
 				parsedJSON := struct {
 					Credentials map[string]interface{} `json:"credentials"`

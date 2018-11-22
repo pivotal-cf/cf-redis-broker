@@ -31,7 +31,7 @@ var _ = Describe("Provision shared instance", func() {
 
 	Context("when instance is created successfully", func() {
 		AfterEach(func() {
-			status, _ := brokerClient.DeprovisionInstance(instanceID)
+			status, _ := brokerClient.DeprovisionInstance(instanceID, "dedicated")
 			Expect(status).To(Equal(http.StatusOK))
 		})
 
@@ -92,26 +92,26 @@ var _ = Describe("Provision shared instance", func() {
 
 		AfterEach(func() {
 			for i := 1; i < 4; i++ {
-				status, _ := brokerClient.DeprovisionInstance(strconv.Itoa(i))
+				status, _ := brokerClient.DeprovisionInstance(strconv.Itoa(i), "shared")
 				Expect(status).To(Equal(http.StatusOK))
 			}
 		})
 
 		It("does not start a Redis instance", func() {
 			brokerClient.ProvisionInstance("4", "shared")
-			defer brokerClient.DeprovisionInstance("4")
+			defer brokerClient.DeprovisionInstance("4", "shared")
 			Expect(getRedisProcessCount()).To(Equal(initialRedisProcessCount + 3))
 		})
 
 		It("returns a 500", func() {
 			status, _ := brokerClient.ProvisionInstance("4", "shared")
-			defer brokerClient.DeprovisionInstance("4")
+			defer brokerClient.DeprovisionInstance("4", "shared")
 			Expect(status).To(Equal(http.StatusInternalServerError))
 		})
 
 		It("returns a useful error message in the correct JSON format", func() {
 			_, body := brokerClient.ProvisionInstance("4", "shared")
-			defer brokerClient.DeprovisionInstance("4")
+			defer brokerClient.DeprovisionInstance("4", "shared")
 
 			expected := `{"description":"instance limit for this service has been reached"}`
 			Expect(string(body)).To(MatchJSON(expected))
@@ -146,7 +146,7 @@ var _ = Describe("Provision shared instance", func() {
 		})
 
 		AfterEach(func() {
-			status, _ := brokerClient.DeprovisionInstance(instanceID)
+			status, _ := brokerClient.DeprovisionInstance(instanceID, "shared")
 			Expect(status).To(Equal(http.StatusOK))
 		})
 

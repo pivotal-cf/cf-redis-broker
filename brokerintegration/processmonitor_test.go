@@ -45,7 +45,7 @@ var _ = Describe("processmonitor cmd", func() {
 
 			AfterEach(func() {
 				helpers.KillProcess(monitorSession)
-				statusCode, _ := brokerClient.DeprovisionInstance(instanceUuid)
+				statusCode, _ := brokerClient.DeprovisionInstance(instanceUuid, "shared")
 				Expect(statusCode).To(Equal(200))
 			})
 
@@ -81,7 +81,7 @@ var _ = Describe("processmonitor cmd", func() {
 			AfterEach(func() {
 				helpers.KillProcess(monitorSession)
 				for _, uuid := range instanceUuids {
-					statusCode, _ := brokerClient.DeprovisionInstance(uuid)
+					statusCode, _ := brokerClient.DeprovisionInstance(uuid, "shared")
 					Expect(statusCode).To(Equal(200))
 				}
 			})

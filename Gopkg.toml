@@ -7,6 +7,10 @@
   name = "github.com/st3v/glager"
   version = "0.3.0"
 
+[[constraint]]
+  name = "github.com/pivotal-cf/brokerapi"
+  version = "~v3.0.7"
+
 [prune]
   go-tests = true
   unused-packages = true

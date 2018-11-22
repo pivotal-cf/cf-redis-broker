@@ -19,24 +19,24 @@ var _ = Describe("Dedicated instance unbinding", func() {
 		code, _ := brokerClient.ProvisionInstance(instanceID, "dedicated")
 		Ω(code).Should(Equal(201))
 
-		status, _ := brokerClient.BindInstance(instanceID, bindingID)
+		status, _ := brokerClient.BindInstance(instanceID, bindingID, "dedicated")
 		Ω(status).Should(Equal(http.StatusCreated))
 	})
 
 	AfterEach(func() {
-		brokerClient.DeprovisionInstance(instanceID)
+		brokerClient.DeprovisionInstance(instanceID, "dedicated")
 	})
 
 	It("should respond correctly", func() {
-		code, body := brokerClient.UnbindInstance(instanceID, bindingID)
+		code, body := brokerClient.UnbindInstance(instanceID, bindingID, "dedicated")
 		Ω(code).Should(Equal(200))
 		Ω(body).Should(MatchJSON("{}"))
 
-		code, body = brokerClient.UnbindInstance(instanceID, bindingID)
+		code, body = brokerClient.UnbindInstance(instanceID, bindingID, "dedicated")
 		Ω(code).To(Equal(410))
 		Ω(body).Should(MatchJSON("{}"))
 
-		code, body = brokerClient.UnbindInstance("NON-EXISTANT", bindingID)
+		code, body = brokerClient.UnbindInstance("NON-EXISTANT", bindingID, "dedicated")
 		Ω(code).To(Equal(410))
 		Ω(body).Should(MatchJSON("{}"))
 	})

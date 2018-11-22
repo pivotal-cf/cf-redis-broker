@@ -42,7 +42,7 @@ var _ = Describe("restarting processes", func() {
 			Ω(statusCode).To(Equal(201))
 
 			bindingID := uuid.NewRandom().String()
-			statusCode, body := brokerClient.BindInstance(instanceID, bindingID)
+			statusCode, body := brokerClient.BindInstance(instanceID, bindingID, "shared")
 			Ω(statusCode).To(Equal(201))
 
 			var parsedJSON map[string]interface{}
@@ -59,7 +59,7 @@ var _ = Describe("restarting processes", func() {
 		AfterEach(func() {
 			helpers.KillProcess(monitorSession)
 			client.Close()
-			brokerClient.DeprovisionInstance(instanceID)
+			brokerClient.DeprovisionInstance(instanceID, "dedicated")
 		})
 
 		It("is restarted", func() {
@@ -161,7 +161,7 @@ var _ = Describe("restarting processes", func() {
 			})
 
 			AfterEach(func() {
-				brokerClient.DeprovisionInstance(instanceID)
+				brokerClient.DeprovisionInstance(instanceID, "dedicated")
 				relaunchProcessMonitorWithConfig(processMonitorPath, "broker.yml")
 			})
 		})
