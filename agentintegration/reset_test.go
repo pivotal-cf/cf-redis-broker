@@ -134,7 +134,7 @@ func doResetRequest(c chan<- bool) {
 func checkRedisStopAndStart(c chan<- bool) {
 	defer GinkgoRecover()
 
-	Eventually(redisSession, "3s").Should(gexec.Exit())
+	Eventually(redisSession, "10s").Should(gexec.Exit())
 
 	// Sleep here to emulate the time it takes monit to do it's thing
 	time.Sleep(time.Millisecond * 200)
