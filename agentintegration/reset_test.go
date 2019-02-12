@@ -43,10 +43,10 @@ var _ = Describe("DELETE /", func() {
 		httpRequestReturned := make(chan bool)
 
 		go checkRedisStopAndStart(redisRestarted)
-		go doResetRequest(httpRequestReturned)
 
 		select {
 		case <-redisRestarted:
+			go doResetRequest(httpRequestReturned)
 			select {
 			case <-httpRequestReturned:
 			case <-time.After(time.Second * 300):
