@@ -45,8 +45,8 @@ var _ = Describe("DELETE /", func() {
 		request, _ := http.NewRequest("DELETE", "http://127.0.0.1:9876", nil)
 		request.SetBasicAuth("admin", "supersecretpassword")
 		response, err := http.DefaultClient.Do(request)
-		Eventually(err).ShouldNot(HaveOccurred())
 		Eventually(response.StatusCode).Should(Equal(http.StatusOK))
+		Expect(err).NotTo(HaveOccurred())
 		Eventually(redisSession, "10s").Should(gexec.Exit())
 		time.Sleep(time.Millisecond * 200)
 		redisSession, err = gexec.Start(exec.Command("redis-server", redisConfPath), GinkgoWriter, GinkgoWriter)
@@ -67,7 +67,7 @@ var _ = Describe("DELETE /", func() {
 		// }
 
 		conf, err := redisconf.Load(redisConfPath)
-		Ω(err).ShouldNot(HaveOccurred())
+		Expect(err).ShouldNot(HaveOccurred())
 
 		_, err = strconv.Atoi(conf.Get("port"))
 		Expect(err).NotTo(HaveOccurred())
