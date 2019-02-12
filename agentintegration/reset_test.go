@@ -39,38 +39,25 @@ var _ = Describe("DELETE /", func() {
 		originalRedisConf, err = redisconf.Load(redisConfPath)
 		Ω(err).ShouldNot(HaveOccurred())
 
-		// redisRestarted := make(chan bool)
-		// httpRequestReturned := make(chan bool)
+		redisRestarted := make(chan bool)
+		httpRequestReturned := make(chan bool)
 
-		request, _ := http.NewRequest("DELETE", "http://127.0.0.1:9876", nil)
-		request.SetBasicAuth("admin", "supersecretpassword")
-		response, err := http.DefaultClient.Do(request)
-		Eventually(err).ShouldNot(HaveOccurred())
-		Eventually(response.StatusCode).Should(Equal(http.StatusOK))
-		Eventually(redisSession, "10s").Should(gexec.Exit())
-		time.Sleep(time.Millisecond * 200)
-		redisSession, err = gexec.Start(exec.Command("redis-server", redisConfPath), GinkgoWriter, GinkgoWriter)
-		Eventually(err).ShouldNot(HaveOccurred())
+		go checkRedisStopAndStart(redisRestarted)
+		go doResetRequest(httpRequestReturned)
 
-		// go checkRedisStopAndStart(redisRestarted)
-		// go doResetRequest(httpRequestReturned)
-		//
-		// select {
-		// case <-redisRestarted:
-		// 	select {
-		// 	case <-httpRequestReturned:
-		// 	case <-time.After(time.Second * 300):
-		// 		Fail("Test timed out after 300 seconds")
-		// 	}
-		// case <-time.After(time.Second * 10):
-		// 	Fail("Test timed out after 10 seconds")
-		// }
+		select {
+		case <-redisRestarted:
+			select {
+			case <-httpRequestReturned:
+			case <-time.After(time.Second * 300):
+				Fail("Test timed out after 300 seconds")
+			}
+		case <-time.After(time.Second * 10):
+			Fail("Test timed out after 10 seconds")
+		}
 
 		conf, err := redisconf.Load(redisConfPath)
 		Ω(err).ShouldNot(HaveOccurred())
-
-		_, err = strconv.Atoi(conf.Get("port"))
-		Expect(err).NotTo(HaveOccurred())
 
 		redisConn = helpers.BuildRedisClientFromConf(conf)
 	})
