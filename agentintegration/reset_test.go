@@ -49,8 +49,8 @@ var _ = Describe("DELETE /", func() {
 		case <-redisRestarted:
 			select {
 			case <-httpRequestReturned:
-			case <-time.After(time.Second * 180):
-				Fail("Test timed out after 180 seconds")
+			case <-time.After(time.Second * 300):
+				Fail("Test timed out after 300 seconds")
 			}
 		case <-time.After(time.Second * 10):
 			Fail("Test timed out after 10 seconds")
