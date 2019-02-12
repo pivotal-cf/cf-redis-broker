@@ -29,6 +29,7 @@ var _ = Describe("DELETE /", func() {
 		redisConn         redis.Conn
 		aofPath           string
 		originalRedisConf redisconf.Conf
+		redisConf redisconf.Conf
 	)
 
 	BeforeEach(func() {
@@ -40,26 +41,18 @@ var _ = Describe("DELETE /", func() {
 		Ω(err).ShouldNot(HaveOccurred())
 
 		redisRestarted := make(chan bool)
-		httpRequestReturned := make(chan bool)
 
 		go checkRedisStopAndStart(redisRestarted)
-		go doResetRequest(httpRequestReturned)
+		sendResetRequest()
 
 		select {
 		case <-redisRestarted:
-			select {
-			case <-httpRequestReturned:
-			case <-time.After(time.Second * 300):
-				Fail("Test timed out after 300 seconds")
-			}
+			redisConf, err = redisconf.Load(redisConfPath)
+			Expect(err).NotTo(HaveOccurred())
 		case <-time.After(time.Second * 10):
 			Fail("Test timed out after 10 seconds")
 		}
-
-		conf, err := redisconf.Load(redisConfPath)
-		Ω(err).ShouldNot(HaveOccurred())
-
-		redisConn = helpers.BuildRedisClientFromConf(conf)
+		redisConn = helpers.BuildRedisClientFromConf(redisConf)
 	})
 
 	AfterEach(func() {
@@ -123,16 +116,12 @@ func redisNotWritingAof(redisConn redis.Conn) func() bool {
 	}
 }
 
-func doResetRequest(c chan<- bool) {
-	defer GinkgoRecover()
-
+func sendResetRequest() {
 	request, _ := http.NewRequest("DELETE", "http://127.0.0.1:9876", nil)
 	request.SetBasicAuth("admin", "supersecretpassword")
 	response, err := http.DefaultClient.Do(request)
-	Ω(err).ShouldNot(HaveOccurred())
-	Ω(response.StatusCode).To(Equal(http.StatusOK))
-
-	c <- true
+	Expect(err).NotTo(HaveOccurred())
+	Expect(response.StatusCode).To(Equal(http.StatusOK))
 }
 
 func checkRedisStopAndStart(c chan<- bool) {
