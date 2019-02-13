@@ -141,7 +141,7 @@ func redisNotWritingAof(redisConn redis.Conn) func() bool {
 
 func sendResetRequest() {
 	httpClient := &http.Client{
-		Timeout:   5 * time.Second,
+		Timeout:   300 * time.Second,
 		Transport: http.DefaultTransport,
 	}
 
