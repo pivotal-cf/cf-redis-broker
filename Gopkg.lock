@@ -157,7 +157,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:7d889a3ad41d792f499492b38932388aec61d2ac269dddcf100f36e94aae094a"
+  digest = "1:0350b0a8ce19b969d20bd7f3809f3eec22f88bf979a43b0154b3baf606af43f3"
   name = "github.com/pivotal-cf/redisutils"
   packages = [
     "monit",
@@ -165,7 +165,7 @@
     "redis",
   ]
   pruneopts = "UT"
-  revision = "b44924cb2b80b48a78b0692a25b9628c239c177c"
+  revision = "7f011d1484e9c848c068cf07215959c815011cbd"
 
 [[projects]]
   digest = "1:40e195917a951a8bf867cd05de2a46aaf1806c50cf92eebf4c16f78cd196f747"

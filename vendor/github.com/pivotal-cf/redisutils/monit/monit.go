@@ -84,7 +84,7 @@ func New() *SysMonit {
 	return &SysMonit{
 		Executable: "monit",
 		interval:   time.Millisecond * 100,
-		timeout:    time.Second * 15,
+		timeout:    time.Second * 120,
 		exec:       iexec.New(),
 	}
 }
