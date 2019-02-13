@@ -152,8 +152,14 @@ func sendResetRequest() {
 
 	response, err := httpClient.Do(request)
 	Expect(err).NotTo(HaveOccurred())
+
+	defer response.Body.Close()
+	bodyBytes, err := ioutil.ReadAll(response.Body)
+	Expect(err).NotTo(HaveOccurred())
 	fmt.Println(">>>>> HTTP Response from DELETE <<<<<<<<")
-	fmt.Println(response.Body)
+	fmt.Println(string(bodyBytes))
+	fmt.Println("<<<<<<< END Response >>>>>>>")
+
 	Expect(response.StatusCode).To(Equal(http.StatusOK))
 }
 
