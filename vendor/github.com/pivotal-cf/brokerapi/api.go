@@ -598,8 +598,6 @@ func (h serviceBrokerHandler) unbind(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	fmt.Printf("req: %v\n\n", req.FormValue("plan_id"))
-
 	details := UnbindDetails{
 		PlanID:    req.FormValue("plan_id"),
 		ServiceID: req.FormValue("service_id"),
