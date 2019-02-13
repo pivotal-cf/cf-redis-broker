@@ -145,10 +145,15 @@ func sendResetRequest() {
 		Transport: http.DefaultTransport,
 	}
 
-	request, _ := http.NewRequest("DELETE", "http://127.0.0.1:9876", nil)
+	request, err := http.NewRequest("DELETE", "http://127.0.0.1:9876", nil)
+	Expect(err).NotTo(HaveOccurred())
+
 	request.SetBasicAuth("admin", "supersecretpassword")
+
 	response, err := httpClient.Do(request)
 	Expect(err).NotTo(HaveOccurred())
+	fmt.Println(">>>>> HTTP Response from DELETE <<<<<<<<")
+	fmt.Println(response.Body)
 	Expect(response.StatusCode).To(Equal(http.StatusOK))
 }
 
