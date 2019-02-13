@@ -40,6 +40,10 @@ var _ = Describe("DELETE /", func() {
 		originalRedisConf, err = redisconf.Load(redisConfPath)
 		Expect(err).NotTo(HaveOccurred())
 
+		originalRedisConn := helpers.BuildRedisClientFromConf(originalRedisConf)
+		_, err = originalRedisConn.Do("SET", "key", "val")
+		Expect(err).NotTo(HaveOccurred())
+
 		redisStopped := make(chan bool)
 		go checkRedisStopped(redisStopped)
 		sendResetRequest()
