@@ -38,20 +38,25 @@ var _ = Describe("DELETE /", func() {
 
 		var err error
 		originalRedisConf, err = redisconf.Load(redisConfPath)
-		Ω(err).ShouldNot(HaveOccurred())
+		Expect(err).NotTo(HaveOccurred())
 
-		redisRestarted := make(chan bool)
-
-		go checkRedisStopAndStart(redisRestarted)
+		redisStopped := make(chan bool)
+		go checkRedisStopped(redisStopped)
 		sendResetRequest()
 
 		select {
-		case <-redisRestarted:
-			redisConf, err = redisconf.Load(redisConfPath)
-			Expect(err).NotTo(HaveOccurred())
+		case <-redisStopped:
+			// Sleep here to emulate the time it takes monit to do it's thing
+			time.Sleep(time.Millisecond * 200)
+
+			redisSession, err = gexec.Start(exec.Command("redis-server", redisConfPath), GinkgoWriter, GinkgoWriter)
+			Expect(err).ShouldNot(HaveOccurred())
+
 		case <-time.After(time.Second * 10):
 			Fail("Test timed out after 10 seconds")
 		}
+
+		redisConf = checkRedisConfigured(redisConfPath)
 		redisConn = helpers.BuildRedisClientFromConf(redisConf)
 	})
 
@@ -65,31 +70,45 @@ var _ = Describe("DELETE /", func() {
 		port := originalRedisConf.Get("port")
 		uri := fmt.Sprintf("127.0.0.1:%s", port)
 		redisConn, err := redis.Dial("tcp", uri)
-		Ω(err).ShouldNot(HaveOccurred())
+		Expect(err).NotTo(HaveOccurred())
 
 		_, err = redisConn.Do("AUTH", password)
-		Ω(err).Should(MatchError("ERR invalid password"))
+		Expect(err).To(MatchError("ERR invalid password"))
 	})
 
 	It("resets the configuration", func() {
 		config, err := redis.Strings(redisConn.Do("CONFIG", "GET", "maxmemory-policy"))
 
-		Ω(err).ShouldNot(HaveOccurred())
-		Ω(config[1]).Should(Equal("noeviction"))
+		Expect(err).NotTo(HaveOccurred())
+		Expect(config[1]).To(Equal("noeviction"))
 	})
 
 	It("deletes all data from redis", func() {
 		values, err := redis.Values(redisConn.Do("KEYS", "*"))
-		Ω(err).ShouldNot(HaveOccurred())
-		Ω(values).Should(BeEmpty())
+		Expect(err).NotTo(HaveOccurred())
+		Expect(values).To(BeEmpty())
 	})
 
 	It("has an empty AOF file", func() {
 		data, err := ioutil.ReadFile(aofPath)
-		Ω(err).ShouldNot(HaveOccurred())
-		Ω(string(data)).Should(Equal(""))
+		Expect(err).NotTo(HaveOccurred())
+		Expect(string(data)).To(Equal(""))
 	})
 })
+
+func checkRedisConfigured(redisConfPath string) redisconf.Conf {
+	conf, err := redisconf.Load(redisConfPath)
+	Expect(err).NotTo(HaveOccurred())
+
+	port, err := strconv.Atoi(conf.Get("port"))
+	Expect(err).NotTo(HaveOccurred())
+
+	Expect(helpers.ServiceAvailable(uint(port))).To(BeTrue())
+	redisConf, err := redisconf.Load(redisConfPath)
+	Expect(err).NotTo(HaveOccurred())
+
+	return redisConf
+}
 
 func startRedisAndBlockUntilUp() (*gexec.Session, string) {
 	session, connection := startRedis(redisConfPath)
@@ -124,26 +143,9 @@ func sendResetRequest() {
 	Expect(response.StatusCode).To(Equal(http.StatusOK))
 }
 
-func checkRedisStopAndStart(c chan<- bool) {
+func checkRedisStopped(c chan<- bool) {
 	defer GinkgoRecover()
-
 	Eventually(redisSession, "10s").Should(gexec.Exit())
-
-	// Sleep here to emulate the time it takes monit to do it's thing
-	time.Sleep(time.Millisecond * 200)
-
-	var err error
-	redisSession, err = gexec.Start(exec.Command("redis-server", redisConfPath), GinkgoWriter, GinkgoWriter)
-	Ω(err).ShouldNot(HaveOccurred())
-
-	conf, err := redisconf.Load(redisConfPath)
-	Ω(err).ShouldNot(HaveOccurred())
-
-	port, err := strconv.Atoi(conf.Get("port"))
-	Ω(err).ShouldNot(HaveOccurred())
-
-	Expect(helpers.ServiceAvailable(uint(port))).To(BeTrue())
-
 	c <- true
 }
 
