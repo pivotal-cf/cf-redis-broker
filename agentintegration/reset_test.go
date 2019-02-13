@@ -140,9 +140,14 @@ func redisNotWritingAof(redisConn redis.Conn) func() bool {
 }
 
 func sendResetRequest() {
+	httpClient := &http.Client{
+		Timeout:   5 * time.Second,
+		Transport: http.DefaultTransport,
+	}
+
 	request, _ := http.NewRequest("DELETE", "http://127.0.0.1:9876", nil)
 	request.SetBasicAuth("admin", "supersecretpassword")
-	response, err := http.DefaultClient.Do(request)
+	response, err := httpClient.Do(request)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(response.StatusCode).To(Equal(http.StatusOK))
 }
