@@ -3,8 +3,13 @@ package agentintegration_test
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/pivotal-cf/cf-redis-broker/integration/helpers"
 	"net/http"
 	"os"
+	"os/exec"
+	"path/filepath"
+	"strconv"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -72,6 +77,45 @@ var _ = Describe("keycount request", func() {
 		})
 	})
 })
+
+func startRedisAndBlockUntilUp() (*gexec.Session, string) {
+	session, connection := startRedis(redisConfPath)
+
+	_, err := connection.Do("CONFIG", "SET", "maxmemory-policy", "allkeys-lru")
+	Ω(err).ShouldNot(HaveOccurred())
+
+	cwd, err := os.Getwd()
+	Ω(err).ShouldNot(HaveOccurred())
+	aofPath := filepath.Join(cwd, "appendonly.aof")
+
+	Eventually(redisNotWritingAof(connection)).Should(BeTrue())
+	Expect(helpers.FileExists(aofPath)).To(BeTrue())
+
+	return session, aofPath
+}
+
+func redisNotWritingAof(redisConn redis.Conn) func() bool {
+	return func() bool {
+		out, _ := redis.String(redisConn.Do("INFO", "persistence"))
+		return strings.Contains(out, "aof_pending_rewrite:0") &&
+			strings.Contains(out, "aof_rewrite_scheduled:0") &&
+			strings.Contains(out, "aof_rewrite_in_progress:0")
+	}
+}
+
+func startRedis(confPath string) (*gexec.Session, redis.Conn) {
+	redisSession, err := gexec.Start(exec.Command("redis-server", confPath), GinkgoWriter, GinkgoWriter)
+	Ω(err).ShouldNot(HaveOccurred())
+
+	conf, err := redisconf.Load(confPath)
+	Ω(err).ShouldNot(HaveOccurred())
+
+	port, err := strconv.Atoi(conf.Get("port"))
+	Ω(err).ShouldNot(HaveOccurred())
+
+	Expect(helpers.ServiceAvailable(uint(port))).To(BeTrue())
+	return redisSession, helpers.BuildRedisClient(uint(port), "localhost", conf.Get("requirepass"))
+}
 
 func getKeycount() (int, error) {
 	httpClient := &http.Client{
