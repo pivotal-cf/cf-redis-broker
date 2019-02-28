@@ -11,7 +11,7 @@ import (
 	"github.com/pivotal-cf/cf-redis-broker/integration"
 	"github.com/pivotal-cf/cf-redis-broker/redis/client"
 
-	redisclient "github.com/garyburd/redigo/redis"
+	redisclient "github.com/gomodule/redigo/redis"
 )
 
 var host = "0.0.0.0"

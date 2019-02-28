@@ -3,7 +3,7 @@ package brokerintegration_test
 import (
 	"encoding/json"
 
-	redigo "github.com/garyburd/redigo/redis"
+	redigo "github.com/gomodule/redigo/redis"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pborman/uuid"

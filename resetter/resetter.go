@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	redigo "github.com/garyburd/redigo/redis"
+	redigo "github.com/gomodule/redigo/redis"
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 	"github.com/pivotal-cf/redisutils/monit"
 	"github.com/pivotal-cf/redisutils/redis"

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/garyburd/redigo/redis"
+	"github.com/gomodule/redigo/redis"
 	. "github.com/onsi/gomega"
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 )

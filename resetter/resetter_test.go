@@ -45,8 +45,8 @@ var _ = Describe("Client", func() {
 	)
 
 	BeforeEach(func() {
-		redisFake = redis.NewFake()
-		connFake = redis.NewConnFake()
+		redisFake = new(redis.Fake)
+		connFake = new(redis.ConnFake)
 		redisFake.DialReturns(connFake, nil)
 		fakeMonit = new(monitFakes.FakeMonit)
 		fakePortChecker = new(fakeChecker)

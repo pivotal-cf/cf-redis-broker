@@ -1,6 +1,6 @@
 package redis
 
-import redigo "github.com/garyburd/redigo/redis"
+import redigo "github.com/gomodule/redigo/redis"
 
 //Redis is an interface around redigo/redis
 type Redis interface {

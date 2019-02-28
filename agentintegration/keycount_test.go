@@ -3,7 +3,6 @@ package agentintegration_test
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/pivotal-cf/cf-redis-broker/integration/helpers"
 	"net/http"
 	"os"
 	"os/exec"
@@ -12,11 +11,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pivotal-cf/cf-redis-broker/integration/helpers"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 
-	"github.com/garyburd/redigo/redis"
+	"github.com/gomodule/redigo/redis"
 	"github.com/pivotal-cf/cf-redis-broker/agentapi"
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 )

@@ -6,10 +6,9 @@ package redis
 import (
 	"sync"
 
-	redigo "github.com/garyburd/redigo/redis"
+	redigo "github.com/gomodule/redigo/redis"
 )
 
-//Fake ...
 type Fake struct {
 	DialStub        func(string, string, ...redigo.DialOption) (redigo.Conn, error)
 	dialMutex       sync.RWMutex
@@ -22,18 +21,17 @@ type Fake struct {
 		result1 redigo.Conn
 		result2 error
 	}
+	dialReturnsOnCall map[int]struct {
+		result1 redigo.Conn
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-//NewFake is the preferred way to initialise a Fake
-func NewFake() *Fake {
-	return new(Fake)
-}
-
-//Dial ...
 func (fake *Fake) Dial(arg1 string, arg2 string, arg3 ...redigo.DialOption) (redigo.Conn, error) {
 	fake.dialMutex.Lock()
+	ret, specificReturn := fake.dialReturnsOnCall[len(fake.dialArgsForCall)]
 	fake.dialArgsForCall = append(fake.dialArgsForCall, struct {
 		arg1 string
 		arg2 string
@@ -44,24 +42,24 @@ func (fake *Fake) Dial(arg1 string, arg2 string, arg3 ...redigo.DialOption) (red
 	if fake.DialStub != nil {
 		return fake.DialStub(arg1, arg2, arg3...)
 	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
 	return fake.dialReturns.result1, fake.dialReturns.result2
 }
 
-//DialCallCount ...
 func (fake *Fake) DialCallCount() int {
 	fake.dialMutex.RLock()
 	defer fake.dialMutex.RUnlock()
 	return len(fake.dialArgsForCall)
 }
 
-//DialArgsForCall ...
 func (fake *Fake) DialArgsForCall(i int) (string, string, []redigo.DialOption) {
 	fake.dialMutex.RLock()
 	defer fake.dialMutex.RUnlock()
 	return fake.dialArgsForCall[i].arg1, fake.dialArgsForCall[i].arg2, fake.dialArgsForCall[i].arg3
 }
 
-//DialReturns ...
 func (fake *Fake) DialReturns(result1 redigo.Conn, result2 error) {
 	fake.DialStub = nil
 	fake.dialReturns = struct {
@@ -70,13 +68,30 @@ func (fake *Fake) DialReturns(result1 redigo.Conn, result2 error) {
 	}{result1, result2}
 }
 
-//Invocations ...
+func (fake *Fake) DialReturnsOnCall(i int, result1 redigo.Conn, result2 error) {
+	fake.DialStub = nil
+	if fake.dialReturnsOnCall == nil {
+		fake.dialReturnsOnCall = make(map[int]struct {
+			result1 redigo.Conn
+			result2 error
+		})
+	}
+	fake.dialReturnsOnCall[i] = struct {
+		result1 redigo.Conn
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *Fake) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.dialMutex.RLock()
 	defer fake.dialMutex.RUnlock()
-	return fake.invocations
+	copiedInvocations := map[string][][]interface{}{}
+	for key, value := range fake.invocations {
+		copiedInvocations[key] = value
+	}
+	return copiedInvocations
 }
 
 func (fake *Fake) recordInvocation(key string, args []interface{}) {

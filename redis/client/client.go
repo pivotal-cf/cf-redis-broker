@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	redisclient "github.com/garyburd/redigo/redis"
+	redisclient "github.com/gomodule/redigo/redis"
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"
 )
 

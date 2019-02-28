@@ -5,7 +5,7 @@ import (
 	"os"
 	"os/exec"
 
-	redisclient "github.com/garyburd/redigo/redis"
+	redisclient "github.com/gomodule/redigo/redis"
 	. "github.com/onsi/gomega"
 	"github.com/pivotal-cf/cf-redis-broker/integration/helpers"
 )
