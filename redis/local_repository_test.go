@@ -255,7 +255,7 @@ var _ = Describe("Local Repository", func() {
 	})
 
 	Describe("Delete", func() {
-		Context("When the instance exists", func() {
+		Context("when the instance exists", func() {
 			BeforeEach(func() {
 				newTestInstance(instanceID, repo)
 			})
@@ -294,11 +294,57 @@ var _ = Describe("Local Repository", func() {
 				Expect(logger).To(gbytes.Say(expectedData))
 			})
 		})
+
+		Context("when the pid file does not exist", func() {
+			BeforeEach(func() {
+				newTestInstance(instanceID, repo)
+				os.Remove(repo.InstancePidFilePath(instanceID))
+			})
+
+			It("deletes the instance data directory", func() {
+				repo.Delete(instanceID)
+				_, err := os.Stat(path.Join(tmpInstanceDataDir, instanceID))
+				Ω(err).To(HaveOccurred())
+			})
+
+			It("deletes the instance log directory", func() {
+				repo.Delete(instanceID)
+				_, err := os.Stat(path.Join(tmpInstanceLogDir, instanceID))
+				Ω(err).To(HaveOccurred())
+			})
+
+			It("returns no error", func() {
+				err := repo.Delete(instanceID)
+				Ω(err).ToNot(HaveOccurred())
+			})
+
+			It("logs that the instance was deprovisioned", func() {
+				err := repo.Delete(instanceID)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(logger).To(gbytes.Say("deprovision-instance"))
+				expectedData := fmt.Sprintf(
+					`{"instance_id":"%s","message":"Successfully deprovisioned Redis instance","plan":"shared-vm"}`, instanceID,
+				)
+				Expect(logger).To(gbytes.Say(expectedData))
+			})
+
+			It("logs that the pid file was not present", func() {
+				err := repo.Delete(instanceID)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(logger).To(gbytes.Say("deprovision-instance"))
+				expectedData := fmt.Sprintf(
+					`{"instance_id":"%s","message":"Could not find pid file","plan":"shared-vm"}`, instanceID,
+				)
+				Expect(logger).To(gbytes.Say(expectedData))
+			})
+		})
 	})
 
 	Describe("InstanceCount", func() {
 		Context("when there are no instances", func() {
-			BeforeEach(func(){
+			BeforeEach(func() {
 				err := os.MkdirAll(tmpInstanceDataDir, 0750)
 				Ω(err).ToNot(HaveOccurred())
 			})
@@ -483,7 +529,7 @@ var _ = Describe("Local Repository", func() {
 		})
 
 		Context("when there are no instances", func() {
-			BeforeEach(func(){
+			BeforeEach(func() {
 				err := os.MkdirAll(tmpInstanceDataDir, 0750)
 				Ω(err).ToNot(HaveOccurred())
 			})

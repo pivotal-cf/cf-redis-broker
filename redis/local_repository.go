@@ -223,7 +223,11 @@ func (repo *LocalRepository) Delete(instanceID string) error {
 
 	err = os.Remove(repo.InstancePidFilePath(instanceID))
 	if err != nil {
-		return err
+		repo.Logger.Info("deprovision-instance", lager.Data{
+			"instance_id": instanceID,
+			"plan":        "shared-vm",
+			"message":     "Could not find pid file",
+		})
 	}
 
 	repo.Logger.Info("deprovision-instance", lager.Data{
