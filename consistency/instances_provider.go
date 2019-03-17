@@ -19,7 +19,7 @@ func NewStateFileAvailableInstances(path string) *stateFileAvailableInstances {
 	return &stateFileAvailableInstances{path}
 }
 
-// AvailableInstances reads and returns the available instances from the state file.
+// Instances reads and returns the available instances from the state file.
 func (s *stateFileAvailableInstances) Instances() ([]redis.Instance, error) {
 	reader, err := os.Open(s.path)
 	if err != nil {
