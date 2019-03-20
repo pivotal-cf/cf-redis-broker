@@ -1,17 +1,18 @@
 package redis_test
 
 import (
+	"code.cloudfoundry.org/lager"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
 
+	"code.cloudfoundry.org/lager/lagertest"
 	"github.com/pivotal-cf/brokerapi"
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
 	"github.com/pivotal-cf/cf-redis-broker/redis"
 	"github.com/pivotal-cf/cf-redis-broker/redis/fakes"
-	"code.cloudfoundry.org/lager/lagertest"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -26,55 +27,47 @@ var _ = Describe("RemoteRepository", func() {
 		config          brokerconfig.Config
 		fakeAgentClient *fakes.FakeAgentClient
 		logger          *lagertest.TestLogger
+		err             error
+		log             *gbytes.Buffer
 	)
 
 	BeforeEach(func() {
 		logger = lagertest.NewTestLogger("remote-repo")
+		log = gbytes.NewBuffer()
+		logger.RegisterSink(lager.NewWriterSink(log, lager.DEBUG))
+
 		config = brokerconfig.Config{}
 		config.RedisConfiguration.Dedicated.Nodes = []string{"10.0.0.1", "10.0.0.2", "10.0.0.3"}
 		config.RedisConfiguration.Dedicated.Port = 6379
 		config.AgentPort = "1234"
 
-		var err error
 		tmpDir, err = ioutil.TempDir("", "cf-redis-broker")
-		Expect(err).ToNot(HaveOccurred())
+		Expect(err).NotTo(HaveOccurred())
 
-		fakeAgentClient = &fakes.FakeAgentClient{}
-		fakeAgentClient.CredentialsFunc = func(host string) (redis.Credentials, error) {
-			return redis.Credentials{
-				Port:     6666,
-				Password: "password",
-			}, nil
-		}
+		fakeAgentClient = new(fakes.FakeAgentClient)
+		fakeAgentClient.CredentialsReturns(redis.Credentials{Port: 6666, Password: "password"}, nil)
 
 		statefilePath = path.Join(tmpDir, "statefile.json")
 		config.RedisConfiguration.Dedicated.StatefilePath = statefilePath
-		repo, err = redis.NewRemoteRepository(fakeAgentClient, config, logger)
-		Expect(err).ToNot(HaveOccurred())
+	})
+
+	AfterEach(func() {
+		err = os.RemoveAll(tmpDir)
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	Describe("NewRemoteRepository", func() {
-		Context("When a state file does not exist", func() {
-			It("logs statefile creation", func() {
-				Expect(logger).To(gbytes.Say(fmt.Sprintf("statefile %s not found, generating instead", statefilePath)))
-			})
-
-			It("logs 0 dedicated instances found", func() {
-				Expect(logger).To(gbytes.Say("0 dedicated Redis instances found"))
-			})
-		})
-
 		Context("When a state file exists", func() {
 			var statefile Statefile
 
 			BeforeEach(func() {
 				statefile = Statefile{
 					AvailableInstances: []*redis.Instance{
-						&redis.Instance{Host: "10.0.0.1"},
-						&redis.Instance{Host: "10.0.0.2"},
+						{Host: "10.0.0.1"},
+						{Host: "10.0.0.2"},
 					},
 					AllocatedInstances: []*redis.Instance{
-						&redis.Instance{
+						{
 							Host: "10.0.0.3",
 							ID:   "dedicated-instance",
 						},
@@ -84,81 +77,81 @@ var _ = Describe("RemoteRepository", func() {
 			})
 
 			Context("When the state file can be read", func() {
-				It("loads its state from the state file", func() {
+				It("creates a new remote repository", func() {
 					repo, err := redis.NewRemoteRepository(fakeAgentClient, config, logger)
 					Expect(err).ToNot(HaveOccurred())
 
-					allocatedInstances, err := repo.AllInstances()
-					Expect(err).ToNot(HaveOccurred())
-					Expect(repo.InstanceLimit()).To(Equal(3))
-					Expect(len(allocatedInstances)).To(Equal(1))
-					Expect(*allocatedInstances[0]).To(Equal(*statefile.AllocatedInstances[0]))
+					By("loading its state from the state file", func() {
+						allocatedInstances, err := repo.AllInstances()
+						Expect(err).ToNot(HaveOccurred())
+						Expect(repo.InstanceLimit()).To(Equal(3))
+						Expect(len(allocatedInstances)).To(Equal(1))
+						Expect(*allocatedInstances[0]).To(Equal(*statefile.AllocatedInstances[0]))
+					})
+
+					By("logging that it is starting to look for dedicated instances, and in which file", func() {
+						expectedOutput := fmt.Sprintf(
+							"Starting dedicated instance lookup in statefile: %s",
+							statefilePath,
+						)
+						Eventually(log).Should(gbytes.Say(expectedOutput))
+					})
+
+					By("logging the instance count", func() {
+						Eventually(log).Should(gbytes.Say("1 dedicated Redis instance found"))
+					})
+
+					By("logging the instance IDs", func() {
+						Eventually(log).Should(gbytes.Say(
+							fmt.Sprintf("Found dedicated instance: %s", statefile.AllocatedInstances[0].ID),
+						))
+					})
 				})
 
-				It("adds new nodes from config", func() {
-					nodes := append(config.RedisConfiguration.Dedicated.Nodes, "10.0.0.4")
-					config.RedisConfiguration.Dedicated.Nodes = nodes
+				Context("when there are changes to the config", func() {
+					It("adds new nodes from config", func() {
+						nodes := append(config.RedisConfiguration.Dedicated.Nodes, "10.0.0.4")
+						config.RedisConfiguration.Dedicated.Nodes = nodes
 
-					repo, err := redis.NewRemoteRepository(fakeAgentClient, config, logger)
-					Expect(err).ToNot(HaveOccurred())
+						repo, err := redis.NewRemoteRepository(fakeAgentClient, config, logger)
+						Expect(err).ToNot(HaveOccurred())
 
-					availableInstances := repo.AvailableInstances()
-					Expect(len(availableInstances)).To(Equal(3))
-					Expect(availableInstances[2].Host).To(Equal("10.0.0.4"))
-				})
+						availableInstances := repo.AvailableInstances()
+						Expect(len(availableInstances)).To(Equal(3))
+						Expect(availableInstances[2].Host).To(Equal("10.0.0.4"))
+					})
 
-				It("saves the statefile", func() {
-					nodes := append(config.RedisConfiguration.Dedicated.Nodes, "10.0.0.4")
-					config.RedisConfiguration.Dedicated.Nodes = nodes
+					It("saves the statefile", func() {
+						nodes := append(config.RedisConfiguration.Dedicated.Nodes, "10.0.0.4")
+						config.RedisConfiguration.Dedicated.Nodes = nodes
 
-					_, err := redis.NewRemoteRepository(fakeAgentClient, config, logger)
-					Expect(err).ToNot(HaveOccurred())
+						_, err := redis.NewRemoteRepository(fakeAgentClient, config, logger)
+						Expect(err).ToNot(HaveOccurred())
 
-					state := getStatefileContents(statefilePath)
-					Expect(len(state.AvailableInstances)).To(Equal(3))
-					Expect(state.AvailableInstances[2].Host).To(Equal("10.0.0.4"))
-				})
-
-				It("logs that it is starting to look for dedicated instances, and in which file", func() {
-					expectedOutput := fmt.Sprintf(
-						"Starting dedicated instance lookup in statefile: %s",
-						statefilePath,
-					)
-					Eventually(logger).Should(gbytes.Say(expectedOutput))
-				})
-
-				It("logs the instance count", func() {
-					redis.NewRemoteRepository(fakeAgentClient, config, logger)
-					Eventually(logger).Should(gbytes.Say("1 dedicated Redis instance found"))
-				})
-
-				It("logs the instance IDs", func() {
-					redis.NewRemoteRepository(fakeAgentClient, config, logger)
-					Eventually(logger).Should(gbytes.Say(
-						fmt.Sprintf("Found dedicated instance: %s", statefile.AllocatedInstances[0].ID),
-					))
+						state := getStatefileContents(statefilePath)
+						Expect(len(state.AvailableInstances)).To(Equal(3))
+						Expect(state.AvailableInstances[2].Host).To(Equal("10.0.0.4"))
+					})
 				})
 			})
 
-			Context("When the state file cannot be read", func() {
-				var err error
-
+			Context("When the state file has invalid permissions", func() {
 				BeforeEach(func() {
-					os.Remove(statefilePath)
-					os.Mkdir(statefilePath, 0644)
-					_, err = redis.NewRemoteRepository(fakeAgentClient, config, logger)
+					err = os.Remove(statefilePath)
+					Expect(err).NotTo(HaveOccurred())
+					err = os.Mkdir(statefilePath, 0644)
+					Expect(err).NotTo(HaveOccurred())
 				})
 
 				AfterEach(func() {
-					os.RemoveAll(statefilePath)
+					err = os.RemoveAll(statefilePath)
+					Expect(err).NotTo(HaveOccurred())
 				})
 
-				It("returns an error", func() {
+				It("logs the failure and returns an error", func() {
+					_, err = redis.NewRemoteRepository(fakeAgentClient, config, logger)
 					Expect(err).To(HaveOccurred())
-				})
-
-				It("logs the error", func() {
-					Expect(logger).To(gbytes.Say("failed to read statefile"))
+					Eventually(log).Should(gbytes.Say("failed to read statefile"))
 				})
 			})
 
@@ -167,39 +160,49 @@ var _ = Describe("RemoteRepository", func() {
 
 				BeforeEach(func() {
 					err := ioutil.WriteFile(statefilePath, []byte("NOT JSON"), 0644)
-					Expect(err).ToNot(HaveOccurred())
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				It("logs the failure and returns an error", func() {
 					_, newRepoErr = redis.NewRemoteRepository(fakeAgentClient, config, logger)
-				})
-
-				It("returns an error", func() {
 					Expect(newRepoErr).To(HaveOccurred())
+					Eventually(log).Should(gbytes.Say("failed to read statefile due to invalid JSON"))
 				})
+			})
+		})
 
-				It("logs the error", func() {
-					Expect(logger).To(gbytes.Say("failed to read statefile due to invalid JSON"))
-				})
+		Context("When a state file does not exist", func() {
+			It("logs statefile creation", func() {
+				_, err = redis.NewRemoteRepository(fakeAgentClient, config, logger)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(logger).To(gbytes.Say(fmt.Sprintf("statefile %s not found, generating instead", statefilePath)))
+			})
+
+			It("logs 0 dedicated instances found", func() {
+				_, err = redis.NewRemoteRepository(fakeAgentClient, config, logger)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(logger).To(gbytes.Say("0 dedicated Redis instances found"))
 			})
 		})
 	})
 
 	Context("When no nodes are allocated", func() {
+		BeforeEach(func() {
+			repo, err = redis.NewRemoteRepository(fakeAgentClient, config, logger)
+			Expect(err).NotTo(HaveOccurred())
+		})
 
-		Describe("#AllInstances", func() {
+		Describe("AllInstances", func() {
 			var instances []*redis.Instance
 
-			BeforeEach(func() {
-				var err error
-
+			It("returns an empty array", func() {
 				instances, err = repo.AllInstances()
 				Expect(err).ToNot(HaveOccurred())
-			})
-
-			It("returns an empty array", func() {
-				Expect(len(instances)).To(Equal(0))
+				Expect(instances).To(HaveLen(0))
 			})
 		})
 
-		Describe("#AvailableNodes", func() {
+		Describe("AvailableNodes", func() {
 			It("returns all the dedicated nodes", func() {
 				instances := repo.AvailableInstances()
 				Expect(instances[0].Host).To(Equal("10.0.0.1"))
@@ -208,13 +211,13 @@ var _ = Describe("RemoteRepository", func() {
 			})
 		})
 
-		Describe("#InstanceCount", func() {
+		Describe("InstanceCount", func() {
 			It("returns the total number of allocated nodes", func() {
 				Expect(repo.InstanceCount()).To(Equal(0))
 			})
 		})
 
-		Describe("#Unbind", func() {
+		Describe("Unbind", func() {
 			It("returns an error", func() {
 				err := repo.Unbind("NON-EXISTANT-INSTANCE", "SOME-BINDING")
 				Expect(err).To(MatchError(brokerapi.ErrInstanceDoesNotExist))
@@ -224,24 +227,25 @@ var _ = Describe("RemoteRepository", func() {
 
 	Context("When one node is allocated", func() {
 		BeforeEach(func() {
-			err := repo.Create("foo")
-			Expect(err).ToNot(HaveOccurred())
+			repo, err = redis.NewRemoteRepository(fakeAgentClient, config, logger)
+			Expect(err).NotTo(HaveOccurred())
+
+			err = repo.Create("foo")
+			Expect(err).NotTo(HaveOccurred())
+
+			fakeAgentClient.CredentialsStub = func(host string) (redis.Credentials, error) {
+				if host == "10.0.0.1" {
+					return redis.Credentials{
+						Port:     123456,
+						Password: "super-secret",
+					}, nil
+				} else {
+					return redis.Credentials{}, errors.New("wrong url")
+				}
+			}
 		})
 
-		Describe("#Bind", func() {
-			BeforeEach(func() {
-				fakeAgentClient.CredentialsFunc = func(host string) (redis.Credentials, error) {
-					if host == "10.0.0.1" {
-						return redis.Credentials{
-							Port:     123456,
-							Password: "super-secret",
-						}, nil
-					} else {
-						return redis.Credentials{}, errors.New("wrong url")
-					}
-				}
-			})
-
+		Describe("Bind", func() {
 			It("returns the instance information", func() {
 				instanceCredentials, err := repo.Bind("foo", "foo-binding")
 				Expect(err).ToNot(HaveOccurred())
@@ -261,53 +265,55 @@ var _ = Describe("RemoteRepository", func() {
 
 			Context("when it cannot persist the state to the state file", func() {
 				BeforeEach(func() {
-					os.Remove(statefilePath)
-					os.Mkdir(statefilePath, 0644)
+					err = os.Remove(statefilePath)
+					Expect(err).NotTo(HaveOccurred())
+					err = os.Mkdir(statefilePath, 0644)
+					Expect(err).NotTo(HaveOccurred())
 				})
 
 				AfterEach(func() {
-					os.RemoveAll(statefilePath)
+					err = os.RemoveAll(statefilePath)
+					Expect(err).NotTo(HaveOccurred())
 				})
 
 				It("does not bind", func() {
-					_, err := repo.Bind("foo", "bar-binding")
-					Expect(err).To(HaveOccurred())
+					By("returning an error when binding", func() {
+						_, err := repo.Bind("foo", "bar-binding")
+						Expect(err).To(HaveOccurred())
+					})
 
-					bindings, err := repo.BindingsForInstance("foo")
-					Expect(err).ToNot(HaveOccurred())
-
-					Expect(len(bindings)).To(Equal(0))
+					By("reporting no bindings", func() {
+						bindings, err := repo.BindingsForInstance("foo")
+						Expect(err).ToNot(HaveOccurred())
+						Expect(bindings).To(HaveLen(0))
+					})
 				})
 			})
 		})
 
-		Describe("#Unbind", func() {
+		Describe("Unbind", func() {
 			Context("when the binding exists", func() {
 				BeforeEach(func() {
 					_, err := repo.Bind("foo", "foo-binding")
 					Expect(err).ToNot(HaveOccurred())
 				})
 
-				It("returns successfully", func() {
-					err := repo.Unbind("foo", "foo-binding")
-					Expect(err).ToNot(HaveOccurred())
-				})
-
-				It("writes the new state to the statefile", func() {
-					repo.Unbind("foo", "foo-binding")
+				It("succesfully writes the new state to the statefile", func() {
+					err = repo.Unbind("foo", "foo-binding")
+					Expect(err).NotTo(HaveOccurred())
 
 					state := getStatefileContents(statefilePath)
 					Expect(state.InstanceBindings["foo"]).To(BeEmpty())
 				})
 
-				Context("Concurrency", func() {
+				Context("when two concurrent unbind calls occur", func() {
 					It("prevents simultaneous edits", func() {
 						chan1 := make(chan struct{})
 						chan2 := make(chan struct{})
 
 						action := func(control chan struct{}) {
 							defer GinkgoRecover()
-							repo.Unbind("foo", "foo-binding")
+							_ = repo.Unbind("foo", "foo-binding")
 							close(control)
 						}
 
@@ -329,12 +335,15 @@ var _ = Describe("RemoteRepository", func() {
 
 				Context("when the statefile cannot be persisted", func() {
 					BeforeEach(func() {
-						os.Remove(statefilePath)
-						os.Mkdir(statefilePath, 0644)
+						err = os.Remove(statefilePath)
+						Expect(err).NotTo(HaveOccurred())
+						err = os.Mkdir(statefilePath, 0644)
+						Expect(err).NotTo(HaveOccurred())
 					})
 
 					AfterEach(func() {
-						os.RemoveAll(statefilePath)
+						err = os.RemoveAll(statefilePath)
+						Expect(err).NotTo(HaveOccurred())
 					})
 
 					It("does not unbind", func() {
@@ -357,47 +366,44 @@ var _ = Describe("RemoteRepository", func() {
 			})
 		})
 
-		Describe("#AllInstances", func() {
+		Describe("AllInstances", func() {
 			var instances []*redis.Instance
 
-			BeforeEach(func() {
-				var err error
-
+			It("successfully returns an array with one IP address", func() {
 				instances, err = repo.AllInstances()
-				Expect(err).ToNot(HaveOccurred())
-			})
-
-			It("returns an array with one IP address", func() {
+				Expect(err).NotTo(HaveOccurred())
 				Expect(instances[0].Host).To(Equal("10.0.0.1"))
 			})
 		})
 
-		Describe("#AvailableNodes", func() {
+		Describe("AvailableNodes", func() {
 			It("returns all the dedicated nodes", func() {
 				instances := repo.AvailableInstances()
+				Expect(instances).To(HaveLen(2))
 				Expect(instances[0].Host).To(Equal("10.0.0.2"))
 				Expect(instances[1].Host).To(Equal("10.0.0.3"))
 			})
 		})
 
-		Describe("#Create", func() {
+		Describe("Create", func() {
 			It("allocates the next available node", func() {
-				err := repo.Create("bar")
+				var hosts []string
+				err = repo.Create("bar")
 				Expect(err).ToNot(HaveOccurred())
 
-				hosts := []string{}
 				instances, err := repo.AllInstances()
 				Expect(err).ToNot(HaveOccurred())
+				Expect(instances).To(HaveLen(2))
 
 				for _, instance := range instances {
 					hosts = append(hosts, instance.Host)
 				}
 
-				Expect(hosts).To(ContainElement("10.0.0.2"))
+				Expect(hosts).To(ConsistOf("10.0.0.1", "10.0.0.2"))
 			})
 
 			It("writes the new state to the statefile", func() {
-				err := repo.Create("bar")
+				err = repo.Create("bar")
 				Expect(err).ToNot(HaveOccurred())
 
 				statefileContents := getStatefileContents(statefilePath)
@@ -406,27 +412,28 @@ var _ = Describe("RemoteRepository", func() {
 			})
 
 			It("logs that the instance was provisioned", func() {
-				err := repo.Create("bar")
+				err = repo.Create("bar")
 				Expect(err).ToNot(HaveOccurred())
 
-				Expect(logger).To(gbytes.Say("provision-instance"))
-
-				expectedData := `{"instance_id":"bar","message":"Successfully provisioned Redis instance","plan":"dedicated-vm"}`
-				Expect(logger).To(gbytes.Say(expectedData))
+				Eventually(log).Should(gbytes.Say("provision-instance"))
+				Eventually(log).Should(gbytes.Say(`{"instance_id":"bar","message":"Successfully provisioned Redis instance","plan":"dedicated-vm"}`))
 			})
 
-			Context("when it cannot persist the state to the state file", func() {
+			Context("when the state cannot be persisted to the state file", func() {
 				BeforeEach(func() {
-					os.Remove(statefilePath)
-					os.Mkdir(statefilePath, 0644)
+					err = os.Remove(statefilePath)
+					Expect(err).NotTo(HaveOccurred())
+					err = os.Mkdir(statefilePath, 0644)
+					Expect(err).NotTo(HaveOccurred())
 				})
 
 				AfterEach(func() {
-					os.RemoveAll(statefilePath)
+					err = os.RemoveAll(statefilePath)
+					Expect(err).NotTo(HaveOccurred())
 				})
 
 				It("does not allocate an instance", func() {
-					err := repo.Create("bar")
+					err = repo.Create("bar")
 					Expect(err).To(HaveOccurred())
 
 					_, err = repo.FindByID("bar")
@@ -438,20 +445,22 @@ var _ = Describe("RemoteRepository", func() {
 				It("returns brokerapi.ErrInstanceAlreadyExists", func() {
 					err := repo.Create("foo")
 					Expect(err).To(HaveOccurred())
-					Expect(err).To(Equal(brokerapi.ErrInstanceAlreadyExists))
+					Expect(err).To(MatchError(brokerapi.ErrInstanceAlreadyExists))
 				})
 			})
 
 			Context("when instance capacity has been reached", func() {
 				BeforeEach(func() {
-					repo.Create("bar")
-					repo.Create("baz")
+					err = repo.Create("bar")
+					Expect(err).NotTo(HaveOccurred())
+					err = repo.Create("baz")
+					Expect(err).NotTo(HaveOccurred())
 				})
 
 				It("returns brokerapi.ErrInstanceLimitMet", func() {
-					err := repo.Create("another")
+					err = repo.Create("another")
 					Expect(err).To(HaveOccurred())
-					Expect(err).To(Equal(brokerapi.ErrInstanceLimitMet))
+					Expect(err).To(MatchError(brokerapi.ErrInstanceLimitMet))
 				})
 			})
 		})
@@ -461,7 +470,7 @@ var _ = Describe("RemoteRepository", func() {
 				It("returns the allocated instance", func() {
 					instanceID := "foo"
 					instance, err := repo.FindByID(instanceID)
-					Expect(err).ToNot(HaveOccurred())
+					Expect(err).NotTo(HaveOccurred())
 					Expect(instance.ID).To(Equal(instanceID))
 					Expect(instance.Host).To(Equal("10.0.0.1"))
 				})
@@ -482,8 +491,8 @@ var _ = Describe("RemoteRepository", func() {
 				It("returns false", func() {
 					instanceID := "bar"
 					result, err := repo.InstanceExists(instanceID)
-					Ω(result).Should(BeFalse())
-					Ω(err).ShouldNot(HaveOccurred())
+					Expect(result).To(BeFalse())
+					Expect(err).NotTo(HaveOccurred())
 				})
 			})
 
@@ -491,103 +500,95 @@ var _ = Describe("RemoteRepository", func() {
 				It("returns true", func() {
 					instanceID := "foo"
 					result, err := repo.InstanceExists(instanceID)
-					Ω(result).Should(BeTrue())
-					Ω(err).ShouldNot(HaveOccurred())
+					Expect(result).To(BeTrue())
+					Expect(err).NotTo(HaveOccurred())
 				})
 			})
 		})
 
-		Describe("#Destroy", func() {
+		Describe("Destroy", func() {
 			Context("when deleting an existing instance", func() {
-				It("deallocates the instance", func() {
-					err := repo.Destroy("foo")
-					Expect(err).ToNot(HaveOccurred())
-					Expect(len(repo.AvailableInstances())).To(Equal(3))
+				It("de-allocates the instance", func() {
+					err = repo.Destroy("foo")
+					Expect(err).NotTo(HaveOccurred())
+					Expect(repo.AvailableInstances()).To(HaveLen(3))
 				})
 
 				It("writes the new state to the statefile", func() {
-					err := repo.Destroy("foo")
-					Expect(err).ToNot(HaveOccurred())
+					err = repo.Destroy("foo")
+					Expect(err).NotTo(HaveOccurred())
 
 					statefileContents := getStatefileContents(statefilePath)
-					Expect(len(statefileContents.AllocatedInstances)).To(Equal(0))
+					Expect(statefileContents.AllocatedInstances).To(HaveLen(0))
 				})
 
 				It("resets the instance data", func() {
 					instance, err := repo.FindByID("foo")
-					Expect(err).ToNot(HaveOccurred())
+					Expect(err).NotTo(HaveOccurred())
 
 					err = repo.Destroy("foo")
-					Expect(err).ToNot(HaveOccurred())
+					Expect(err).NotTo(HaveOccurred())
 
-					Expect(fakeAgentClient.ResetHosts).To(ConsistOf(instance.Host))
+					Expect(fakeAgentClient.ResetCallCount()).To(Equal(1))
+					Expect(fakeAgentClient.ResetArgsForCall(0)).To(Equal(instance.Host))
 				})
 
 				It("logs that the instance was deprovisioned", func() {
-					err := repo.Destroy("foo")
-					Expect(err).ToNot(HaveOccurred())
+					err = repo.Destroy("foo")
+					Expect(err).NotTo(HaveOccurred())
 
-					Expect(logger).To(gbytes.Say("deprovision-instance"))
-
-					expectedData := `{"instance_id":"foo","message":"Successfully deprovisioned Redis instance","plan":"dedicated-vm"}`
-					Expect(logger).To(gbytes.Say(expectedData))
+					Eventually(log).Should(gbytes.Say("deprovision-instance"))
+					Eventually(log).Should(gbytes.Say(`{"instance_id":"foo","message":"Successfully deprovisioned Redis instance","plan":"dedicated-vm"}`))
 				})
 
 				Context("when it cannot persist the state to the state file", func() {
 					BeforeEach(func() {
-						os.Remove(statefilePath)
-						os.Mkdir(statefilePath, 0644)
+						err = os.Remove(statefilePath)
+						Expect(err).NotTo(HaveOccurred())
+
+						err = os.Mkdir(statefilePath, 0644)
+						Expect(err).NotTo(HaveOccurred())
 					})
 
-					AfterEach(func() {
-						os.RemoveAll(statefilePath)
-					})
-
-					It("does not delete", func() {
-						err := os.Chmod(tmpDir, 0444)
-						Expect(err).ToNot(HaveOccurred())
-
+					It("does not delete the instance", func() {
 						err = repo.Destroy("foo")
 						Expect(err).To(HaveOccurred())
 
 						_, err = repo.FindByID("foo")
-						Expect(err).ToNot(HaveOccurred())
+						Expect(err).NotTo(HaveOccurred())
 					})
 				})
 
 				Context("when the DELETE request fails", func() {
-					clientError := errors.New("Internal server error")
+					var initialStatefileContents Statefile
 
 					BeforeEach(func() {
-						fakeAgentClient.ResetHandler = func(string) error {
-							return clientError
-						}
+						fakeAgentClient.ResetReturns(errors.New("internal server error"))
+						initialStatefileContents = getStatefileContents(statefilePath)
 					})
 
 					It("does not deallocate the instance", func() {
-						repo.Destroy("foo")
-						_, err := repo.FindByID("foo")
-						Expect(err).ToNot(HaveOccurred())
-					})
+						By("returning an error", func() {
+							err = repo.Destroy("foo")
+							Expect(err).To(MatchError("internal server error"))
+						})
 
-					It("does not modify the state file", func() {
-						initialStatefileContents := getStatefileContents(statefilePath)
-						repo.Destroy("foo")
-						Expect(getStatefileContents(statefilePath)).To(Equal(initialStatefileContents))
-					})
+						By("not deleting the instance", func() {
+							_, err = repo.FindByID("foo")
+							Expect(err).NotTo(HaveOccurred())
+						})
 
-					It("returns the error", func() {
-						err := repo.Destroy("foo")
-						Expect(err).To(Equal(clientError))
+						By("not modifying the state file", func() {
+							Expect(getStatefileContents(statefilePath)).To(Equal(initialStatefileContents))
+						})
 					})
 				})
 			})
 
 			Context("when deleting an instance that does not exist", func() {
 				It("returns an error", func() {
-					err := repo.Destroy("bar")
-					Expect(err).To(HaveOccurred())
-					Expect(err).To(Equal(brokerapi.ErrInstanceDoesNotExist))
+					err = repo.Destroy("bar")
+					Expect(err).To(MatchError(brokerapi.ErrInstanceDoesNotExist))
 				})
 			})
 		})
@@ -595,99 +596,112 @@ var _ = Describe("RemoteRepository", func() {
 
 	Context("When all nodes are allocated", func() {
 		BeforeEach(func() {
-			err := repo.Create("foo")
-			Expect(err).ToNot(HaveOccurred())
+			repo, err = redis.NewRemoteRepository(fakeAgentClient, config, logger)
+			Expect(err).NotTo(HaveOccurred())
+
+			err = repo.Create("foo")
+			Expect(err).NotTo(HaveOccurred())
 			err = repo.Create("bar")
-			Expect(err).ToNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 			err = repo.Create("baz")
-			Expect(err).ToNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 		})
 
-		Describe("#AllInstances", func() {
-			var instances []*redis.Instance
-
-			BeforeEach(func() {
-				var err error
-
-				instances, err = repo.AllInstances()
-				Expect(err).ToNot(HaveOccurred())
-			})
-
+		Describe("AllInstances", func() {
 			It("returns all nodes", func() {
+				instances, err := repo.AllInstances()
+				Expect(err).NotTo(HaveOccurred())
+
 				Expect(instances[0].Host).To(Equal("10.0.0.1"))
 				Expect(instances[1].Host).To(Equal("10.0.0.2"))
 				Expect(instances[2].Host).To(Equal("10.0.0.3"))
 			})
 		})
 
-		Describe("#AvailableNodes", func() {
+		Describe("AvailableNodes", func() {
 			It("returns an empty array", func() {
 				instances := repo.AvailableInstances()
-				Expect(len(instances)).To(Equal(0))
+				Expect(instances).To(HaveLen(0))
 			})
 		})
 
-		Describe("#Create", func() {
+		Describe("Create", func() {
 			It("returns an error", func() {
-				err := repo.Create("foo")
-				Expect(err).To(HaveOccurred())
-				Expect(err).To(Equal(brokerapi.ErrInstanceLimitMet))
+				err = repo.Create("foo")
+				Expect(err).To(MatchError(brokerapi.ErrInstanceLimitMet))
 			})
 		})
 
-		Describe("#InstanceCount", func() {
+		Describe("InstanceCount", func() {
 			It("returns the total number of allocated nodes", func() {
 				Expect(repo.InstanceCount()).To(Equal(3))
 			})
 		})
 	})
 
-	Describe("#PersistStatefile", func() {
+	Describe("PersistStatefile", func() {
 		BeforeEach(func() {
-			err := repo.Create("foo")
-			Expect(err).ToNot(HaveOccurred())
+			repo, err = redis.NewRemoteRepository(fakeAgentClient, config, logger)
+			Expect(err).NotTo(HaveOccurred())
+
+			err = repo.Create("foo")
+			Expect(err).NotTo(HaveOccurred())
 
 			_, err = repo.Bind("foo", "foo-binding")
-			Expect(err).ToNot(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("writes state to a file", func() {
-			err := repo.PersistStatefile()
-			Expect(err).ToNot(HaveOccurred())
+			err = repo.PersistStatefile()
+			Expect(err).NotTo(HaveOccurred())
 
 			statefileContents := getStatefileContents(statefilePath)
 
-			Expect(len(statefileContents.AvailableInstances)).To(Equal(2))
-			Expect(len(statefileContents.AllocatedInstances)).To(Equal(1))
+			Expect(statefileContents.AvailableInstances).To(HaveLen(2))
+			Expect(statefileContents.AllocatedInstances).To(HaveLen(1))
 
 			allocatedInstance := statefileContents.AllocatedInstances[0]
 			Expect(allocatedInstance.Host).To(Equal("10.0.0.1"))
 
-			Expect(len(statefileContents.InstanceBindings["foo"])).To(Equal(1))
+			Expect(statefileContents.InstanceBindings["foo"]).To(HaveLen(1))
 			Expect(statefileContents.InstanceBindings["foo"][0]).To(Equal("foo-binding"))
 		})
 
-		It("sets the statefile permissions", func(){
-			info, _ := os.Stat(statefilePath)
+		It("sets the statefile permissions", func() {
+			info, err := os.Stat(statefilePath)
+			Expect(err).NotTo(HaveOccurred())
 			Expect(getPermissions(info)).To(Equal(0640))
 
 		})
 	})
 
-	Describe("#IDForHost", func() {
-		It("returns the corresponding instance ID", func() {
-			err := repo.Create("foo")
-			Expect(err).ToNot(HaveOccurred())
-
-			Expect(repo.IDForHost(config.RedisConfiguration.Dedicated.Nodes[0])).To(Equal("foo"))
+	Describe("IDForHost", func() {
+		BeforeEach(func() {
+			repo, err = redis.NewRemoteRepository(fakeAgentClient, config, logger)
+			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("returns an empty string when the host is not allocated", func() {
-			Expect(repo.IDForHost(config.RedisConfiguration.Dedicated.Nodes[0])).To(Equal(""))
+		Context("when there is a host allocated", func() {
+			BeforeEach(func() {
+				err = repo.Create("foo")
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("returns the corresponding instance ID", func() {
+				Expect(repo.IDForHost(config.RedisConfiguration.Dedicated.Nodes[0])).To(Equal("foo"))
+			})
 		})
 
-		It("returns an empty string when the host is unknown", func() {
-			Expect(repo.IDForHost("nonsense")).To(Equal(""))
+		Context("when there are no hosts allocated", func() {
+			It("returns an empty string", func() {
+				Expect(repo.IDForHost(config.RedisConfiguration.Dedicated.Nodes[0])).To(Equal(""))
+			})
+		})
+
+		Context("when the host is unknown", func() {
+			It("returns an empty string", func() {
+				Expect(repo.IDForHost("nonsense")).To(Equal(""))
+			})
 		})
 	})
 })

@@ -17,14 +17,17 @@ import (
 
 const redisStartTimeout time.Duration = 10 * time.Second
 
+//go:generate counterfeiter -o fakes/fake_process_checker.go . ProcessChecker
 type ProcessChecker interface {
 	Alive(pid int) bool
 }
 
+//go:generate counterfeiter -o fakes/fake_process_killer.go . ProcessKiller
 type ProcessKiller interface {
 	Kill(pid int) error
 }
 
+//go:generate counterfeiter -o fakes/fake_instance_informer.go . InstanceInformer
 type InstanceInformer interface {
 	InstancePid(string) (int, error)
 }
@@ -38,7 +41,7 @@ type OSProcessController struct {
 	WaitUntilConnectableFunc  WaitUntilConnectableFunc
 	RedisServerExecutablePath string
 
-	exec iexec.Exec
+	Exec iexec.Exec
 }
 
 func NewOSProcessController(
@@ -58,7 +61,7 @@ func NewOSProcessController(
 		PingFunc:                  pingFunc,
 		WaitUntilConnectableFunc:  waitUntilConnectableFunc,
 		RedisServerExecutablePath: redisServerExecutablePath,
-		exec: iexec.New(),
+		Exec:                      iexec.New(),
 	}
 }
 
@@ -93,7 +96,7 @@ func (controller *OSProcessController) StartAndWaitUntilReadyWithConfig(instance
 		executable = controller.RedisServerExecutablePath
 	}
 
-	err := controller.exec.Command(executable, instanceCommandArgs...).Run()
+	err := controller.Exec.Command(executable, instanceCommandArgs...).Run()
 	if err != nil {
 		return fmt.Errorf("redis failed to start: %s", err)
 	}
@@ -104,6 +107,13 @@ func (controller *OSProcessController) StartAndWaitUntilReadyWithConfig(instance
 func (controller *OSProcessController) Kill(instance *Instance) error {
 	pid, err := controller.InstanceInformer.InstancePid(instance.ID)
 	if err != nil {
+		controller.Logger.Error(
+			"redis instance has no pidfile",
+			err,
+			lager.Data{
+				"instance": instance.ID,
+			},
+		)
 		return err
 	}
 
@@ -124,7 +134,7 @@ func (controller *OSProcessController) EnsureRunning(instance *Instance, configP
 		}
 
 		controller.Logger.Error(
-			"Failed to PING redis-server",
+			"failed to PING redis-server",
 			err,
 			lager.Data{"instance": instance.ID},
 		)

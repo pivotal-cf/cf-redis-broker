@@ -25,6 +25,7 @@ type RemoteRepository struct {
 	logger lager.Logger
 }
 
+//go:generate counterfeiter -o fakes/fake_agent_client.go . AgentClient
 type AgentClient interface {
 	Reset(hostIP string) error
 	Credentials(hostIP string) (Credentials, error)

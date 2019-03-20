@@ -10,11 +10,13 @@ import (
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
 )
 
+//go:generate counterfeiter -o fakes/fake_process_controller.go . ProcessController
 type ProcessController interface {
 	StartAndWaitUntilReady(instance *Instance, configPath, instanceDataDir, logfilePath string, timeout time.Duration) error
 	Kill(instance *Instance) error
 }
 
+//go:generate counterfeiter -o fakes/fake_local_instance_repository.go . LocalInstanceRepository
 type LocalInstanceRepository interface {
 	FindByID(instanceID string) (*Instance, error)
 	InstanceExists(instanceID string) (bool, error)

@@ -1,86 +1,81 @@
-package redis
+package redis_test
 
 import (
+	"code.cloudfoundry.org/lager"
 	"errors"
+	"github.com/BooleanCat/igo/ios/iexec"
+	"github.com/onsi/gomega/gbytes"
 	"io/ioutil"
 	"net"
 	"os"
 	"strings"
 	"time"
 
-	"code.cloudfoundry.org/lager"
-	"code.cloudfoundry.org/lager/lagertest"
-	"github.com/BooleanCat/igo/ios/iexec"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gbytes"
+
+	"code.cloudfoundry.org/lager/lagertest"
+	"github.com/pivotal-cf/cf-redis-broker/redis"
+	"github.com/pivotal-cf/cf-redis-broker/redis/fakes"
 )
-
-type fakeProcessChecker struct {
-	alive          bool
-	lastCheckedPid int
-}
-
-func (fakeProcessChecker *fakeProcessChecker) Alive(pid int) bool {
-	fakeProcessChecker.lastCheckedPid = pid
-	return fakeProcessChecker.alive
-}
-
-type fakeProcessKiller struct {
-	killed        bool
-	lastPidKilled int
-}
-
-func (fakeProcessKiller *fakeProcessKiller) Kill(pid int) error {
-	fakeProcessKiller.lastPidKilled = pid
-	fakeProcessKiller.killed = true
-	return nil
-}
-
-type fakeInstanceInformer struct{}
-
-func (*fakeInstanceInformer) InstancePid(instanceID string) (int, error) {
-	return 123, nil
-}
 
 var _ = Describe("Redis Process Controller", func() {
 	var (
-		processController    *OSProcessController
-		instance             *Instance = new(Instance)
-		instanceInformer     *fakeInstanceInformer
-		logger               *lagertest.TestLogger
-		fakeProcessChecker   *fakeProcessChecker = new(fakeProcessChecker)
-		fakeProcessKiller    *fakeProcessKiller  = new(fakeProcessKiller)
-		fakes                *iexec.NestedCommandFake
-		connectionTimeoutErr error
+		processController         *redis.OSProcessController
+		instance                  *redis.Instance
+		instanceInformer          *fakes.FakeInstanceInformer
+		logger                    *lagertest.TestLogger
+		processChecker            *fakes.FakeProcessChecker
+		processKiller             *fakes.FakeProcessKiller
+		pingServerFunc            redis.PingServerFunc
+		waitUntilConnectableFunc  redis.WaitUntilConnectableFunc
+		redisServerExecutablePath string
+		connectionTimeoutError    error
+		pingServerError           error
+		exec                      *iexec.NestedCommandFake
+		log                       *gbytes.Buffer
+		err                       error
 	)
 
 	BeforeEach(func() {
-		connectionTimeoutErr = nil
-		instanceInformer = new(fakeInstanceInformer)
+		instance = new(redis.Instance)
+
+		instanceInformer = new(fakes.FakeInstanceInformer)
+		instanceInformer.InstancePidReturns(123, nil)
+
+		processChecker = new(fakes.FakeProcessChecker)
+
+		processKiller = new(fakes.FakeProcessKiller)
+		processKiller.KillReturns(nil)
+
+		exec = iexec.NewNestedCommandFake()
+
 		logger = lagertest.NewTestLogger("process-controller")
-		fakes = iexec.NewNestedCommandFake()
+		log = gbytes.NewBuffer()
+
+		pingServerError = nil
+		connectionTimeoutError = nil
+		pingServerFunc = func(instance *redis.Instance) error { return pingServerError }
+		waitUntilConnectableFunc = func(address *net.TCPAddr, timeout time.Duration) error { return connectionTimeoutError }
+		redisServerExecutablePath = ""
 	})
 
 	JustBeforeEach(func() {
-		processController = NewOSProcessController(
+		processController = redis.NewOSProcessController(
 			logger,
 			instanceInformer,
-			fakeProcessChecker,
-			fakeProcessKiller,
-			func(instance *Instance) error {
-				return errors.New("what")
-			},
-			func(*net.TCPAddr, time.Duration) error {
-				return connectionTimeoutErr
-			},
-			"",
+			processChecker,
+			processKiller,
+			pingServerFunc,
+			waitUntilConnectableFunc,
+			redisServerExecutablePath,
 		)
-		processController.exec = fakes.Exec
+		processController.Exec = exec.Exec
+		processController.Logger.RegisterSink(lager.NewWriterSink(log, lager.DEBUG))
 	})
 
 	itStartsARedisProcess := func(executablePath string) {
-		command, args := fakes.Exec.CommandArgsForCall(0)
+		command, args := exec.Exec.CommandArgsForCall(0)
 		joinedArgs := strings.Join(args, " ")
 		Expect(command).To(Equal(executablePath))
 		Expect(joinedArgs).To(Equal("configFilePath --dir instanceDataDir --logfile logFilePath"))
@@ -88,23 +83,31 @@ var _ = Describe("Redis Process Controller", func() {
 
 	Describe("StartAndWaitUntilReady", func() {
 		It("runs the right command to start redis", func() {
-			processController.StartAndWaitUntilReady(instance, "configFilePath", "instanceDataDir", "logFilePath", time.Second*1)
+			err = processController.StartAndWaitUntilReady(
+				instance,
+				"configFilePath",
+				"instanceDataDir",
+				"logFilePath",
+				time.Second*1,
+			)
 			itStartsARedisProcess("redis-server")
-		})
-
-		It("returns no error", func() {
-			err := processController.StartAndWaitUntilReady(instance, "", "", "", time.Second*1)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		Context("when the redis process fails to start", func() {
 			BeforeEach(func() {
-				connectionTimeoutErr = errors.New("oops")
+				connectionTimeoutError = errors.New("oops")
 			})
 
 			It("returns the same error that the WaitUntilConnectableFunc returns", func() {
-				err := processController.StartAndWaitUntilReady(instance, "", "", "", time.Second*1)
-				Expect(err).To(Equal(connectionTimeoutErr))
+				err = processController.StartAndWaitUntilReady(
+					instance,
+					"configFilePath",
+					"instanceDataDir",
+					"logFilePath",
+					time.Second*1,
+				)
+				Expect(err).To(MatchError(connectionTimeoutError))
 			})
 		})
 	})
@@ -119,7 +122,8 @@ var _ = Describe("Redis Process Controller", func() {
 					"--dir", "instanceDataDir",
 					"--logfile", "logFilePath",
 				}
-				processController.StartAndWaitUntilReadyWithConfig(instance, args, time.Second*1)
+				err = processController.StartAndWaitUntilReadyWithConfig(instance, args, time.Second*1)
+				Expect(err).NotTo(HaveOccurred())
 				itStartsARedisProcess("custom/path/to/redis")
 			})
 		})
@@ -130,7 +134,8 @@ var _ = Describe("Redis Process Controller", func() {
 				"--dir", "instanceDataDir",
 				"--logfile", "logFilePath",
 			}
-			processController.StartAndWaitUntilReadyWithConfig(instance, args, time.Second*1)
+			err = processController.StartAndWaitUntilReadyWithConfig(instance, args, time.Second*1)
+			Expect(err).NotTo(HaveOccurred())
 			itStartsARedisProcess("redis-server")
 		})
 
@@ -141,98 +146,87 @@ var _ = Describe("Redis Process Controller", func() {
 
 		Context("when the redis process fails to start", func() {
 			BeforeEach(func() {
-				connectionTimeoutErr = errors.New("oops")
+				connectionTimeoutError = errors.New("oops")
 			})
 
 			It("returns the same error that the WaitUntilConnectableFunc returns", func() {
-				err := processController.StartAndWaitUntilReadyWithConfig(instance, []string{}, time.Second*1)
-				Expect(err).To(Equal(connectionTimeoutErr))
+				err = processController.StartAndWaitUntilReadyWithConfig(instance, []string{}, time.Second*1)
+				Expect(err).To(MatchError(connectionTimeoutError))
 			})
 		})
 	})
 
 	Describe("Kill", func() {
 		It("kills the correct process", func() {
-			err := processController.Kill(instance)
+			err = processController.Kill(instance)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(fakeProcessKiller.killed).To(BeTrue())
-			Expect(fakeProcessKiller.lastPidKilled).To(Equal(123))
+			Expect(processKiller.KillCallCount()).To(Equal(1))
+			Expect(processKiller.KillArgsForCall(0)).To(Equal(123))
+		})
+
+		Context("when the pidfile does not exist", func() {
+			BeforeEach(func() {
+				instanceInformer.InstancePidReturns(0, errors.New("pid not found error"))
+			})
+
+			It("returns an error informing the operator to manually kill the redis process", func() {
+				err = processController.Kill(instance)
+				Expect(err).To(HaveOccurred())
+				Eventually(log).Should(gbytes.Say("redis instance has no pidfile"))
+
+				Expect(processKiller.KillCallCount()).To(Equal(0))
+			})
 		})
 	})
 
 	Describe("EnsureRunning", func() {
-		Context("if the process is already running", func() {
-			var (
-				controller *OSProcessController
-				log        *gbytes.Buffer
-			)
+		Context("when the process is already running", func() {
 
 			BeforeEach(func() {
-				fakeProcessChecker.alive = true
+				processChecker.AliveReturns(true)
 			})
 
-			JustBeforeEach(func() {
-				controller = processController
-				log = gbytes.NewBuffer()
-				controller.Logger.RegisterSink(lager.NewWriterSink(log, lager.DEBUG))
+			It("runs and logs success", func() {
+				err = processController.EnsureRunning(instance, "", "", "", "")
+				Expect(err).NotTo(HaveOccurred())
+				Eventually(log).Should(gbytes.Say("redis instance already running"))
 			})
 
-			Context("and is a redis server", func() {
-				Context("and is the correct redis instance", func() {
-					var err error
+			Context("when the process is not the correct redis instance", func() {
+				var file *os.File
 
-					JustBeforeEach(func() {
-						processController.PingFunc = func(instance *Instance) error {
-							return nil
-						}
-						err = controller.EnsureRunning(instance, "", "", "", "")
-					})
+				BeforeEach(func() {
+					file, err = ioutil.TempFile("", "brokerTest")
+					Expect(err).NotTo(HaveOccurred())
 
-					It("does not return an error", func() {
-						Expect(err).NotTo(HaveOccurred())
-					})
-
-					It("logs success", func() {
-						Eventually(log).Should(gbytes.Say("redis instance already running"))
-					})
+					pingServerError = errors.New("ping error")
 				})
 
-				Context("and is not the correct redis instance", func() {
-					var (
-						err  error
-						file *os.File
-					)
-
-					BeforeEach(func() {
-						var statErr error
-
-						file, statErr = ioutil.TempFile("/tmp", "brokerTest")
-						Expect(statErr).NotTo(HaveOccurred())
-					})
-
-					JustBeforeEach(func() {
-						err = controller.EnsureRunning(instance, "/my/lovely/config", "", file.Name(), "")
-					})
-
-					It("does not return an error", func() {
+				It("restarts the redis-server", func() {
+					By("running succesfully", func() {
+						err = processController.EnsureRunning(instance, "/my/lovely/config", "", file.Name(), "")
 						Expect(err).NotTo(HaveOccurred())
 					})
 
-					It("deletes the pid file", func() {
-						_, statErr := os.Stat(file.Name())
-						Expect(statErr).To(HaveOccurred())
+					By("logging the failed PING", func() {
+						Eventually(log).Should(gbytes.Say("failed to PING redis-server"))
 					})
 
-					It("logs the pidfile deletion", func() {
+					By("deleting the pidfile", func() {
+						_, err = os.Stat(file.Name())
+						Expect(err).To(HaveOccurred())
+					})
+
+					By("logging the pidfile deletion", func() {
 						Eventually(log).Should(gbytes.Say("removed stale pidfile"))
 					})
 
-					It("should restart the redis-server", func() {
+					By("restarting the redis-server", func() {
 						ran := false
-						callCount := fakes.Exec.CommandCallCount()
+						callCount := exec.Exec.CommandCallCount()
 						for i := 0; i < callCount; i++ {
-							command, args := fakes.Exec.CommandArgsForCall(i)
+							command, args := exec.Exec.CommandArgsForCall(i)
 							joinedArgs := strings.Join(args, " ")
 							if command == "redis-server" && strings.Contains(joinedArgs, "/my/lovely/config") {
 								ran = true
@@ -241,102 +235,36 @@ var _ = Describe("Redis Process Controller", func() {
 						}
 						Expect(ran).To(BeTrue())
 					})
-
-					Context("and failed to delete pidfile", func() {
-						JustBeforeEach(func() {
-							err = controller.EnsureRunning(instance, "", "", "Pikachu", "")
-						})
-
-						It("returns an error", func() {
-							Expect(err).To(HaveOccurred())
-						})
-
-						It("logs the error", func() {
-							Eventually(log).Should(gbytes.Say("failed to delete stale pidfile"))
-						})
-					})
-				})
-			})
-
-			Context("and is not a redis server", func() {
-				var (
-					err  error
-					file *os.File
-				)
-
-				BeforeEach(func() {
-					var statErr error
-
-					file, statErr = ioutil.TempFile("/tmp", "brokerTest")
-					Expect(statErr).NotTo(HaveOccurred())
 				})
 
-				JustBeforeEach(func() {
-					err = controller.EnsureRunning(instance, "/my/config", "", file.Name(), "")
-				})
-
-				It("deletes the pidfile", func() {
-					_, statErr := os.Stat(file.Name())
-					Expect(statErr).To(HaveOccurred())
-				})
-
-				It("does not return an error", func() {
-					Expect(err).NotTo(HaveOccurred())
-				})
-
-				It("logs the pidfile deletion", func() {
-					Eventually(log).Should(gbytes.Say("removed stale pidfile"))
-				})
-
-				It("should restart the redis-server", func() {
-					ran := false
-					callCount := fakes.Exec.CommandCallCount()
-					for i := 0; i < callCount; i++ {
-						command, args := fakes.Exec.CommandArgsForCall(i)
-						joinedArgs := strings.Join(args, " ")
-						if command == "redis-server" && strings.Contains(joinedArgs, "/my/config") {
-							ran = true
-							break
-						}
-					}
-					Expect(ran).To(BeTrue())
-				})
-
-				Context("and failed to delete pidfile", func() {
-					JustBeforeEach(func() {
-						err = controller.EnsureRunning(instance, "", "", "Pikachu", "")
-					})
-
-					It("returns an error", func() {
+				Context("when the pidfile cannot be deleted", func() {
+					It("logs the failure and returns an error", func() {
+						err = processController.EnsureRunning(instance, "", "", "/not/a/valid/pidfile", "")
 						Expect(err).To(HaveOccurred())
-					})
-
-					It("logs the error", func() {
 						Eventually(log).Should(gbytes.Say("failed to delete stale pidfile"))
 					})
 				})
 			})
 		})
 
-		Context("if the process is not already running", func() {
+		Context("when the process is not already running", func() {
 			BeforeEach(func() {
-				fakeProcessChecker.alive = false
+				processChecker.AliveReturns(false)
 			})
 
-			It("starts it", func() {
-				err := processController.EnsureRunning(instance, "configFilePath", "instanceDataDir", "pidFilePath", "logFilePath")
+			It("starts the redis server", func() {
+				err = processController.EnsureRunning(instance, "configFilePath", "instanceDataDir", "pidfilePath", "logFilePath")
 				Expect(err).NotTo(HaveOccurred())
-
 				itStartsARedisProcess("redis-server")
 			})
 
-			Context("and it can not be started", func() {
+			Context("when the redis server cannot be started", func() {
 				BeforeEach(func() {
-					fakes.Cmd.RunReturns(errors.New("run error"))
+					exec.Cmd.RunReturns(errors.New("run error"))
 				})
 
-				It("should return error", func() {
-					err := processController.EnsureRunning(instance, "", "", "", "")
+				It("should return an error", func() {
+					err = processController.EnsureRunning(instance, "", "", "", "")
 					Expect(err).To(HaveOccurred())
 				})
 			})

@@ -60,26 +60,37 @@ var _ = Describe("Local Redis Creator", func() {
 				freePortsFound = 0
 			})
 
-			It("finds a free port", func() {
-				err := localInstanceCreator.Create(instanceID)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(freePortsFound).To(Equal(1))
-			})
-
-			It("starts a new Redis instance", func() {
+			It("starts a redis instance", func() {
 				err := localInstanceCreator.Create(instanceID)
 				Expect(err).NotTo(HaveOccurred())
 
-				Expect(len(fakeProcessController.StartedInstances)).To(Equal(1))
-				Expect(fakeProcessController.StartedInstances[0].ID).To(Equal(instanceID))
+				By("finding a free port", func() {
+					Expect(freePortsFound).To(Equal(1))
+				})
+
+				By("starting a new redis instance with the correct ID", func() {
+					Expect(fakeProcessController.StartAndWaitUntilReadyCallCount()).To(Equal(1))
+					instance, _, _, _, _ := fakeProcessController.StartAndWaitUntilReadyArgsForCall(0)
+					Expect(instance.ID).To(Equal(instanceID))
+				})
+
+				By("calling Unlock on a local repository with the correct instance ID", func() {
+					Expect(fakeLocalRepository.UnlockCallCount()).To(Equal(1))
+					Expect(fakeLocalRepository.UnlockArgsForCall(0).ID).To(Equal(instanceID))
+				})
 			})
 
-			It("calls Unlock on local repository with correct instance ID", func() {
-				err := localInstanceCreator.Create(instanceID)
-				Expect(err).ShouldNot(HaveOccurred())
-				Expect(fakeLocalRepository.UnlockCallCount()).To(Equal(1))
-				Expect(fakeLocalRepository.UnlockArgsForCall(0).ID).To(Equal(instanceID))
+			Context("when there is not a free port available", func() {
+				BeforeEach(func() {
+					localInstanceCreator.FindFreePort = func() (int, error) { return 0, errors.New("port not found") }
+				})
+
+				It("returns an error", func() {
+					err := localInstanceCreator.Create(instanceID)
+					Expect(err).To(MatchError("port not found"))
+				})
 			})
+
 		})
 
 		Context("when the service instance limit has been met", func() {
@@ -88,14 +99,10 @@ var _ = Describe("Local Redis Creator", func() {
 			})
 
 			It("does not start a new Redis instance", func() {
-				localInstanceCreator.Create(instanceID)
-
-				Expect(len(fakeProcessController.StartedInstances)).To(Equal(0))
-			})
-
-			It("returns an InstanceLimitMet error", func() {
 				err := localInstanceCreator.Create(instanceID)
-				Expect(err).To(Equal(brokerapi.ErrInstanceLimitMet))
+				Expect(err).To(MatchError(brokerapi.ErrInstanceLimitMet))
+
+				Expect(fakeProcessController.StartAndWaitUntilReadyCallCount()).To(Equal(0))
 			})
 		})
 	})
@@ -111,47 +118,37 @@ var _ = Describe("Local Redis Creator", func() {
 				)
 			})
 
-			JustBeforeEach(func() {
+			It("kills the redis instance", func() {
 				err := localInstanceCreator.Destroy(instanceID)
 				Expect(err).NotTo(HaveOccurred())
-			})
 
-			It("calls lock before stopping redis", func() {
-				Expect(fakeLocalRepository.LockCallCount()).To(Equal(1))
-				Expect(fakeLocalRepository.LockArgsForCall(0).ID).To(Equal(instanceID))
-			})
+				By("calling lock before stopping redis", func() {
+					Expect(fakeLocalRepository.LockCallCount()).To(Equal(1))
+					Expect(fakeLocalRepository.LockArgsForCall(0).ID).To(Equal(instanceID))
+				})
 
-			It("kills the instance", func() {
-				Expect(len(fakeProcessController.KilledInstances)).To(Equal(1))
-				Expect(fakeProcessController.KilledInstances[0].ID).To(Equal(instanceID))
-			})
+				By("killing the instance", func() {
+					Expect(fakeProcessController.KillCallCount()).To(Equal(1))
+					Expect(fakeProcessController.KillArgsForCall(0).ID).To(Equal(instanceID))
+				})
 
-			It("deletes the instance data directory", func() {
-				Expect(fakeLocalRepository.DeleteCallCount()).To(Equal(1))
-				Expect(fakeLocalRepository.DeleteArgsForCall(0)).To(Equal(instanceID))
+				By("deleting the instance data directory", func() {
+					Expect(fakeLocalRepository.DeleteCallCount()).To(Equal(1))
+					Expect(fakeLocalRepository.DeleteArgsForCall(0)).To(Equal(instanceID))
+				})
 			})
 		})
 
-		Context("When the instance does not exist", func() {
-			var destroyErr error
-
+		Context("when the instance does not exist", func() {
 			BeforeEach(func() {
 				fakeLocalRepository.FindByIDReturns(nil, errors.New("instance not found"))
 			})
 
-			JustBeforeEach(func() {
-				destroyErr = localInstanceCreator.Destroy("missingInstanceID")
-			})
+			It("returns an appropriate error and does not delete or kill anything", func() {
+				err := localInstanceCreator.Destroy("missingInstanceID")
+				Expect(err).To(HaveOccurred())
 
-			It("returns an error", func() {
-				Expect(destroyErr).To(HaveOccurred())
-			})
-
-			It("does not try to kill instance processes", func() {
-				Expect(fakeProcessController.KilledInstances).To(BeEmpty())
-			})
-
-			It("does not try to delete instances from the instance repository", func() {
+				Expect(fakeProcessController.KillCallCount()).To(Equal(0))
 				Expect(fakeLocalRepository.DeleteCallCount()).To(Equal(0))
 			})
 		})
