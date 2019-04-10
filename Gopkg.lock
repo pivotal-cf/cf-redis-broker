@@ -167,7 +167,7 @@
     "redis",
   ]
   pruneopts = "UT"
-  revision = "100293e89c27e5058bbdf9513911b637dfb0b8de"
+  revision = "d948c0684e330882e15d3df9eef244dd0a271293"
 
 [[projects]]
   digest = "1:40e195917a951a8bf867cd05de2a46aaf1806c50cf92eebf4c16f78cd196f747"
