@@ -61,29 +61,6 @@ func main() {
 		LocalInstanceRepository: localRepo,
 	}
 
-	agentClient := redis.NewRemoteAgentClient(
-		config.AgentPort,
-		config.AuthConfiguration.Username,
-		config.AuthConfiguration.Password,
-		true,
-	)
-
-	remoteRepo, err := redis.NewRemoteRepository(agentClient, config, brokerLogger)
-	if err != nil {
-		brokerLogger.Fatal("Error initializing remote repository", err)
-	}
-
-	if config.ConsistencyVerificationInterval > 0 {
-		interval := time.Duration(config.ConsistencyVerificationInterval) * time.Second
-
-		consistency.KeepVerifying(
-			agentClient,
-			config.RedisConfiguration.Dedicated.StatefilePath,
-			interval,
-			brokerLogger,
-		)
-	}
-
 	sigChannel := make(chan os.Signal, 1)
 	signal.Notify(sigChannel, syscall.SIGTERM)
 	go func() {
@@ -98,11 +75,9 @@ func main() {
 	serviceBroker := &broker.RedisServiceBroker{
 		InstanceCreators: map[string]broker.InstanceCreator{
 			"shared":    localCreator,
-			"dedicated": remoteRepo,
 		},
 		InstanceBinders: map[string]broker.InstanceBinder{
 			"shared":    localRepo,
-			"dedicated": remoteRepo,
 		},
 		Config: config,
 	}
@@ -115,11 +90,7 @@ func main() {
 	brokerAPI := brokerapi.New(serviceBroker, brokerLogger, brokerCredentials)
 
 	authWrapper := auth.NewWrapper(brokerCredentials.Username, brokerCredentials.Password)
-	debugHandler := authWrapper.WrapFunc(debug.NewHandler(remoteRepo))
-	instanceHandler := authWrapper.WrapFunc(redisinstance.NewHandler(remoteRepo))
 
-	http.HandleFunc("/instance", instanceHandler)
-	http.HandleFunc("/debug", debugHandler)
 	http.Handle("/", brokerAPI)
 
 	brokerLogger.Fatal("http-listen", http.ListenAndServe(config.Host+":"+config.Port, nil))

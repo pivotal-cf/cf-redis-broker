@@ -203,7 +203,7 @@ func CopyWithInstanceAdditions(fromPath, toPath, instanceID, port, password, pid
 		return err
 	}
 
-	return nil
+return nil
 }
 
 func (c *Conf) InitForDedicatedNode(password ...string) error {
