@@ -18,7 +18,6 @@ func (brokerClient *BrokerClient) ProvisionInstance(instanceID string, plan stri
 
 	planID, found := map[string]string{
 		"shared":    "C210CA06-E7E5-4F5D-A5AA-7A2C51CC290E",
-		"dedicated": "74E8984C-5F8C-11E4-86BE-07807B3B2589",
 	}[plan]
 
 	if !found {
@@ -65,7 +64,6 @@ func (brokerClient *BrokerClient) BindInstance(instanceID, bindingID, plan strin
 
 	planID, found := map[string]string{
 		"shared":    "C210CA06-E7E5-4F5D-A5AA-7A2C51CC290E",
-		"dedicated": "74E8984C-5F8C-11E4-86BE-07807B3B2589",
 	}[plan]
 
 	if !found {
@@ -100,7 +98,6 @@ func (brokerClient *BrokerClient) UnbindInstance(instanceID, bindingID, plan str
 
 	planID, found := map[string]string{
 		"shared":    "C210CA06-E7E5-4F5D-A5AA-7A2C51CC290E",
-		"dedicated": "74E8984C-5F8C-11E4-86BE-07807B3B2589",
 	}[plan]
 
 	if !found {
@@ -118,7 +115,6 @@ func (brokerClient *BrokerClient) DeprovisionInstance(instanceID, plan string) (
 
 	planID, found := map[string]string{
 		"shared":    "C210CA06-E7E5-4F5D-A5AA-7A2C51CC290E",
-		"dedicated": "74E8984C-5F8C-11E4-86BE-07807B3B2589",
 	}[plan]
 
 	if !found {

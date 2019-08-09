@@ -11,7 +11,6 @@ import (
 
 const (
 	PlanNameShared    = "shared-vm"
-	PlanNameDedicated = "dedicated-vm"
 )
 
 type InstanceCredentials struct {
@@ -172,23 +171,7 @@ func (redisServiceBroker *RedisServiceBroker) plans() map[string]*brokerapi.Serv
 			},
 		}
 	}
-
-	if redisServiceBroker.Config.DedicatedEnabled() {
-		plans["dedicated"] = &brokerapi.ServicePlan{
-			ID:          redisServiceBroker.Config.RedisConfiguration.DedicatedVMPlanID,
-			Name:        PlanNameDedicated,
-			Description: "This plan provides a Redis server configured for data persistence. ",
-			Metadata: &brokerapi.ServicePlanMetadata{
-				Bullets: []string{
-					"Dedicated VM per instance",
-					"Single dedicated Redis process",
-					"Suitable for production workloads",
-				},
-				DisplayName: "Dedicated-VM",
-			},
-		}
-	}
-
+	
 	return plans
 }
 

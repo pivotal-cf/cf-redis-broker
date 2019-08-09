@@ -2,7 +2,6 @@
 redis:
   service_name: my-redis
   service_id: 12345abcde
-  dedicated_vm_plan_id: id-for-dedicated-vm-plan
   shared_vm_plan_id: id-for-shared-vm-plan
   host: example.com
   data_directory: /some/redis/data/directory
@@ -14,13 +13,6 @@ redis:
   backup:
     endpoint_url: http://s3url.com
     bucket_name: redis-backups
-  dedicated:
-    nodes:
-      - 10.0.0.1
-      - 10.0.0.2
-      - 10.0.0.3
-    port: 6379
-    statefile_path: "/tmp/redis-config-dir/statefile.json"
 auth:
   username: admin
   password: secret
