@@ -48,3 +48,7 @@
 [[constraint]]
   name = "github.com/pkg/errors"
   version = "^0.8.0"
+
+[[override]]
+  name = "gopkg.in/fsnotify.v1"
+  source = "gopkg.in/fsnotify/fsnotify.v1"
