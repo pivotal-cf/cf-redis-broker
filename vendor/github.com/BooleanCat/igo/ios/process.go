@@ -7,7 +7,7 @@ type Process interface {
 	Kill() error
 	Release() error
 	Signal(os.Signal) error
-	Wait() (*os.ProcessState, error)
+	Wait() (ProcessState, error)
 	GetPid() int
 	SetPid(int)
 }
@@ -41,8 +41,9 @@ func (p *ProcessReal) Signal(sig os.Signal) error {
 }
 
 //Wait is a wrapper around os.Process.Wait()
-func (p *ProcessReal) Wait() (*os.ProcessState, error) {
-	return p.process.Wait()
+func (p *ProcessReal) Wait() (ProcessState, error) {
+	processState, err := p.process.Wait()
+	return NewProcessState(processState), err
 }
 
 //GetPid is a wrapper around getting os.Process.Pid

@@ -192,7 +192,7 @@ type CmdFake struct {
 	invocationsMutex sync.RWMutex
 }
 
-//NewCmdFake is the preffered way to initialise a CmdFake
+//NewCmdFake is the preferred way to initialise a CmdFake
 func NewCmdFake() *CmdFake {
 	return new(CmdFake)
 }

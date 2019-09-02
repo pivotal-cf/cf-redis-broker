@@ -10,6 +10,10 @@
   name = "github.com/pivotal-cf/brokerapi"
   version = ">= 3.0.7, < 6.2.0"
 
+[[override]]
+  name = "gopkg.in/fsnotify.v1"
+  source = "https://github.com/fsnotify/fsnotify.git"
+
 [prune]
   go-tests = true
   unused-packages = true

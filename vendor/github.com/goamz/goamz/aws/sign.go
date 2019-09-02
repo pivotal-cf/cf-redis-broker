@@ -157,7 +157,6 @@ If neither header is defined or we are unable to parse either header as a valid 
 then we will create a new "x-amz-date" header with the current time.
 */
 func (s *V4Signer) requestTime(req *http.Request) time.Time {
-
 	// Get "x-amz-date" header
 	date := req.Header.Get("x-amz-date")
 
@@ -227,12 +226,12 @@ func (s *V4Signer) canonicalURI(u *url.URL) string {
 func (s *V4Signer) canonicalQueryString(u *url.URL) string {
 	var a []string
 	for k, vs := range u.Query() {
-		k = url.QueryEscape(k)
+		k = Encode(k)
 		for _, v := range vs {
 			if v == "" {
 				a = append(a, k+"=")
 			} else {
-				v = url.QueryEscape(v)
+				v = Encode(v)
 				a = append(a, k+"="+v)
 			}
 		}

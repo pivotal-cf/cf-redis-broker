@@ -30,11 +30,11 @@ type ProcessFake struct {
 	signalReturns struct {
 		result1 error
 	}
-	WaitStub        func() (*os.ProcessState, error)
+	WaitStub        func() (ProcessState, error)
 	waitMutex       sync.RWMutex
 	waitArgsForCall []struct{}
 	waitReturns     struct {
-		result1 *os.ProcessState
+		result1 ProcessState
 		result2 error
 	}
 	GetPidStub        func() int
@@ -52,7 +52,7 @@ type ProcessFake struct {
 	invocationsMutex sync.RWMutex
 }
 
-//NewProcessFake is the preffered way to initialise a ProcessFake
+//NewProcessFake is the preferred way to initialise a ProcessFake
 func NewProcessFake() *ProcessFake {
 	return new(ProcessFake)
 }
@@ -148,7 +148,7 @@ func (fake *ProcessFake) SignalReturns(result1 error) {
 }
 
 //Wait ...
-func (fake *ProcessFake) Wait() (*os.ProcessState, error) {
+func (fake *ProcessFake) Wait() (ProcessState, error) {
 	fake.waitMutex.Lock()
 	fake.waitArgsForCall = append(fake.waitArgsForCall, struct{}{})
 	fake.recordInvocation("Wait", []interface{}{})
@@ -167,10 +167,10 @@ func (fake *ProcessFake) WaitCallCount() int {
 }
 
 //WaitReturns ...
-func (fake *ProcessFake) WaitReturns(result1 *os.ProcessState, result2 error) {
+func (fake *ProcessFake) WaitReturns(result1 ProcessState, result2 error) {
 	fake.WaitStub = nil
 	fake.waitReturns = struct {
-		result1 *os.ProcessState
+		result1 ProcessState
 		result2 error
 	}{result1, result2}
 }

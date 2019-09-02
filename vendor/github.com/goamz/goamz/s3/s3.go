@@ -18,7 +18,6 @@ import (
 	"encoding/base64"
 	"encoding/xml"
 	"fmt"
-	"github.com/goamz/goamz/aws"
 	"io"
 	"io/ioutil"
 	"log"
@@ -28,7 +27,10 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
+
+	"github.com/goamz/goamz/aws"
 )
 
 const debug = false
@@ -73,7 +75,8 @@ type S3 struct {
 	private byte
 
 	// client used for requests
-	client *http.Client
+	httpClient *http.Client
+	clientLock sync.RWMutex
 }
 
 // The Bucket type encapsulates operations with an S3 bucket.
@@ -131,7 +134,7 @@ func New(auth aws.Auth, region aws.Region, client ...*http.Client) *S3 {
 		httpclient = client[0]
 	}
 
-	return &S3{Auth: auth, Region: region, AttemptStrategy: DefaultAttemptStrategy, client: httpclient}
+	return &S3{Auth: auth, Region: region, AttemptStrategy: DefaultAttemptStrategy, httpClient: httpclient}
 }
 
 // Bucket returns a Bucket with the given name.
@@ -340,7 +343,7 @@ func (b *Bucket) Put(path string, data []byte, contType string, perm ACL, option
 }
 
 // PutCopy puts a copy of an object given by the key path into bucket b using b.Path as the target key
-func (b *Bucket) PutCopy(path string, perm ACL, options CopyOptions, source string) (*CopyObjectResult, error) {
+func (b *Bucket) PutCopy(path string, perm ACL, options CopyOptions, source string) (result *CopyObjectResult, err error) {
 	headers := map[string][]string{
 		"x-amz-acl":         {string(perm)},
 		"x-amz-copy-source": {source},
@@ -352,12 +355,17 @@ func (b *Bucket) PutCopy(path string, perm ACL, options CopyOptions, source stri
 		path:    path,
 		headers: headers,
 	}
-	resp := &CopyObjectResult{}
-	err := b.S3.query(req, resp)
-	if err != nil {
-		return resp, err
+	result = &CopyObjectResult{}
+	for attempt := b.S3.AttemptStrategy.Start(); attempt.Next(); {
+		err = b.S3.query(req, result)
+		if !shouldRetry(err) {
+			break
+		}
 	}
-	return resp, nil
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 /*
@@ -953,6 +961,48 @@ func (s3 *S3) prepare(req *request) error {
 	return nil
 }
 
+func (s3 *S3) client() *http.Client {
+	s3.clientLock.RLock()
+	if c := s3.httpClient; c != nil {
+		s3.clientLock.RUnlock()
+		return c
+	}
+
+	s3.clientLock.RUnlock()
+
+	s3.clientLock.Lock()
+	defer s3.clientLock.Unlock()
+
+	s3.httpClient = &http.Client{
+		Transport: &http.Transport{
+			Dial: func(netw, addr string) (c net.Conn, err error) {
+				c, err = net.DialTimeout(netw, addr, s3.ConnectTimeout)
+				if err != nil {
+					return
+				}
+
+				var deadline time.Time
+				if s3.RequestTimeout > 0 {
+					deadline = time.Now().Add(s3.RequestTimeout)
+					c.SetDeadline(deadline)
+				}
+
+				if s3.ReadTimeout > 0 || s3.WriteTimeout > 0 {
+					c = &ioTimeoutConn{
+						TCPConn:         c.(*net.TCPConn),
+						readTimeout:     s3.ReadTimeout,
+						writeTimeout:    s3.WriteTimeout,
+						requestDeadline: deadline,
+					}
+				}
+				return
+			},
+		},
+	}
+
+	return s3.httpClient
+}
+
 // run sends req and returns the http response from the server.
 // If resp is not nil, the XML data contained in the response
 // body will be unmarshalled on it.
@@ -978,41 +1028,15 @@ func (s3 *S3) run(req *request, resp interface{}) (*http.Response, error) {
 	if v, ok := req.headers["Content-Length"]; ok {
 		hreq.ContentLength, _ = strconv.ParseInt(v[0], 10, 64)
 		delete(req.headers, "Content-Length")
+		if hreq.ContentLength == 0 {
+			req.payload = nil
+		}
 	}
 	if req.payload != nil {
 		hreq.Body = ioutil.NopCloser(req.payload)
 	}
 
-	if s3.client == nil {
-		s3.client = &http.Client{
-			Transport: &http.Transport{
-				Dial: func(netw, addr string) (c net.Conn, err error) {
-					c, err = net.DialTimeout(netw, addr, s3.ConnectTimeout)
-					if err != nil {
-						return
-					}
-
-					var deadline time.Time
-					if s3.RequestTimeout > 0 {
-						deadline = time.Now().Add(s3.RequestTimeout)
-						c.SetDeadline(deadline)
-					}
-
-					if s3.ReadTimeout > 0 || s3.WriteTimeout > 0 {
-						c = &ioTimeoutConn{
-							TCPConn:         c.(*net.TCPConn),
-							readTimeout:     s3.ReadTimeout,
-							writeTimeout:    s3.WriteTimeout,
-							requestDeadline: deadline,
-						}
-					}
-					return
-				},
-			},
-		}
-	}
-
-	hresp, err := s3.client.Do(&hreq)
+	hresp, err := s3.client().Do(&hreq)
 	if err != nil {
 		return nil, err
 	}
@@ -1101,10 +1125,14 @@ func shouldRetry(err error) bool {
 		}
 	case *Error:
 		switch e.Code {
-		case "InternalError", "NoSuchUpload", "NoSuchBucket":
+		case "InternalError", "NoSuchUpload", "NoSuchBucket", "RequestTimeout":
 			return true
 		}
+	// let's handle tls handshake timeout issues and similar temporary errors
+	case net.Error:
+		return e.Temporary()
 	}
+
 	return false
 }
 

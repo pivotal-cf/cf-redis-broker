@@ -26,7 +26,7 @@ type Fake struct {
 	invocationsMutex sync.RWMutex
 }
 
-//NewFake is the preffered way to initialise a Fake
+//NewFake is the preferred way to initialise a Fake
 func NewFake() *Fake {
 	return new(Fake)
 }

@@ -47,7 +47,7 @@ var (
 )
 
 type Marshaler interface {
-	MarshalYAML() (tag string, value interface{})
+	MarshalYAML() (tag string, value interface{}, err error)
 }
 
 // An Encoder writes JSON objects to an output stream.
@@ -356,7 +356,10 @@ func (e *Encoder) emitMarshaler(tag string, v reflect.Value) {
 		e.emitNil()
 		return
 	}
-	t, val := m.MarshalYAML()
+	t, val, err := m.MarshalYAML()
+	if err != nil {
+		panic(err)
+	}
 	if val == nil {
 		e.emitNil()
 		return
@@ -378,7 +381,11 @@ func (e *Encoder) emitAddrMarshaler(tag string, v reflect.Value) {
 	}
 
 	m := v.Interface().(Marshaler)
-	t, val := m.MarshalYAML()
+	t, val, err := m.MarshalYAML()
+	if err != nil {
+		panic(err)
+	}
+
 	if val == nil {
 		e.emitNil()
 		return
