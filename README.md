@@ -9,7 +9,7 @@ evironment variables set to be able to work:
 * `AWS_ACCESS_KEY_ID`
 * `AWS_SECRET_ACCESS_KEY`
 
-These are defined in `integration/backup/assets/working-backup.yml.template`.
+These are defined in (this is wrong?) `integration/backup/assets/working-backup.yml.template`.
 
 It also expect a bucket called `redis-backup-test`, and the user whose key is
 provided, above, should have the following access to the bucket for testing
