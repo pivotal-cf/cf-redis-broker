@@ -8,7 +8,7 @@
 
 [[constraint]]
   name = "github.com/pivotal-cf/brokerapi"
-  version = ">= 3.0.7, < 6.2.0"
+  version = ">= 3.0.7, < 6.5.0"
 
 [[override]]
   name = "gopkg.in/fsnotify.v1"
