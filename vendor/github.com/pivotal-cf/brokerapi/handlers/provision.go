@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/pivotal-cf/brokerapi/middlewares"
+
 	"code.cloudfoundry.org/lager"
 	"github.com/gorilla/mux"
 	"github.com/pivotal-cf/brokerapi/domain"
@@ -24,8 +26,11 @@ func (h *APIHandler) Provision(w http.ResponseWriter, req *http.Request) {
 	vars := mux.Vars(req)
 	instanceID := vars["instance_id"]
 
+	correlationID := req.Context().Value(middlewares.CorrelationIDKey).(string)
+
 	logger := h.logger.Session(provisionLogKey, lager.Data{
-		instanceIDLogKey: instanceID,
+		instanceIDLogKey:             instanceID,
+		middlewares.CorrelationIDKey: correlationID,
 	})
 
 	var details domain.ProvisionDetails
@@ -110,7 +115,11 @@ func (h *APIHandler) Provision(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if provisionResponse.IsAsync {
+	if provisionResponse.AlreadyExists {
+		h.respond(w, http.StatusOK, apiresponses.ProvisioningResponse{
+			DashboardURL: provisionResponse.DashboardURL,
+		})
+	} else if provisionResponse.IsAsync {
 		h.respond(w, http.StatusAccepted, apiresponses.ProvisioningResponse{
 			DashboardURL:  provisionResponse.DashboardURL,
 			OperationData: provisionResponse.OperationData,

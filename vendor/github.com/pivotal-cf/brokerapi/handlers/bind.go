@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/pivotal-cf/brokerapi/middlewares"
+
 	"code.cloudfoundry.org/lager"
 	"github.com/gorilla/mux"
 	"github.com/pivotal-cf/brokerapi/domain"
@@ -20,9 +22,12 @@ func (h APIHandler) Bind(w http.ResponseWriter, req *http.Request) {
 	instanceID := vars["instance_id"]
 	bindingID := vars["binding_id"]
 
+	correlationID := req.Context().Value(middlewares.CorrelationIDKey).(string)
+
 	logger := h.logger.Session(bindLogKey, lager.Data{
-		instanceIDLogKey: instanceID,
-		bindingIDLogKey:  bindingID,
+		instanceIDLogKey:             instanceID,
+		bindingIDLogKey:              bindingID,
+		middlewares.CorrelationIDKey: correlationID,
 	})
 
 	version := getAPIVersion(req)
@@ -77,6 +82,16 @@ func (h APIHandler) Bind(w http.ResponseWriter, req *http.Request) {
 				Description: err.Error(),
 			})
 		}
+		return
+	}
+
+	if binding.AlreadyExists {
+		h.respond(w, http.StatusOK, apiresponses.BindingResponse{
+			Credentials:     binding.Credentials,
+			SyslogDrainURL:  binding.SyslogDrainURL,
+			RouteServiceURL: binding.RouteServiceURL,
+			VolumeMounts:    binding.VolumeMounts,
+		})
 		return
 	}
 

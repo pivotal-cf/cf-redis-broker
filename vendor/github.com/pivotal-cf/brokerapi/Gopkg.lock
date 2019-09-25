@@ -53,7 +53,7 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:38805c64ce8a1f932fb23bf1392709732ff4addfd9e72671ae09e6be206645df"
+  digest = "1:94f6656435022d2e0eaed70a0874df6d273a7cbf29890a7e19f4261732d25a87"
   name = "github.com/onsi/ginkgo"
   packages = [
     ".",
@@ -77,11 +77,11 @@
     "types",
   ]
   pruneopts = ""
-  revision = "7e8b50db0c6d0a15ac0eb015d4ca64e7e7e2c88c"
-  version = "v1.9.0"
+  revision = "974566c482abc93ffd3df6f4626e79076c7ed290"
+  version = "v1.10.1"
 
 [[projects]]
-  digest = "1:fd4a6c768782f9e0cfd663eeb0bc8cf52c98fd23ead2aee6eb89a0eb4fb577b7"
+  digest = "1:f201278781bbc4a1c20265278c28b80712ef90123563cc0a391d836fc49e0da5"
   name = "github.com/onsi/gomega"
   packages = [
     ".",
@@ -99,16 +99,16 @@
     "types",
   ]
   pruneopts = ""
-  revision = "27d50ea6455b212cf516609fa58b2b5dce1abc81"
-  version = "v1.6.0"
+  revision = "bdebf9e0ece900259084cfa4121b97ce1a540939"
+  version = "v1.7.0"
 
 [[projects]]
-  branch = "master"
-  digest = "1:a2692649163142c4dbe4ab102f8b012031e30a29021d523cb7b57f8d4e40913a"
+  digest = "1:a5484d4fa43127138ae6e7b2299a6a52ae006c7f803d98d717f60abf3e97192e"
   name = "github.com/pborman/uuid"
   packages = ["."]
   pruneopts = ""
-  revision = "8b1b92947f46224e3b97bb1a3a5b0382be00d31e"
+  revision = "adf5a7427709b9deb95d29d3fa8a2bf9cfd388f1"
+  version = "v1.2"
 
 [[projects]]
   digest = "1:1d7e1867c49a6dd9856598ef7c3123604ea3daabf5b83f303ff457bcbc410b1d"

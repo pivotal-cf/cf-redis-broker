@@ -193,6 +193,38 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:22f829c0ce1b390fe40b420a6b20b5b96700523c0a03185ca4a0c2afcf049e86"
+  name = "github.com/pivotal-cf/cf-redis-broker"
+  packages = [
+    "agentapi",
+    "agentconfig",
+    "availability",
+    "broker",
+    "brokerconfig",
+    "configmigrator",
+    "consistency",
+    "consistency/fake",
+    "debug",
+    "integration",
+    "integration/helpers",
+    "log",
+    "process",
+    "recovery/task",
+    "redis",
+    "redis/client",
+    "redis/fakes",
+    "redisconf",
+    "redisinstance",
+    "resetter",
+    "s3",
+    "system",
+    "system/fakes",
+  ]
+  pruneopts = "UT"
+  revision = "16d6227be28b4eba68e75f85241a2d3c58d6edb6"
+
+[[projects]]
+  branch = "master"
   digest = "1:a685eac357408980bea99ac4ad32a8acf597748c901fd5d445a8c1d3399cde9b"
   name = "github.com/pivotal-cf/redisutils"
   packages = [
@@ -328,6 +360,29 @@
     "github.com/pborman/uuid",
     "github.com/pivotal-cf/brokerapi",
     "github.com/pivotal-cf/brokerapi/auth",
+    "github.com/pivotal-cf/cf-redis-broker/agentapi",
+    "github.com/pivotal-cf/cf-redis-broker/agentconfig",
+    "github.com/pivotal-cf/cf-redis-broker/availability",
+    "github.com/pivotal-cf/cf-redis-broker/broker",
+    "github.com/pivotal-cf/cf-redis-broker/brokerconfig",
+    "github.com/pivotal-cf/cf-redis-broker/configmigrator",
+    "github.com/pivotal-cf/cf-redis-broker/consistency",
+    "github.com/pivotal-cf/cf-redis-broker/consistency/fake",
+    "github.com/pivotal-cf/cf-redis-broker/debug",
+    "github.com/pivotal-cf/cf-redis-broker/integration",
+    "github.com/pivotal-cf/cf-redis-broker/integration/helpers",
+    "github.com/pivotal-cf/cf-redis-broker/log",
+    "github.com/pivotal-cf/cf-redis-broker/process",
+    "github.com/pivotal-cf/cf-redis-broker/recovery/task",
+    "github.com/pivotal-cf/cf-redis-broker/redis",
+    "github.com/pivotal-cf/cf-redis-broker/redis/client",
+    "github.com/pivotal-cf/cf-redis-broker/redis/fakes",
+    "github.com/pivotal-cf/cf-redis-broker/redisconf",
+    "github.com/pivotal-cf/cf-redis-broker/redisinstance",
+    "github.com/pivotal-cf/cf-redis-broker/resetter",
+    "github.com/pivotal-cf/cf-redis-broker/s3",
+    "github.com/pivotal-cf/cf-redis-broker/system",
+    "github.com/pivotal-cf/cf-redis-broker/system/fakes",
     "github.com/pivotal-cf/redisutils/monit",
     "github.com/pivotal-cf/redisutils/monit/fakes",
     "github.com/pivotal-cf/redisutils/redis",
