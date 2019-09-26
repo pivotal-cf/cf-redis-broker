@@ -4,3 +4,4 @@
 *.coverprofile
 *.test
 junit_*.xml
+.envrc
