@@ -56,14 +56,6 @@
   revision = "8b901b531db8fca1529b05bfa948605b01ca3ab0"
 
 [[projects]]
-  digest = "1:573ca21d3669500ff845bdebee890eb7fc7f0f50c59f2132f2a0c6b03d85086a"
-  name = "github.com/golang/protobuf"
-  packages = ["proto"]
-  pruneopts = "UT"
-  revision = "6c65a5562fc06764971b7c5d05c76c75e84bdbf7"
-  version = "v1.3.2"
-
-[[projects]]
   digest = "1:38ec74012390146c45af1f92d46e5382b50531247929ff3a685d2b2be65155ac"
   name = "github.com/gomodule/redigo"
   packages = [
@@ -144,14 +136,13 @@
   version = "v1.10.1"
 
 [[projects]]
-  digest = "1:efbd278cf953c2297bfd9eb844cb9930942575b68383e26e2ca8f3041fd4bce1"
+  digest = "1:f10e746cdde740b68ae11142c351de99e8a669c5aa5a2df9ac10294cb052ab39"
   name = "github.com/onsi/gomega"
   packages = [
     ".",
     "format",
     "gbytes",
     "gexec",
-    "ghttp",
     "internal/assertion",
     "internal/asyncassertion",
     "internal/oraclematcher",
@@ -190,38 +181,6 @@
   pruneopts = "UT"
   revision = "cf0dcc39e8bcb0a904b4e1cac9263603c442aa9e"
   version = "v6.4.1"
-
-[[projects]]
-  branch = "master"
-  digest = "1:22f829c0ce1b390fe40b420a6b20b5b96700523c0a03185ca4a0c2afcf049e86"
-  name = "github.com/pivotal-cf/cf-redis-broker"
-  packages = [
-    "agentapi",
-    "agentconfig",
-    "availability",
-    "broker",
-    "brokerconfig",
-    "configmigrator",
-    "consistency",
-    "consistency/fake",
-    "debug",
-    "integration",
-    "integration/helpers",
-    "log",
-    "process",
-    "recovery/task",
-    "redis",
-    "redis/client",
-    "redis/fakes",
-    "redisconf",
-    "redisinstance",
-    "resetter",
-    "s3",
-    "system",
-    "system/fakes",
-  ]
-  pruneopts = "UT"
-  revision = "16d6227be28b4eba68e75f85241a2d3c58d6edb6"
 
 [[projects]]
   branch = "master"
@@ -347,7 +306,6 @@
     "github.com/goamz/goamz/aws",
     "github.com/goamz/goamz/s3",
     "github.com/gomodule/redigo/redis",
-    "github.com/gorilla/mux",
     "github.com/mitchellh/goamz/aws",
     "github.com/mitchellh/goamz/s3",
     "github.com/mitchellh/goamz/s3/s3test",
@@ -356,33 +314,8 @@
     "github.com/onsi/gomega",
     "github.com/onsi/gomega/gbytes",
     "github.com/onsi/gomega/gexec",
-    "github.com/onsi/gomega/ghttp",
     "github.com/pborman/uuid",
     "github.com/pivotal-cf/brokerapi",
-    "github.com/pivotal-cf/brokerapi/auth",
-    "github.com/pivotal-cf/cf-redis-broker/agentapi",
-    "github.com/pivotal-cf/cf-redis-broker/agentconfig",
-    "github.com/pivotal-cf/cf-redis-broker/availability",
-    "github.com/pivotal-cf/cf-redis-broker/broker",
-    "github.com/pivotal-cf/cf-redis-broker/brokerconfig",
-    "github.com/pivotal-cf/cf-redis-broker/configmigrator",
-    "github.com/pivotal-cf/cf-redis-broker/consistency",
-    "github.com/pivotal-cf/cf-redis-broker/consistency/fake",
-    "github.com/pivotal-cf/cf-redis-broker/debug",
-    "github.com/pivotal-cf/cf-redis-broker/integration",
-    "github.com/pivotal-cf/cf-redis-broker/integration/helpers",
-    "github.com/pivotal-cf/cf-redis-broker/log",
-    "github.com/pivotal-cf/cf-redis-broker/process",
-    "github.com/pivotal-cf/cf-redis-broker/recovery/task",
-    "github.com/pivotal-cf/cf-redis-broker/redis",
-    "github.com/pivotal-cf/cf-redis-broker/redis/client",
-    "github.com/pivotal-cf/cf-redis-broker/redis/fakes",
-    "github.com/pivotal-cf/cf-redis-broker/redisconf",
-    "github.com/pivotal-cf/cf-redis-broker/redisinstance",
-    "github.com/pivotal-cf/cf-redis-broker/resetter",
-    "github.com/pivotal-cf/cf-redis-broker/s3",
-    "github.com/pivotal-cf/cf-redis-broker/system",
-    "github.com/pivotal-cf/cf-redis-broker/system/fakes",
     "github.com/pivotal-cf/redisutils/monit",
     "github.com/pivotal-cf/redisutils/monit/fakes",
     "github.com/pivotal-cf/redisutils/redis",

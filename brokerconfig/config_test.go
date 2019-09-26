@@ -85,7 +85,6 @@ var _ = Describe("parsing the broker config file", func() {
 			})
 
 			It("loads plan ids", func() {
-				Ω(config.RedisConfiguration.DedicatedVMPlanID).To(Equal("id-for-dedicated-vm-plan"))
 				Ω(config.RedisConfiguration.SharedVMPlanID).To(Equal("id-for-shared-vm-plan"))
 			})
 
@@ -143,23 +142,6 @@ var _ = Describe("parsing the broker config file", func() {
 
 			It("returns an error", func() {
 				Ω(parseConfigErr).Should(MatchError(ContainSubstring("not found")))
-			})
-		})
-
-		Describe("dedicated nodes", func() {
-			It("loads the dedicated node ips", func() {
-				Ω(len(config.RedisConfiguration.Dedicated.Nodes)).Should(Equal(3))
-				Ω(config.RedisConfiguration.Dedicated.Nodes).Should(ContainElement("10.0.0.1"))
-				Ω(config.RedisConfiguration.Dedicated.Nodes).Should(ContainElement("10.0.0.2"))
-				Ω(config.RedisConfiguration.Dedicated.Nodes).Should(ContainElement("10.0.0.3"))
-			})
-
-			It("sets the correct port", func() {
-				Ω(config.RedisConfiguration.Dedicated.Port).Should(Equal(6379))
-			})
-
-			It("sets the path to the statefile", func() {
-				Ω(config.RedisConfiguration.Dedicated.StatefilePath).Should(Equal("/tmp/redis-config-dir/statefile.json"))
 			})
 		})
 	})
@@ -234,24 +216,6 @@ var _ = Describe("parsing the broker config file", func() {
 					err := brokerconfig.ValidateConfig(config)
 					Ω(err).To(HaveOccurred())
 					Ω(err.Error()).To(Equal("File '/a/non-existent/path' (RedisConfig.InstanceLogDirectory) not found"))
-				})
-			})
-		})
-
-		Describe("DedicatedNodesKnownByIP", func() {
-			Context("when redis.dedicated.nodes contains entries that aren't IPv4  addresses", func() {
-				BeforeEach(func() {
-					config.Dedicated = brokerconfig.Dedicated{
-						Nodes:         []string{"10.1.3.4", "10.1.3.40", "instance-id-50.dedicated-node.redis-z1.cf-cfapps-io2-redis.bosh"},
-						Port:          12345,
-						StatefilePath: "statefilepath",
-					}
-				})
-
-				It("returns an error", func() {
-					err := brokerconfig.ValidateConfig(config)
-					Ω(err).To(HaveOccurred())
-					Ω(err.Error()).To(Equal("The broker only supports IP addresses for dedicated nodes"))
 				})
 			})
 		})

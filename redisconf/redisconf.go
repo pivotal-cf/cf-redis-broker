@@ -12,8 +12,9 @@ import (
 
 	"github.com/pborman/uuid"
 
-	"github.com/cloudfoundry/gosigar"
 	"os"
+
+	"github.com/cloudfoundry/gosigar"
 )
 
 type Param struct {
@@ -199,24 +200,6 @@ func CopyWithInstanceAdditions(fromPath, toPath, instanceID, port, password, pid
 
 	err = defaultConfig.Save(toPath)
 	os.Chmod(toPath, 0640)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (c *Conf) InitForDedicatedNode(password ...string) error {
-	switch len(password) {
-	case 0:
-		c.setRandomPassword()
-	case 1:
-		c.setPassword(password[0])
-	default:
-		return errors.New("Passed more than one password")
-	}
-
-	err := c.setMaxMemory()
 	if err != nil {
 		return err
 	}

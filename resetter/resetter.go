@@ -140,11 +140,6 @@ func (resetter *Resetter) resetConfigWithNewPassword() error {
 		return err
 	}
 
-	err = conf.InitForDedicatedNode()
-	if err != nil {
-		return err
-	}
-
 	if err := conf.Save(resetter.liveConfPath); err != nil {
 		return err
 	}

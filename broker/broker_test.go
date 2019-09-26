@@ -67,8 +67,6 @@ var _ = Describe("Redis service broker", func() {
 	var sharedPlanID = "C210CA06-E7E5-4F5D-A5AA-7A2C51CC290E"
 	var planName = "shared"
 
-	var dedicatedPlanID = "74"
-
 	var host = "an_host"
 	var port = 1234
 	var password = "big_secret"
@@ -92,11 +90,7 @@ var _ = Describe("Redis service broker", func() {
 			Config: brokerconfig.Config{
 				RedisConfiguration: brokerconfig.ServiceConfiguration{
 					SharedVMPlanID:       sharedPlanID,
-					DedicatedVMPlanID:    dedicatedPlanID,
 					ServiceInstanceLimit: 3,
-					Dedicated: brokerconfig.Dedicated{
-						Nodes: []string{"10.0.0.1", "10.0.0.2", "10.0.0.3"},
-					},
 				},
 			},
 		}
@@ -147,13 +141,6 @@ var _ = Describe("Redis service broker", func() {
 			It("returns a suitable error", func() {
 				_, err := redisBroker.Provision(nil, instanceID, brokerapi.ProvisionDetails{}, false)
 				Expect(err).To(MatchError("plan_id required"))
-			})
-		})
-
-		Context("when the plan is recognized, but the broker has not been configured with the appropriate instance creator", func() {
-			It("returns a suitable error", func() {
-				_, err := redisBroker.Provision(nil, instanceID, brokerapi.ProvisionDetails{PlanID: dedicatedPlanID}, false)
-				Expect(err).To(MatchError("instance creator not found for plan"))
 			})
 		})
 	})

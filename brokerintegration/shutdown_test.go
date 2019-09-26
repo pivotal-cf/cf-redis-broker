@@ -30,9 +30,5 @@ var _ = Describe("Broker Integration", func() {
 		It("logs that it has identified zero shared instances", func() {
 			Eventually(broker.Out).Should(gbytes.Say("0 shared Redis instances found"))
 		})
-
-		It("logs that it has identified zero dedicated instances", func() {
-			Eventually(broker.Out).Should(gbytes.Say("0 dedicated Redis instances found"))
-		})
 	})
 })

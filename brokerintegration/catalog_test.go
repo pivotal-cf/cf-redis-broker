@@ -82,34 +82,6 @@ var _ = Describe("Catalog", func() {
 				}))
 			})
 		})
-
-		Describe("Dedicated-vm plan", func() {
-			var plan brokerapi.ServicePlan
-
-			BeforeEach(func() {
-				for _, p := range plans {
-					if p.Name == "dedicated-vm" {
-						plan = p
-					}
-				}
-			})
-
-			It("has the correct id from the config file", func() {
-				Ω(plan.ID).Should(Equal("74E8984C-5F8C-11E4-86BE-07807B3B2589"))
-			})
-
-			It("displays the correct description", func() {
-				Ω(plan.Description).Should(Equal("This plan provides a Redis server configured for data persistence. "))
-			})
-
-			It("displays the correct metadata bullet points", func() {
-				Ω(plan.Metadata.Bullets).Should(Equal([]string{
-					"Dedicated VM per instance",
-					"Single dedicated Redis process",
-					"Suitable for production workloads",
-				}))
-			})
-		})
 	})
 
 	Context("When there are no dedicated nodes", func() {
@@ -137,62 +109,6 @@ var _ = Describe("Catalog", func() {
 
 			sharedPlan := plans[0]
 			Ω(sharedPlan.Name).Should(Equal("shared-vm"))
-		})
-	})
-
-	Context("When there are dedicated nodes", func() {
-
-		BeforeEach(func() {
-			_, body := brokerClient.MakeCatalogRequest()
-
-			catalog := struct {
-				Services []brokerapi.Service `json:"services"`
-			}{}
-
-			json.Unmarshal(body, &catalog)
-			Ω(len(catalog.Services)).Should(Equal(1))
-
-			plans = catalog.Services[0].Plans
-		})
-
-		It("shows both plans", func() {
-			Ω(len(plans)).Should(Equal(2))
-
-			planNames := []string{}
-			for _, plan := range plans {
-				planNames = append(planNames, plan.Name)
-			}
-
-			Ω(planNames).Should(ContainElement("shared-vm"))
-			Ω(planNames).Should(ContainElement("dedicated-vm"))
-		})
-
-		Context("When the service instance limit is set to zero", func() {
-			BeforeEach(func() {
-				switchBroker("broker.yml-no-shared")
-
-				_, body := brokerClient.MakeCatalogRequest()
-
-				catalog := struct {
-					Services []brokerapi.Service `json:"services"`
-				}{}
-
-				json.Unmarshal(body, &catalog)
-				Ω(len(catalog.Services)).Should(Equal(1))
-
-				plans = catalog.Services[0].Plans
-			})
-
-			AfterEach(func() {
-				switchBroker("broker.yml")
-			})
-
-			It("Only shows the dedicated plan", func() {
-				Ω(len(plans)).Should(Equal(1))
-
-				dedicatedPlan := plans[0]
-				Ω(dedicatedPlan.Name).Should(Equal("dedicated-vm"))
-			})
 		})
 	})
 })

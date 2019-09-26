@@ -31,7 +31,7 @@ var _ = Describe("Provision shared instance", func() {
 
 	Context("when instance is created successfully", func() {
 		AfterEach(func() {
-			status, _ := brokerClient.DeprovisionInstance(instanceID, "dedicated")
+			status, _ := brokerClient.DeprovisionInstance(instanceID, "shared")
 			Expect(status).To(Equal(http.StatusOK))
 		})
 

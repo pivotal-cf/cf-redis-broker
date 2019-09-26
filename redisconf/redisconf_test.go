@@ -6,7 +6,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strconv"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -15,55 +14,6 @@ import (
 )
 
 var _ = Describe("redisconf", func() {
-	Describe("InitForDedicatedNode", func() {
-		var conf redisconf.Conf
-
-		BeforeEach(func() {
-			path, err := filepath.Abs(path.Join("assets", "redis.conf"))
-			Expect(err).ToNot(HaveOccurred())
-			conf, err = redisconf.Load(path)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(conf.Get("maxmemory")).To(BeEmpty())
-			Expect(conf.Password()).To(BeEmpty())
-		})
-
-		It("sets the max memory parameter", func() {
-			err := conf.InitForDedicatedNode()
-			Expect(err).ToNot(HaveOccurred())
-
-			maxmemory := conf.Get("maxmemory")
-			Expect(maxmemory).ToNot(BeEmpty())
-
-			_, err = strconv.Atoi(maxmemory)
-			Expect(err).ToNot(HaveOccurred())
-		})
-
-		Context("called without password", func() {
-			It("sets a random password", func() {
-				err := conf.InitForDedicatedNode()
-				Expect(err).ToNot(HaveOccurred())
-
-				Expect(conf.Password()).ToNot(BeEmpty())
-			})
-		})
-
-		Context("called with password", func() {
-			It("sets the passed password", func() {
-				err := conf.InitForDedicatedNode("my-password")
-				Expect(err).ToNot(HaveOccurred())
-
-				Expect(conf.Password()).To(Equal("my-password"))
-			})
-		})
-
-		Context("called with multiple password", func() {
-			It("returns an error", func() {
-				err := conf.InitForDedicatedNode("my-password1", "my-password2")
-				Expect(err).To(MatchError("Passed more than one password"))
-			})
-		})
-	})
-
 	Describe("Encode", func() {
 		It("encodes the parameters correctly", func() {
 			path, err := filepath.Abs(path.Join("assets", "redis.conf"))

@@ -62,15 +62,6 @@ func Host(host string) Option {
 	}
 }
 
-func CmdAliases(aliases map[string]string) Option {
-	return func(c *client) {
-		c.aliases = map[string]string{}
-		for cmd, alias := range aliases {
-			c.registerAlias(cmd, alias)
-		}
-	}
-}
-
 func Connect(options ...Option) (Client, error) {
 	c := &client{
 		host:    "0.0.0.0",
