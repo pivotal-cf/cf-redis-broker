@@ -289,3 +289,12 @@ func (c *client) lookupAlias(cmd string) string {
 	}
 	return alias
 }
+
+func CmdAliases(aliases map[string]string) Option {
+	return func(c *client) {
+		c.aliases = map[string]string{}
+		for cmd, alias := range aliases {
+			c.registerAlias(cmd, alias)
+		}
+	}
+}
