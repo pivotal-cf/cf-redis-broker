@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	brokerapi "github.com/pivotal-cf/brokerapi/domain"
+	brokerapiresponses "github.com/pivotal-cf/brokerapi/domain/apiresponses"
 
-	"github.com/pivotal-cf/brokerapi"
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
 )
 
@@ -71,7 +72,7 @@ func (redisServiceBroker *RedisServiceBroker) Provision(ctx context.Context, ins
 	spec = brokerapi.ProvisionedServiceSpec{}
 
 	if redisServiceBroker.instanceExists(instanceID) {
-		return spec, brokerapi.ErrInstanceAlreadyExists
+		return spec, brokerapiresponses.ErrInstanceAlreadyExists
 	}
 
 	if serviceDetails.PlanID == "" {
@@ -112,7 +113,7 @@ func (redisServiceBroker *RedisServiceBroker) Deprovision(ctx context.Context, i
 			return spec, instanceCreator.Destroy(instanceID)
 		}
 	}
-	return spec, brokerapi.ErrInstanceDoesNotExist
+	return spec, brokerapiresponses.ErrInstanceDoesNotExist
 }
 
 func (redisServiceBroker *RedisServiceBroker) Bind(ctx context.Context, instanceID, bindingID string, details brokerapi.BindDetails, asyncAllowed bool) (brokerapi.Binding, error) {
@@ -135,7 +136,7 @@ func (redisServiceBroker *RedisServiceBroker) Bind(ctx context.Context, instance
 			return binding, nil
 		}
 	}
-	return brokerapi.Binding{}, brokerapi.ErrInstanceDoesNotExist
+	return brokerapi.Binding{}, brokerapiresponses.ErrInstanceDoesNotExist
 }
 
 func (redisServiceBroker *RedisServiceBroker) Unbind(ctx context.Context, instanceID, bindingID string, details brokerapi.UnbindDetails, asyncAllowed bool) (brokerapi.UnbindSpec, error) {
@@ -144,13 +145,13 @@ func (redisServiceBroker *RedisServiceBroker) Unbind(ctx context.Context, instan
 		if instanceExists {
 			err := repo.Unbind(instanceID, bindingID)
 			if err != nil {
-				return brokerapi.UnbindSpec{}, brokerapi.ErrBindingDoesNotExist
+				return brokerapi.UnbindSpec{}, brokerapiresponses.ErrBindingDoesNotExist
 			}
 			return brokerapi.UnbindSpec{}, nil
 		}
 	}
 
-	return brokerapi.UnbindSpec{}, brokerapi.ErrInstanceDoesNotExist
+	return brokerapi.UnbindSpec{}, brokerapiresponses.ErrInstanceDoesNotExist
 }
 
 func (redisServiceBroker *RedisServiceBroker) plans() map[string]*brokerapi.ServicePlan {

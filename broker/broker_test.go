@@ -2,11 +2,12 @@ package broker_test
 
 import (
 	"errors"
+	brokerapi "github.com/pivotal-cf/brokerapi/domain"
+	brokerapiresponses "github.com/pivotal-cf/brokerapi/domain/apiresponses"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/pivotal-cf/brokerapi"
 	"github.com/pivotal-cf/cf-redis-broker/broker"
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
 )
@@ -114,7 +115,7 @@ var _ = Describe("Redis service broker", func() {
 
 				It("gives an error when trying to use the same instanceID", func() {
 					_, err := redisBroker.Provision(nil, instanceID, brokerapi.ProvisionDetails{PlanID: sharedPlanID}, false)
-					Expect(err).To(Equal(brokerapi.ErrInstanceAlreadyExists))
+					Expect(err).To(Equal(brokerapiresponses.ErrInstanceAlreadyExists))
 				})
 			})
 
@@ -160,7 +161,7 @@ var _ = Describe("Redis service broker", func() {
 
 		It("returns error if instance does not exist", func() {
 			_, err := redisBroker.Deprovision(nil, "non-existent", brokerapi.DeprovisionDetails{}, false)
-			Expect(err).To(Equal(brokerapi.ErrInstanceDoesNotExist))
+			Expect(err).To(Equal(brokerapiresponses.ErrInstanceDoesNotExist))
 		})
 
 		Context("when the instance creator returns an error", func() {
@@ -206,7 +207,7 @@ var _ = Describe("Redis service broker", func() {
 				bindingID := "bindingID"
 
 				_, err := redisBroker.Bind(nil, instanceID, bindingID, brokerapi.BindDetails{}, false)
-				Expect(err).To(Equal(brokerapi.ErrInstanceDoesNotExist))
+				Expect(err).To(Equal(brokerapiresponses.ErrInstanceDoesNotExist))
 			})
 		})
 	})
@@ -227,7 +228,7 @@ var _ = Describe("Redis service broker", func() {
 		It("returns brokerapi.ErrBindingDoesNotExist if binding did not exist", func() {
 			someCreatorAndBinder.bindingExists = false
 			_, err := redisBroker.Unbind(nil, instanceID, "NON-EXISTANT-BINDING", brokerapi.UnbindDetails{}, false)
-			Expect(err).To(MatchError(brokerapi.ErrBindingDoesNotExist))
+			Expect(err).To(MatchError(brokerapiresponses.ErrBindingDoesNotExist))
 		})
 	})
 })

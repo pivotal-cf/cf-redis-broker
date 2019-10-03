@@ -2,11 +2,11 @@ package redis
 
 import (
 	"errors"
+	brokerapiresponses "github.com/pivotal-cf/brokerapi/domain/apiresponses"
 	"time"
 
 	"github.com/pborman/uuid"
 
-	"github.com/pivotal-cf/brokerapi"
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
 )
 
@@ -45,7 +45,7 @@ func (localInstanceCreator *LocalInstanceCreator) Create(instanceID string) erro
 	}
 
 	if instanceCount >= localInstanceCreator.RedisConfiguration.ServiceInstanceLimit {
-		return brokerapi.ErrInstanceLimitMet
+		return brokerapiresponses.ErrInstanceLimitMet
 	}
 
 	port, err := localInstanceCreator.FindFreePort()

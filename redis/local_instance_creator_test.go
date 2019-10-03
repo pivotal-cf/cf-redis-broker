@@ -2,12 +2,11 @@ package redis_test
 
 import (
 	"errors"
+	brokerapiresponses "github.com/pivotal-cf/brokerapi/domain/apiresponses"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pborman/uuid"
-	"github.com/pivotal-cf/brokerapi"
-
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
 	"github.com/pivotal-cf/cf-redis-broker/redis"
 	"github.com/pivotal-cf/cf-redis-broker/redis/fakes"
@@ -100,7 +99,7 @@ var _ = Describe("Local Redis Creator", func() {
 
 			It("does not start a new Redis instance", func() {
 				err := localInstanceCreator.Create(instanceID)
-				Expect(err).To(MatchError(brokerapi.ErrInstanceLimitMet))
+				Expect(err).To(MatchError(brokerapiresponses.ErrInstanceLimitMet))
 
 				Expect(fakeProcessController.StartAndWaitUntilReadyCallCount()).To(Equal(0))
 			})
