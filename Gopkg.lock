@@ -316,6 +316,8 @@
     "github.com/onsi/gomega/gexec",
     "github.com/pborman/uuid",
     "github.com/pivotal-cf/brokerapi",
+    "github.com/pivotal-cf/brokerapi/domain",
+    "github.com/pivotal-cf/brokerapi/domain/apiresponses",
     "github.com/pivotal-cf/redisutils/monit",
     "github.com/pivotal-cf/redisutils/monit/fakes",
     "github.com/pivotal-cf/redisutils/redis",
