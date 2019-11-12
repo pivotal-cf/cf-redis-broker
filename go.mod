@@ -14,8 +14,8 @@ require (
 	github.com/gorilla/mux v1.7.3 // indirect
 	github.com/mitchellh/goamz v0.0.0-20150317174335-caaaea8b30ee
 	github.com/motain/gocheck v0.0.0-20131023154940-9beb271d26e6 // indirect
-	github.com/onsi/ginkgo v1.10.2
-	github.com/onsi/gomega v1.7.0
+	github.com/onsi/ginkgo v1.10.3
+	github.com/onsi/gomega v1.7.1
 	github.com/pborman/uuid v0.0.0-20180906182336-adf5a7427709
 	github.com/pivotal-cf/brokerapi v6.4.2+incompatible
 	github.com/pivotal-cf/cf-redis-broker v0.0.0-20191021163400-810f5598b2b4
@@ -27,7 +27,6 @@ require (
 	golang.org/x/net v0.0.0-20191014212845-da9a3fd4c582 // indirect
 	golang.org/x/sys v0.0.0-20191018095205-727590c5006e // indirect
 	golang.org/x/text v0.3.2 // indirect
-	gopkg.in/yaml.v2 v2.2.4 // indirect
 	launchpad.net/gocheck v0.0.0-20140225173054-000000000087 // indirect
 )
 
