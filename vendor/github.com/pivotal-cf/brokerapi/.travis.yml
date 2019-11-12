@@ -1,13 +1,12 @@
 language: go
 
 go:
+  - 1.9.x
+  - 1.10.x
   - 1.11.x
-  - 1.12.x
-  - 1.13.x
 
-env:
-  - GO111MODULE=on
+install:
+  - go get -v -t ./...
+  - go get -v github.com/onsi/ginkgo/ginkgo
 
-script:
-- go run honnef.co/go/tools/cmd/staticcheck ./...
-- go run github.com/onsi/ginkgo/ginkgo -r
+script: ginkgo -r

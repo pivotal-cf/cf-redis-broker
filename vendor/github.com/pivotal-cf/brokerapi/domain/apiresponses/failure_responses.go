@@ -1,6 +1,7 @@
 package apiresponses
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -63,7 +64,7 @@ func (f *FailureResponse) LoggerAction() string {
 // AppendErrorMessage returns an error with the message updated. All other properties are preserved.
 func (f *FailureResponse) AppendErrorMessage(msg string) *FailureResponse {
 	return &FailureResponse{
-		error:         fmt.Errorf("%s %s", f.Error(), msg),
+		error:         errors.New(fmt.Sprintf("%s %s", f.Error(), msg)),
 		statusCode:    f.statusCode,
 		loggerAction:  f.loggerAction,
 		emptyResponse: f.emptyResponse,
