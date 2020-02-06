@@ -1,4 +1,4 @@
-module broker
+module github.com/pivotal-cf/cf-redis-broker
 
 go 1.13
 
