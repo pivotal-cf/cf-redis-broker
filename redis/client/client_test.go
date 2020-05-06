@@ -72,7 +72,7 @@ var _ = Describe("Client", func() {
 						client.Port(port),
 						client.Password("wrong-password"),
 					)
-					Ω(err).Should(MatchError("ERR invalid password"))
+					Ω(err).Should(MatchError("WRONGPASS invalid username-password pair"))
 				})
 
 				It("works if the password is correct", func() {
