@@ -23,5 +23,7 @@ require (
 	github.com/st3v/glager v0.3.0
 	github.com/stretchr/testify v1.5.1 // indirect
 	github.com/vaughan0/go-ini v0.0.0-20130923145212-a98ad7ee00ec // indirect
+	golang.org/x/net v0.0.0-20200528225125-3c3fba18258b // indirect
+	golang.org/x/sys v0.0.0-20200523222454-059865788121 // indirect
 	launchpad.net/gocheck v0.0.0-20140225173054-000000000087 // indirect
 )
