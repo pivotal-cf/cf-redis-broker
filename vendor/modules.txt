@@ -32,12 +32,13 @@ github.com/nxadm/tail/ratelimiter
 github.com/nxadm/tail/util
 github.com/nxadm/tail/watch
 github.com/nxadm/tail/winfile
-# github.com/onsi/ginkgo v1.12.2
+# github.com/onsi/ginkgo v1.13.0
 github.com/onsi/ginkgo
 github.com/onsi/ginkgo/config
 github.com/onsi/ginkgo/internal/codelocation
 github.com/onsi/ginkgo/internal/containernode
 github.com/onsi/ginkgo/internal/failer
+github.com/onsi/ginkgo/internal/global
 github.com/onsi/ginkgo/internal/leafnodes
 github.com/onsi/ginkgo/internal/remote
 github.com/onsi/ginkgo/internal/spec
@@ -76,7 +77,7 @@ github.com/pivotal-cf/brokerapi/domain/apiresponses
 github.com/pivotal-cf/brokerapi/handlers
 github.com/pivotal-cf/brokerapi/middlewares
 github.com/pivotal-cf/brokerapi/utils
-# github.com/pivotal-cf/redisutils v0.0.0-20200407185016-aa9d40df842b
+# github.com/pivotal-cf/redisutils v0.0.0-20200616201945-a23938fcab26
 github.com/pivotal-cf/redisutils/monit
 github.com/pivotal-cf/redisutils/monit/fakes
 github.com/pivotal-cf/redisutils/redis
@@ -86,15 +87,15 @@ github.com/pkg/errors
 github.com/st3v/glager
 # github.com/vaughan0/go-ini v0.0.0-20130923145212-a98ad7ee00ec
 github.com/vaughan0/go-ini
-# golang.org/x/net v0.0.0-20200528225125-3c3fba18258b
+# golang.org/x/net v0.0.0-20200602114024-627f9648deb9
 golang.org/x/net/html
 golang.org/x/net/html/atom
 golang.org/x/net/html/charset
-# golang.org/x/sys v0.0.0-20200523222454-059865788121
+# golang.org/x/sys v0.0.0-20200615200032-f1bc736245b1
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/text v0.3.2
+# golang.org/x/text v0.3.3
 golang.org/x/text/encoding
 golang.org/x/text/encoding/charmap
 golang.org/x/text/encoding/htmlindex

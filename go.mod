@@ -18,12 +18,13 @@ require (
 	github.com/onsi/gomega v1.10.1
 	github.com/pborman/uuid v1.2.0
 	github.com/pivotal-cf/brokerapi v6.4.2+incompatible
-	github.com/pivotal-cf/redisutils v0.0.0-20200407185016-aa9d40df842b
+	github.com/pivotal-cf/redisutils v0.0.0-20200616201945-a23938fcab26
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/st3v/glager v0.3.0
 	github.com/stretchr/testify v1.5.1 // indirect
 	github.com/vaughan0/go-ini v0.0.0-20130923145212-a98ad7ee00ec // indirect
-	golang.org/x/net v0.0.0-20200528225125-3c3fba18258b // indirect
-	golang.org/x/sys v0.0.0-20200523222454-059865788121 // indirect
+	golang.org/x/net v0.0.0-20200602114024-627f9648deb9 // indirect
+	golang.org/x/sys v0.0.0-20200615200032-f1bc736245b1 // indirect
+	golang.org/x/text v0.3.3 // indirect
 	launchpad.net/gocheck v0.0.0-20140225173054-000000000087 // indirect
 )
