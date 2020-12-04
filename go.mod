@@ -15,7 +15,7 @@ require (
 	github.com/mitchellh/goamz v0.0.0-20150317174335-caaaea8b30ee
 	github.com/motain/gocheck v0.0.0-20131023154940-9beb271d26e6 // indirect
 	github.com/onsi/ginkgo v1.14.0
-	github.com/onsi/gomega v1.10.1
+	github.com/onsi/gomega v1.10.3
 	github.com/pborman/uuid v1.2.0
 	github.com/pivotal-cf/brokerapi v6.4.2+incompatible
 	github.com/pivotal-cf/redisutils v0.0.0-20200720193634-9091cd4b00e2
@@ -23,8 +23,6 @@ require (
 	github.com/st3v/glager v0.3.0
 	github.com/stretchr/testify v1.5.1 // indirect
 	github.com/vaughan0/go-ini v0.0.0-20130923145212-a98ad7ee00ec // indirect
-	golang.org/x/net v0.0.0-20200707034311-ab3426394381 // indirect
-	golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae // indirect
 	golang.org/x/text v0.3.3 // indirect
 	launchpad.net/gocheck v0.0.0-20140225173054-000000000087 // indirect
 )
