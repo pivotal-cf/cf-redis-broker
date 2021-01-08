@@ -18,7 +18,7 @@ require (
 	github.com/onsi/gomega v1.10.4
 	github.com/pborman/uuid v1.2.1
 	github.com/pivotal-cf/brokerapi v6.4.2+incompatible
-	github.com/pivotal-cf/redisutils v0.0.0-20201204205009-c81b2d6207fa
+	github.com/pivotal-cf/redisutils v0.0.0-20210108164727-0d88375dd707
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/st3v/glager v0.3.0
 	github.com/stretchr/testify v1.5.1 // indirect
