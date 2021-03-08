@@ -14,7 +14,7 @@ require (
 	github.com/gorilla/mux v1.7.4 // indirect
 	github.com/mitchellh/goamz v0.0.0-20150317174335-caaaea8b30ee
 	github.com/motain/gocheck v0.0.0-20131023154940-9beb271d26e6 // indirect
-	github.com/onsi/ginkgo v1.14.2
+	github.com/onsi/ginkgo v1.15.1
 	github.com/onsi/gomega v1.10.4
 	github.com/pborman/uuid v1.2.1
 	github.com/pivotal-cf/brokerapi v6.4.2+incompatible
