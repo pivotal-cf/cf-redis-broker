@@ -15,7 +15,7 @@ require (
 	github.com/mitchellh/goamz v0.0.0-20150317174335-caaaea8b30ee
 	github.com/motain/gocheck v0.0.0-20131023154940-9beb271d26e6 // indirect
 	github.com/onsi/ginkgo v1.14.2
-	github.com/onsi/gomega v1.10.4
+	github.com/onsi/gomega v1.11.0
 	github.com/pborman/uuid v1.2.1
 	github.com/pivotal-cf/brokerapi v6.4.2+incompatible
 	github.com/pivotal-cf/redisutils v0.0.0-20210108164727-0d88375dd707
