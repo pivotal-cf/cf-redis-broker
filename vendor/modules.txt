@@ -78,7 +78,7 @@ github.com/pivotal-cf/brokerapi/domain/apiresponses
 github.com/pivotal-cf/brokerapi/handlers
 github.com/pivotal-cf/brokerapi/middlewares
 github.com/pivotal-cf/brokerapi/utils
-# github.com/pivotal-cf/redisutils v0.0.0-20210108164727-0d88375dd707
+# github.com/pivotal-cf/redisutils v0.0.0-20210413181629-2b1d5e4b337c
 github.com/pivotal-cf/redisutils/monit
 github.com/pivotal-cf/redisutils/monit/fakes
 github.com/pivotal-cf/redisutils/redis
