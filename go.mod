@@ -21,7 +21,6 @@ require (
 	github.com/pivotal-cf/redisutils v0.0.0-20210108164727-0d88375dd707
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/st3v/glager v0.3.0
-	github.com/stretchr/testify v1.5.1 // indirect
 	github.com/vaughan0/go-ini v0.0.0-20130923145212-a98ad7ee00ec // indirect
 	launchpad.net/gocheck v0.0.0-20140225173054-000000000087 // indirect
 )
