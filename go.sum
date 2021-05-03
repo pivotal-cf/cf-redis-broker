@@ -10,6 +10,7 @@ github.com/cloudfoundry-incubator/candiedyaml v0.0.0-20170901234223-a41693b7b7af
 github.com/cloudfoundry-incubator/candiedyaml v0.0.0-20170901234223-a41693b7b7af/go.mod h1:dOLSIXcRQJiDS1vlrYFNJicoHNZLsBKideE+70hGdV4=
 github.com/cloudfoundry/gosigar v1.1.0 h1:V/dVCzhKOdIU3WRB5inQU20s4yIgL9Dxx/Mhi0SF8eM=
 github.com/cloudfoundry/gosigar v1.1.0/go.mod h1:3qLfc2GlfmwOx2+ZDaRGH3Y9fwQ0sQeaAleo2GV5pH0=
+github.com/cloudfoundry/gosigar v1.2.0/go.mod h1:3qLfc2GlfmwOx2+ZDaRGH3Y9fwQ0sQeaAleo2GV5pH0=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
