@@ -1,6 +1,6 @@
 module github.com/pivotal-cf/cf-redis-broker
 
-go 1.13
+go 1.17
 
 require (
 	code.cloudfoundry.org/lager v2.0.0+incompatible
@@ -22,5 +22,14 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/st3v/glager v0.3.0
 	github.com/vaughan0/go-ini v0.0.0-20130923145212-a98ad7ee00ec // indirect
-	launchpad.net/gocheck v0.0.0-20140225173054-000000000087 // indirect
+)
+
+require (
+	github.com/fsnotify/fsnotify v1.4.9 // indirect
+	github.com/nxadm/tail v1.4.8 // indirect
+	golang.org/x/net v0.0.0-20210428140749-89ef3d95e781 // indirect
+	golang.org/x/sys v0.0.0-20210423082822-04245dca01da // indirect
+	golang.org/x/text v0.3.6 // indirect
+	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
