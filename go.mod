@@ -6,7 +6,7 @@ require (
 	code.cloudfoundry.org/lager v2.0.0+incompatible
 	github.com/BooleanCat/igo v1.3.0
 	github.com/cloudfoundry-incubator/candiedyaml v0.0.0-20170901234223-a41693b7b7af
-	github.com/cloudfoundry/gosigar v1.2.0
+	github.com/cloudfoundry/gosigar v1.3.2
 	github.com/drewolson/testflight v1.0.0 // indirect
 	github.com/goamz/goamz v0.0.0-20180131231218-8b901b531db8
 	github.com/gomodule/redigo v2.0.0+incompatible
