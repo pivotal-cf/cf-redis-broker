@@ -25,6 +25,7 @@ type Param struct {
 const (
 	DefaultHost = "127.0.0.1"
 	DefaultPort = 6379
+	DefaultTLSPort = 16379
 )
 
 type Conf []Param
@@ -94,6 +95,12 @@ func (conf Conf) Port() int {
 	port, err := strconv.Atoi(conf.Get("port"))
 	if err != nil {
 		return DefaultPort
+	}
+	if port == 0 {
+		port, err = strconv.Atoi(conf.Get("tls-port"))
+		if err != nil {
+			return DefaultTLSPort
+		}
 	}
 	return port
 }

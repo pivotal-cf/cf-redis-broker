@@ -32,6 +32,25 @@ var _ = Describe("redisconf", func() {
 
 			Expect(string(input.Encode())).To(Equal(expectedOutput))
 		})
+
+		It("encodes the parameters correctly when tls is enforced", func() {
+			path, err := filepath.Abs(path.Join("assets", "redis-tls.conf"))
+			Expect(err).ToNot(HaveOccurred())
+			input, err := redisconf.Load(path)
+			Expect(err).ToNot(HaveOccurred())
+
+			expectedOutput := "daemonize no\n" +
+				"pidfile /var/run/redis.pid\n" +
+				"port 0\n" +
+				"appendonly yes\n" +
+				"client-output-buffer-limit normal 0 0 0\n" +
+				"save 900 1\n" +
+				"save 300 10\n" +
+				"bind 0.0.0.0\n" +
+				"tls-port 16379\n"
+
+			Expect(string(input.Encode())).To(Equal(expectedOutput))
+		})
 	})
 
 	Describe("CommandAlias", func() {
