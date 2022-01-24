@@ -105,6 +105,12 @@ func (conf Conf) Port() int {
 	return port
 }
 
+func (conf Conf) Tls() bool {
+	tlsPort := conf.Get("tls-port")
+	port := conf.Get("port")
+	return tlsPort != "" && port == "0"
+}
+
 func (conf Conf) Password() string {
 	return conf.Get("requirepass")
 }

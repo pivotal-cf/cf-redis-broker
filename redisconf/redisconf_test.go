@@ -121,6 +121,22 @@ var _ = Describe("redisconf", func() {
 
 				Expect(conf.Get("daemonize")).To(Equal("no"))
 				Expect(conf.Get("appendonly")).To(Equal("yes"))
+				Expect(conf.Tls()).To(BeFalse())
+			})
+		})
+
+		Context("When the file exists enforced", func() {
+			It("decodes all parameters", func() {
+				path, err := filepath.Abs(path.Join("assets", "redis-tls.conf"))
+				Expect(err).ToNot(HaveOccurred())
+
+				conf, err := redisconf.Load(path)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(conf.Get("daemonize")).To(Equal("no"))
+				Expect(conf.Get("appendonly")).To(Equal("yes"))
+				Expect(conf.Get("port")).To(Equal("0"))
+				Expect(conf.Tls()).To(BeTrue())
 			})
 		})
 

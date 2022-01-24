@@ -16,6 +16,7 @@ type RedisRunner struct {
 }
 
 const RedisPort = 6480
+const RedisTLSPort = 16480
 
 func (runner *RedisRunner) Start(redisArgs []string) {
 	command := exec.Command("redis-server", redisArgs...)
@@ -39,6 +40,36 @@ func (runner *RedisRunner) Stop() {
 
 	Eventually(func() error {
 		_, err := redisclient.Dial("tcp", ":6480")
+		return err
+	}).Should(HaveOccurred())
+
+	err = os.RemoveAll(runner.Dir)
+	Ω(err).ShouldNot(HaveOccurred())
+}
+
+
+func (runner *RedisRunner) StartTLS(redisArgs []string) {
+	command := exec.Command("redis-server", redisArgs...)
+
+	var err error
+	runner.Dir, err = ioutil.TempDir("", "redis-client-test")
+	Ω(err).ShouldNot(HaveOccurred())
+	command.Dir = runner.Dir
+
+	err = command.Start()
+	Ω(err).ShouldNot(HaveOccurred())
+
+	runner.process = command.Process
+
+	Expect(helpers.ServiceAvailableTLS(RedisTLSPort)).To(BeTrue())
+}
+
+func (runner *RedisRunner) StopTLS() {
+	err := runner.process.Kill()
+	Ω(err).ShouldNot(HaveOccurred())
+
+	Eventually(func() error {
+		_, err := redisclient.Dial("tcp", ":16480", redisclient.DialUseTLS(true), redisclient.DialTLSSkipVerify(true))
 		return err
 	}).Should(HaveOccurred())
 
