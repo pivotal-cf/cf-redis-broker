@@ -35,6 +35,7 @@ type client struct {
 	host     string
 	port     int
 	password string
+	tls      bool
 	aliases  map[string]string
 
 	connection redisclient.Conn
@@ -62,11 +63,18 @@ func Host(host string) Option {
 	}
 }
 
+func Tls(tls bool) Option {
+	return func(c *client) {
+		c.tls = tls
+	}
+}
+
 func Connect(options ...Option) (Client, error) {
 	c := &client{
 		host:    "0.0.0.0",
 		port:    redisconf.DefaultPort,
 		aliases: map[string]string{},
+		tls:     false,
 	}
 
 	for _, opt := range options {
@@ -76,7 +84,7 @@ func Connect(options ...Option) (Client, error) {
 	address := fmt.Sprintf("%v:%v", c.host, c.port)
 
 	var err error
-	c.connection, err = redisclient.Dial("tcp", address)
+	c.connection, err = redisclient.Dial("tcp", address, redisclient.DialUseTLS(c.tls), redisclient.DialTLSSkipVerify(c.tls))
 	if err != nil {
 		return nil, err
 	}
