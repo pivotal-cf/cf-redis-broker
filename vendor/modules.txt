@@ -10,8 +10,8 @@ github.com/BooleanCat/igo/ios/iexec
 # github.com/cloudfoundry-incubator/candiedyaml v0.0.0-20170901234223-a41693b7b7af
 ## explicit
 github.com/cloudfoundry-incubator/candiedyaml
-# github.com/cloudfoundry/gosigar v1.3.3
-## explicit; go 1.17
+# github.com/cloudfoundry/gosigar v1.3.4
+## explicit; go 1.18
 github.com/cloudfoundry/gosigar
 github.com/cloudfoundry/gosigar/sys/windows
 # github.com/drewolson/testflight v1.0.0
@@ -116,7 +116,7 @@ github.com/vaughan0/go-ini
 golang.org/x/net/html
 golang.org/x/net/html/atom
 golang.org/x/net/html/charset
-# golang.org/x/sys v0.0.0-20220110181412-a018aaa089fe
+# golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a
 ## explicit; go 1.17
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
