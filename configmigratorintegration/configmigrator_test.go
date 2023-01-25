@@ -52,7 +52,7 @@ func copyOverFromAssets(fileName, dir string) {
 }
 
 func buildExecutable(sourcePath string) string {
-	executable, err := gexec.Build(sourcePath)
+	executable, err := gexec.Build(sourcePath, "-buildvcs=false")
 	if err != nil {
 		log.Fatalf("executable %s could not be built: %s", sourcePath, err)
 		os.Exit(1)

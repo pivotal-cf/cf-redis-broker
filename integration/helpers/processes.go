@@ -16,7 +16,7 @@ import (
 )
 
 func BuildExecutable(sourcePath string) string {
-	executable, err := gexec.Build(sourcePath, "-mod=vendor")
+	executable, err := gexec.Build(sourcePath, "-mod=vendor", "-buildvcs=false")
 	if err != nil {
 		log.Fatalf("executable %s could not be built: %s", sourcePath, err)
 	}
