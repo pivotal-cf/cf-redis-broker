@@ -33,6 +33,8 @@ github.com/google/uuid
 # github.com/gorilla/mux v1.7.4
 ## explicit; go 1.12
 github.com/gorilla/mux
+# github.com/kr/pretty v0.2.1
+## explicit; go 1.12
 # github.com/mitchellh/goamz v0.0.0-20150317174335-caaaea8b30ee
 ## explicit
 github.com/mitchellh/goamz/aws
@@ -97,8 +99,8 @@ github.com/pivotal-cf/brokerapi/domain/apiresponses
 github.com/pivotal-cf/brokerapi/handlers
 github.com/pivotal-cf/brokerapi/middlewares
 github.com/pivotal-cf/brokerapi/utils
-# github.com/pivotal-cf/redisutils v0.0.0-20210510200515-5c90afaa9f5d
-## explicit; go 1.13
+# github.com/pivotal-cf/redisutils v0.0.0-20230714164608-0c46711fcf34
+## explicit; go 1.17
 github.com/pivotal-cf/redisutils/monit
 github.com/pivotal-cf/redisutils/monit/fakes
 github.com/pivotal-cf/redisutils/redis
