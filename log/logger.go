@@ -1,6 +1,6 @@
 package log
 
-import "code.cloudfoundry.org/lager"
+import "code.cloudfoundry.org/lager/v3"
 
 var logger lager.Logger
 

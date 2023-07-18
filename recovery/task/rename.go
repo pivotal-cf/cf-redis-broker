@@ -3,7 +3,7 @@ package task
 import (
 	"os"
 
-	"code.cloudfoundry.org/lager"
+	"code.cloudfoundry.org/lager/v3"
 )
 
 type rename struct {

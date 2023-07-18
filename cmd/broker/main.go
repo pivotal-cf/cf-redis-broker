@@ -6,8 +6,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"code.cloudfoundry.org/lager"
-	"github.com/pivotal-cf/brokerapi"
+	"code.cloudfoundry.org/lager/v3"
+	"github.com/pivotal-cf/brokerapi/v10"
 	"github.com/pivotal-cf/cf-redis-broker/availability"
 	"github.com/pivotal-cf/cf-redis-broker/broker"
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"

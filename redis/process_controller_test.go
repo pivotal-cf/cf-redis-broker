@@ -1,7 +1,7 @@
 package redis_test
 
 import (
-	"code.cloudfoundry.org/lager"
+	"code.cloudfoundry.org/lager/v3"
 	"errors"
 	"github.com/BooleanCat/igo/ios/iexec"
 	"github.com/onsi/gomega/gbytes"
@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"code.cloudfoundry.org/lager/lagertest"
+	"code.cloudfoundry.org/lager/v3/lagertest"
 	"github.com/pivotal-cf/cf-redis-broker/redis"
 	"github.com/pivotal-cf/cf-redis-broker/redis/fakes"
 )

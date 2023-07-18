@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	redigo "github.com/gomodule/redigo/redis"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/pborman/uuid"
 	"github.com/pivotal-cf/cf-redis-broker/integration/helpers"

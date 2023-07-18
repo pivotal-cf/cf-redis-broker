@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
@@ -29,7 +29,7 @@ func listenTCP(network string, laddr *net.TCPAddr) *net.TCPListener {
 }
 
 func listenTCPTLS(network string, laddr *net.TCPAddr) net.Listener {
-	certFile, err := filepath.Abs(path.Join( "assets", "tls", "server.crt"))
+	certFile, err := filepath.Abs(path.Join("assets", "tls", "server.crt"))
 	Expect(err).ToNot(HaveOccurred())
 	keyFile, err := filepath.Abs(path.Join("assets", "tls", "server.key"))
 	Expect(err).ToNot(HaveOccurred())

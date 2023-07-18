@@ -2,10 +2,10 @@ package broker_test
 
 import (
 	"errors"
-	brokerapi "github.com/pivotal-cf/brokerapi/domain"
-	brokerapiresponses "github.com/pivotal-cf/brokerapi/domain/apiresponses"
+	brokerapi "github.com/pivotal-cf/brokerapi/v10/domain"
+	brokerapiresponses "github.com/pivotal-cf/brokerapi/v10/domain/apiresponses"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/pivotal-cf/cf-redis-broker/broker"

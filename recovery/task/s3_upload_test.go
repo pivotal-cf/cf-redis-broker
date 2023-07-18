@@ -3,15 +3,15 @@ package task_test
 import (
 	"errors"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	. "github.com/st3v/glager"
+	glager "github.com/st3v/glager"
 
+	"code.cloudfoundry.org/lager/v3"
 	goamz "github.com/goamz/goamz/s3"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/pivotal-cf/cf-redis-broker/recovery/task"
 	"github.com/pivotal-cf/cf-redis-broker/s3"
-	"code.cloudfoundry.org/lager"
 )
 
 type fakeS3Client struct {
@@ -122,30 +122,30 @@ var _ = Describe("S3Upload", func() {
 		})
 
 		It("logs the upload", func() {
-			Expect(log).To(ContainSequence(
-				Info(
-					Action("redis.s3upload"),
-					Data("event", "starting", "bucket", bucket.BucketName, "source_path", expectedSourcePath, "target_path", expectedTargetPath),
+			Expect(log).To(glager.ContainSequence(
+				glager.Info(
+					glager.Action("redis.s3upload"),
+					glager.Data("event", "starting", "bucket", bucket.BucketName, "source_path", expectedSourcePath, "target_path", expectedTargetPath),
 				),
-				Info(
-					Action("redis.s3upload.create-bucket"),
-					Data("event", "starting", "bucket", bucket.BucketName),
+				glager.Info(
+					glager.Action("redis.s3upload.create-bucket"),
+					glager.Data("event", "starting", "bucket", bucket.BucketName),
 				),
-				Info(
-					Action("redis.s3upload.create-bucket"),
-					Data("event", "done", "bucket", bucket.BucketName),
+				glager.Info(
+					glager.Action("redis.s3upload.create-bucket"),
+					glager.Data("event", "done", "bucket", bucket.BucketName),
 				),
-				Info(
-					Action("redis.s3upload.upload"),
-					Data("event", "starting", "bucket", bucket.BucketName, "source_path", expectedSourcePath, "target_path", expectedTargetPath),
+				glager.Info(
+					glager.Action("redis.s3upload.upload"),
+					glager.Data("event", "starting", "bucket", bucket.BucketName, "source_path", expectedSourcePath, "target_path", expectedTargetPath),
 				),
-				Info(
-					Action("redis.s3upload.upload"),
-					Data("event", "done", "bucket", bucket.BucketName, "source_path", expectedSourcePath, "target_path", expectedTargetPath),
+				glager.Info(
+					glager.Action("redis.s3upload.upload"),
+					glager.Data("event", "done", "bucket", bucket.BucketName, "source_path", expectedSourcePath, "target_path", expectedTargetPath),
 				),
-				Info(
-					Action("redis.s3upload"),
-					Data("event", "done", "bucket", bucket.BucketName, "source_path", expectedSourcePath, "target_path", expectedTargetPath),
+				glager.Info(
+					glager.Action("redis.s3upload"),
+					glager.Data("event", "done", "bucket", bucket.BucketName, "source_path", expectedSourcePath, "target_path", expectedTargetPath),
 				),
 			))
 		})
@@ -162,24 +162,24 @@ var _ = Describe("S3Upload", func() {
 			})
 
 			It("logs the error", func() {
-				Expect(log).To(ContainSequence(
-					Info(
-						Action("redis.s3upload"),
-						Data("event", "starting", "bucket", bucket.BucketName, "source_path", expectedSourcePath, "target_path", expectedTargetPath),
+				Expect(log).To(glager.ContainSequence(
+					glager.Info(
+						glager.Action("redis.s3upload"),
+						glager.Data("event", "starting", "bucket", bucket.BucketName, "source_path", expectedSourcePath, "target_path", expectedTargetPath),
 					),
-					Info(
-						Action("redis.s3upload.create-bucket"),
-						Data("event", "starting", "bucket", bucket.BucketName),
+					glager.Info(
+						glager.Action("redis.s3upload.create-bucket"),
+						glager.Data("event", "starting", "bucket", bucket.BucketName),
 					),
-					Error(
+					glager.Error(
 						expectedErr,
-						Action("redis.s3upload.create-bucket"),
-						Data("event", "failed", "bucket", bucket.BucketName),
+						glager.Action("redis.s3upload.create-bucket"),
+						glager.Data("event", "failed", "bucket", bucket.BucketName),
 					),
-					Error(
+					glager.Error(
 						expectedErr,
-						Action("redis.s3upload"),
-						Data("event", "failed", "bucket", bucket.BucketName, "source_path", expectedSourcePath, "target_path", expectedTargetPath),
+						glager.Action("redis.s3upload"),
+						glager.Data("event", "failed", "bucket", bucket.BucketName, "source_path", expectedSourcePath, "target_path", expectedTargetPath),
 					),
 				))
 			})
@@ -197,32 +197,32 @@ var _ = Describe("S3Upload", func() {
 			})
 
 			It("logs the error", func() {
-				Expect(log).To(ContainSequence(
-					Info(
-						Action("redis.s3upload"),
-						Data("event", "starting", "bucket", bucket.BucketName, "source_path", expectedSourcePath, "target_path", expectedTargetPath),
+				Expect(log).To(glager.ContainSequence(
+					glager.Info(
+						glager.Action("redis.s3upload"),
+						glager.Data("event", "starting", "bucket", bucket.BucketName, "source_path", expectedSourcePath, "target_path", expectedTargetPath),
 					),
-					Info(
-						Action("redis.s3upload.create-bucket"),
-						Data("event", "starting", "bucket", bucket.BucketName),
+					glager.Info(
+						glager.Action("redis.s3upload.create-bucket"),
+						glager.Data("event", "starting", "bucket", bucket.BucketName),
 					),
-					Info(
-						Action("redis.s3upload.create-bucket"),
-						Data("event", "done", "bucket", bucket.BucketName),
+					glager.Info(
+						glager.Action("redis.s3upload.create-bucket"),
+						glager.Data("event", "done", "bucket", bucket.BucketName),
 					),
-					Info(
-						Action("redis.s3upload.upload"),
-						Data("event", "starting", "bucket", bucket.BucketName, "source_path", expectedSourcePath, "target_path", expectedTargetPath),
+					glager.Info(
+						glager.Action("redis.s3upload.upload"),
+						glager.Data("event", "starting", "bucket", bucket.BucketName, "source_path", expectedSourcePath, "target_path", expectedTargetPath),
 					),
-					Error(
+					glager.Error(
 						expectedErr,
-						Action("redis.s3upload.upload"),
-						Data("event", "failed", "bucket", bucket.BucketName, "source_path", expectedSourcePath, "target_path", expectedTargetPath),
+						glager.Action("redis.s3upload.upload"),
+						glager.Data("event", "failed", "bucket", bucket.BucketName, "source_path", expectedSourcePath, "target_path", expectedTargetPath),
 					),
-					Error(
+					glager.Error(
 						expectedErr,
-						Action("redis.s3upload"),
-						Data("event", "failed", "bucket", bucket.BucketName, "source_path", expectedSourcePath, "target_path", expectedTargetPath),
+						glager.Action("redis.s3upload"),
+						glager.Data("event", "failed", "bucket", bucket.BucketName, "source_path", expectedSourcePath, "target_path", expectedTargetPath),
 					),
 				))
 			})

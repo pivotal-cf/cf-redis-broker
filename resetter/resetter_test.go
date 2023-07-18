@@ -13,7 +13,7 @@ import (
 	monitFakes "github.com/pivotal-cf/redisutils/monit/fakes"
 	"github.com/pivotal-cf/redisutils/redis"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 

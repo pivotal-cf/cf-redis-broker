@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"code.cloudfoundry.org/lager"
+	"code.cloudfoundry.org/lager/v3"
 	"github.com/pivotal-cf/cf-redis-broker/broker"
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
 	"github.com/pivotal-cf/cf-redis-broker/redisconf"

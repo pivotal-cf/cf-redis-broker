@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	brokerapi "github.com/pivotal-cf/brokerapi/domain"
-	brokerapiresponses "github.com/pivotal-cf/brokerapi/domain/apiresponses"
+	brokerapi "github.com/pivotal-cf/brokerapi/v10/domain"
+	brokerapiresponses "github.com/pivotal-cf/brokerapi/v10/domain/apiresponses"
 
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
 )
@@ -67,7 +67,7 @@ func (redisServiceBroker *RedisServiceBroker) Services(ctx context.Context) ([]b
 	}, nil
 }
 
-//Provision ...
+// Provision ...
 func (redisServiceBroker *RedisServiceBroker) Provision(ctx context.Context, instanceID string, serviceDetails brokerapi.ProvisionDetails, asyncAllowed bool) (spec brokerapi.ProvisionedServiceSpec, err error) {
 	spec = brokerapi.ProvisionedServiceSpec{}
 
@@ -197,11 +197,11 @@ func (redisServiceBroker *RedisServiceBroker) Update(cxt context.Context, instan
 	return brokerapi.UpdateServiceSpec{}, errors.New("not implemented")
 }
 
-func (redisServiceBroker *RedisServiceBroker) GetBinding(ctx context.Context, instanceID, bindingID string) (brokerapi.GetBindingSpec, error) {
+func (redisServiceBroker *RedisServiceBroker) GetBinding(ctx context.Context, instanceID string, bindingID string, details brokerapi.FetchBindingDetails) (brokerapi.GetBindingSpec, error) {
 	return brokerapi.GetBindingSpec{}, errors.New("not implemented")
 }
 
-func (redisServiceBroker *RedisServiceBroker) GetInstance(ctx context.Context, instanceID string) (brokerapi.GetInstanceDetailsSpec, error) {
+func (redisServiceBroker *RedisServiceBroker) GetInstance(ctx context.Context, instanceID string, details brokerapi.FetchInstanceDetails) (brokerapi.GetInstanceDetailsSpec, error) {
 	return brokerapi.GetInstanceDetailsSpec{}, errors.New("not implemented")
 }
 

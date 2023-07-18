@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	"code.cloudfoundry.org/lager"
+	"code.cloudfoundry.org/lager/v3"
 	"github.com/BooleanCat/igo/ios/iexec"
 
 	"github.com/pivotal-cf/cf-redis-broker/redis/client"

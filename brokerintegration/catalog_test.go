@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/pivotal-cf/brokerapi"
+	"github.com/pivotal-cf/brokerapi/v10"
 	"github.com/pivotal-cf/cf-redis-broker/integration"
 	"github.com/pivotal-cf/cf-redis-broker/integration/helpers"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 

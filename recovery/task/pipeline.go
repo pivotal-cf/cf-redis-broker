@@ -1,6 +1,6 @@
 package task
 
-import "code.cloudfoundry.org/lager"
+import "code.cloudfoundry.org/lager/v3"
 
 type pipeline struct {
 	name   string

@@ -2,7 +2,7 @@ package redis
 
 import (
 	"errors"
-	brokerapiresponses "github.com/pivotal-cf/brokerapi/domain/apiresponses"
+	brokerapiresponses "github.com/pivotal-cf/brokerapi/v10/domain/apiresponses"
 	"time"
 
 	"github.com/pborman/uuid"

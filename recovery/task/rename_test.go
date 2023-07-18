@@ -6,11 +6,11 @@ import (
 	"os"
 	"path/filepath"
 
-	. "github.com/onsi/ginkgo"
+	"code.cloudfoundry.org/lager/v3"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/pivotal-cf/cf-redis-broker/recovery/task"
-	"code.cloudfoundry.org/lager"
 )
 
 var _ = Describe("Rename", func() {

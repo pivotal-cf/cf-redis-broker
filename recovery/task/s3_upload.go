@@ -3,8 +3,8 @@ package task
 import (
 	"fmt"
 
+	"code.cloudfoundry.org/lager/v3"
 	"github.com/pivotal-cf/cf-redis-broker/s3"
-	"code.cloudfoundry.org/lager"
 )
 
 type s3upload struct {

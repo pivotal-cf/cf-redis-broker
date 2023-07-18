@@ -2,7 +2,7 @@ package s3_test
 
 import (
 	"github.com/mitchellh/goamz/s3/s3test"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"testing"

@@ -3,13 +3,13 @@ package task_test
 import (
 	"errors"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	. "github.com/st3v/glager"
+	glager "github.com/st3v/glager"
 
+	"code.cloudfoundry.org/lager/v3"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/pivotal-cf/cf-redis-broker/recovery/task"
-	"code.cloudfoundry.org/lager"
 )
 
 type fakeTask struct {
@@ -77,11 +77,11 @@ var _ = Describe("Pipeline", func() {
 			})
 
 			It("logs each step", func() {
-				Expect(log).To(ContainSequence(
-					Info(Data("event", "starting", "pipeline", "some-name", "task", "task1")),
-					Info(Data("event", "done", "pipeline", "some-name", "task", "task1")),
-					Info(Data("event", "starting", "pipeline", "some-name", "task", "task2")),
-					Info(Data("event", "done", "pipeline", "some-name", "task", "task2")),
+				Expect(log).To(glager.ContainSequence(
+					glager.Info(glager.Data("event", "starting", "pipeline", "some-name", "task", "task1")),
+					glager.Info(glager.Data("event", "done", "pipeline", "some-name", "task", "task1")),
+					glager.Info(glager.Data("event", "starting", "pipeline", "some-name", "task", "task2")),
+					glager.Info(glager.Data("event", "done", "pipeline", "some-name", "task", "task2")),
 				))
 			})
 
@@ -117,11 +117,11 @@ var _ = Describe("Pipeline", func() {
 			})
 
 			It("logs the error", func() {
-				Expect(log).To(ContainSequence(
-					Info(Data("event", "starting", "pipeline", "some-name", "task", "task1")),
-					Info(Data("event", "done", "pipeline", "some-name", "task", "task1")),
-					Info(Data("event", "starting", "pipeline", "some-name", "task", "task2")),
-					Error(expectedError, Data("event", "failed", "pipeline", "some-name", "task", "task2")),
+				Expect(log).To(glager.ContainSequence(
+					glager.Info(glager.Data("event", "starting", "pipeline", "some-name", "task", "task1")),
+					glager.Info(glager.Data("event", "done", "pipeline", "some-name", "task", "task1")),
+					glager.Info(glager.Data("event", "starting", "pipeline", "some-name", "task", "task2")),
+					glager.Error(expectedError, glager.Data("event", "failed", "pipeline", "some-name", "task", "task2")),
 				))
 			})
 		})

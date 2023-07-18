@@ -3,9 +3,9 @@ package main
 import (
 	"os"
 
+	"code.cloudfoundry.org/lager/v3"
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
 	"github.com/pivotal-cf/cf-redis-broker/configmigrator"
-	"code.cloudfoundry.org/lager"
 )
 
 func main() {

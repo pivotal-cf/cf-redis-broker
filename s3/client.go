@@ -1,9 +1,9 @@
 package s3
 
 import (
+	"code.cloudfoundry.org/lager/v3"
 	"github.com/goamz/goamz/aws"
 	goamz "github.com/goamz/goamz/s3"
-	"code.cloudfoundry.org/lager"
 )
 
 type s3Client struct {

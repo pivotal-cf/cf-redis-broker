@@ -2,9 +2,9 @@ package redis_test
 
 import (
 	"errors"
-	brokerapiresponses "github.com/pivotal-cf/brokerapi/domain/apiresponses"
+	brokerapiresponses "github.com/pivotal-cf/brokerapi/v10/domain/apiresponses"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/pborman/uuid"
 	"github.com/pivotal-cf/cf-redis-broker/brokerconfig"
