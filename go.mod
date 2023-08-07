@@ -6,7 +6,7 @@ require (
 	code.cloudfoundry.org/lager/v3 v3.0.1
 	github.com/BooleanCat/igo v1.3.0
 	github.com/cloudfoundry-incubator/candiedyaml v0.0.0-20170901234223-a41693b7b7af
-	github.com/cloudfoundry/gosigar v1.3.17
+	github.com/cloudfoundry/gosigar v1.3.18
 	github.com/goamz/goamz v0.0.0-20180131231218-8b901b531db8
 	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/mitchellh/goamz v0.0.0-20150317174335-caaaea8b30ee
@@ -33,8 +33,8 @@ require (
 	github.com/stretchr/testify v1.8.0 // indirect
 	github.com/vaughan0/go-ini v0.0.0-20130923145212-a98ad7ee00ec // indirect
 	golang.org/x/net v0.12.0 // indirect
-	golang.org/x/sys v0.10.0 // indirect
+	golang.org/x/sys v0.11.0 // indirect
 	golang.org/x/text v0.11.0 // indirect
-	golang.org/x/tools v0.11.0 // indirect
+	golang.org/x/tools v0.11.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
