@@ -1,6 +1,6 @@
 module github.com/pivotal-cf/cf-redis-broker
 
-go 1.17
+go 1.21.1
 
 require (
 	code.cloudfoundry.org/lager/v3 v3.0.1
