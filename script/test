@@ -19,7 +19,7 @@ __message() {
 main() {
   __message "Running tests"
 
-  ginkgo -r -race --keepGoing -randomizeAllSpecs -failOnPending -cover $test_args
+  ginkgo -r -race --keep-going --randomize-all --fail-on-pending -cover $test_args
 }
 
 pushd $PROJECT_DIR
