@@ -149,12 +149,12 @@ func (c *client) LastRDBSaveTime() (int64, error) {
 func (c *client) InfoField(fieldName string) (string, error) {
 	info, err := c.Info()
 	if err != nil {
-		return "", fmt.Errorf("Error during redis info: %s" + err.Error())
+		return "", fmt.Errorf("Error during redis info: %s", err.Error())
 	}
 
 	value, ok := info[fieldName]
 	if !ok {
-		return "", errors.New(fmt.Sprintf("Unknown field: %s", fieldName))
+		return "", fmt.Errorf("Unknown field: %s", fieldName)
 	}
 
 	return value, nil
