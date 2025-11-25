@@ -17,7 +17,7 @@ github.com/Masterminds/semver/v3
 # github.com/cloudfoundry-incubator/candiedyaml v0.0.0-20170901234223-a41693b7b7af
 ## explicit
 github.com/cloudfoundry-incubator/candiedyaml
-# github.com/cloudfoundry/gosigar v1.3.111
+# github.com/cloudfoundry/gosigar v1.3.112
 ## explicit; go 1.23.0
 github.com/cloudfoundry/gosigar
 github.com/cloudfoundry/gosigar/sys/windows
@@ -116,8 +116,8 @@ github.com/pivotal-cf/brokerapi/v10/domain/apiresponses
 github.com/pivotal-cf/brokerapi/v10/handlers
 github.com/pivotal-cf/brokerapi/v10/middlewares
 github.com/pivotal-cf/brokerapi/v10/utils
-# github.com/pivotal-cf/redisutils v0.0.0-20231005074126-9d2949ada046
-## explicit; go 1.21
+# github.com/pivotal-cf/redisutils v0.0.0-20251121114010-821638719fae
+## explicit; go 1.25
 github.com/pivotal-cf/redisutils/monit
 github.com/pivotal-cf/redisutils/monit/fakes
 github.com/pivotal-cf/redisutils/redis

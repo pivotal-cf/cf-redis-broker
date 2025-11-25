@@ -6,7 +6,7 @@ require (
 	code.cloudfoundry.org/lager/v3 v3.55.0
 	github.com/BooleanCat/igo v1.3.0
 	github.com/cloudfoundry-incubator/candiedyaml v0.0.0-20170901234223-a41693b7b7af
-	github.com/cloudfoundry/gosigar v1.3.111
+	github.com/cloudfoundry/gosigar v1.3.112
 	github.com/goamz/goamz v0.0.0-20180131231218-8b901b531db8
 	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/mitchellh/goamz v0.0.0-20150317174335-caaaea8b30ee
@@ -14,7 +14,7 @@ require (
 	github.com/onsi/gomega v1.38.2
 	github.com/pborman/uuid v1.2.1
 	github.com/pivotal-cf/brokerapi/v10 v10.2.0
-	github.com/pivotal-cf/redisutils v0.0.0-20231005074126-9d2949ada046
+	github.com/pivotal-cf/redisutils v0.0.0-20251121114010-821638719fae
 	github.com/st3v/glager v0.3.0
 )
 
