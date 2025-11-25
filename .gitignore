@@ -5,3 +5,4 @@
 *.test
 junit_*.xml
 .envrc
+.idea

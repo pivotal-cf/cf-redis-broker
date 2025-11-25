@@ -14,12 +14,11 @@ require (
 	github.com/onsi/gomega v1.38.2
 	github.com/pborman/uuid v1.2.1
 	github.com/pivotal-cf/brokerapi/v10 v10.2.0
-	github.com/pivotal-cf/redisutils v0.0.0-20251121114010-821638719fae
-	github.com/st3v/glager v0.3.0
+	github.com/pivotal-cf/redisutils v0.0.0-20251125094432-dd70f4e2da0d
+	github.com/st3v/glager v0.4.0
 )
 
 require (
-	code.cloudfoundry.org/lager v2.0.0+incompatible // indirect
 	github.com/Masterminds/semver/v3 v3.4.0 // indirect
 	github.com/go-chi/chi/v5 v5.2.3 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
