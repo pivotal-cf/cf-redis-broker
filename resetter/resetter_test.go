@@ -228,7 +228,7 @@ var _ = Describe("Client", func() {
 		})
 
 		It("does not return until redis is available again", func() {
-			address, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("localhost:%d", redisPort))
+			address, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("127.0.0.1:%d", redisPort))
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(fakePortChecker.addressesWaitedOn).To(ConsistOf(address))
