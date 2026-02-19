@@ -113,8 +113,8 @@ github.com/pivotal-cf/brokerapi/v10/domain/apiresponses
 github.com/pivotal-cf/brokerapi/v10/handlers
 github.com/pivotal-cf/brokerapi/v10/middlewares
 github.com/pivotal-cf/brokerapi/v10/utils
-# github.com/pivotal-cf/redisutils v0.0.0-20251125094432-dd70f4e2da0d
-## explicit; go 1.25
+# github.com/pivotal-cf/redisutils v0.0.0-20260219092339-03bb9b4067e2
+## explicit; go 1.26
 github.com/pivotal-cf/redisutils/monit
 github.com/pivotal-cf/redisutils/monit/fakes
 github.com/pivotal-cf/redisutils/redis

@@ -14,7 +14,7 @@ require (
 	github.com/onsi/gomega v1.39.1
 	github.com/pborman/uuid v1.2.1
 	github.com/pivotal-cf/brokerapi/v10 v10.2.0
-	github.com/pivotal-cf/redisutils v0.0.0-20251125094432-dd70f4e2da0d
+	github.com/pivotal-cf/redisutils v0.0.0-20260219092339-03bb9b4067e2
 	github.com/st3v/glager v0.4.0
 )
 
