@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"time"
 )
 
 // ErrNil indicates that a reply value is nil.
@@ -55,7 +56,7 @@ func Int(reply interface{}, err error) (int, error) {
 }
 
 // Int64 is a helper that converts a command reply to 64 bit integer. If err is
-// not equal to nil, then Int returns 0, err. Otherwise, Int64 converts the
+// not equal to nil, then Int64 returns 0, err. Otherwise, Int64 converts the
 // reply to an int64 as follows:
 //
 //  Reply type    Result
@@ -81,14 +82,16 @@ func Int64(reply interface{}, err error) (int64, error) {
 	return 0, fmt.Errorf("redigo: unexpected type for Int64, got type %T", reply)
 }
 
-var errNegativeInt = errors.New("redigo: unexpected value for Uint64")
+func errNegativeInt(v int64) error {
+	return fmt.Errorf("redigo: unexpected negative value %v for Uint64", v)
+}
 
-// Uint64 is a helper that converts a command reply to 64 bit integer. If err is
-// not equal to nil, then Int returns 0, err. Otherwise, Int64 converts the
-// reply to an int64 as follows:
+// Uint64 is a helper that converts a command reply to 64 bit unsigned integer.
+// If err is not equal to nil, then Uint64 returns 0, err. Otherwise, Uint64 converts the
+// reply to an uint64 as follows:
 //
 //  Reply type    Result
-//  integer       reply, nil
+//  +integer      reply, nil
 //  bulk string   parsed reply, nil
 //  nil           0, ErrNil
 //  other         0, error
@@ -99,7 +102,7 @@ func Uint64(reply interface{}, err error) (uint64, error) {
 	switch reply := reply.(type) {
 	case int64:
 		if reply < 0 {
-			return 0, errNegativeInt
+			return 0, errNegativeInt(reply)
 		}
 		return uint64(reply), nil
 	case []byte:
@@ -115,7 +118,7 @@ func Uint64(reply interface{}, err error) (uint64, error) {
 
 // Float64 is a helper that converts a command reply to 64 bit float. If err is
 // not equal to nil, then Float64 returns 0, err. Otherwise, Float64 converts
-// the reply to an int as follows:
+// the reply to a float64 as follows:
 //
 //  Reply type    Result
 //  bulk string   parsed reply, nil
@@ -274,13 +277,16 @@ func sliceHelper(reply interface{}, err error, name string, makeSlice func(int),
 func Float64s(reply interface{}, err error) ([]float64, error) {
 	var result []float64
 	err = sliceHelper(reply, err, "Float64s", func(n int) { result = make([]float64, n) }, func(i int, v interface{}) error {
-		p, ok := v.([]byte)
-		if !ok {
-			return fmt.Errorf("redigo: unexpected element type for Floats64, got type %T", v)
+		switch v := v.(type) {
+		case []byte:
+			f, err := strconv.ParseFloat(string(v), 64)
+			result[i] = f
+			return err
+		case Error:
+			return v
+		default:
+			return fmt.Errorf("redigo: unexpected element type for Float64s, got type %T", v)
 		}
-		f, err := strconv.ParseFloat(string(p), 64)
-		result[i] = f
-		return err
 	})
 	return result, err
 }
@@ -299,6 +305,8 @@ func Strings(reply interface{}, err error) ([]string, error) {
 		case []byte:
 			result[i] = string(v)
 			return nil
+		case Error:
+			return v
 		default:
 			return fmt.Errorf("redigo: unexpected element type for Strings, got type %T", v)
 		}
@@ -313,12 +321,15 @@ func Strings(reply interface{}, err error) ([]string, error) {
 func ByteSlices(reply interface{}, err error) ([][]byte, error) {
 	var result [][]byte
 	err = sliceHelper(reply, err, "ByteSlices", func(n int) { result = make([][]byte, n) }, func(i int, v interface{}) error {
-		p, ok := v.([]byte)
-		if !ok {
+		switch v := v.(type) {
+		case []byte:
+			result[i] = v
+			return nil
+		case Error:
+			return v
+		default:
 			return fmt.Errorf("redigo: unexpected element type for ByteSlices, got type %T", v)
 		}
-		result[i] = p
-		return nil
 	})
 	return result, err
 }
@@ -338,6 +349,8 @@ func Int64s(reply interface{}, err error) ([]int64, error) {
 			n, err := strconv.ParseInt(string(v), 10, 64)
 			result[i] = n
 			return err
+		case Error:
+			return v
 		default:
 			return fmt.Errorf("redigo: unexpected element type for Int64s, got type %T", v)
 		}
@@ -345,7 +358,7 @@ func Int64s(reply interface{}, err error) ([]int64, error) {
 	return result, err
 }
 
-// Ints is a helper that converts an array command reply to a []in.
+// Ints is a helper that converts an array command reply to a []int.
 // If err is not equal to nil, then Ints returns nil, err. Nil array
 // items are stay nil. Ints returns an error if an array item is not a
 // bulk string or nil.
@@ -364,6 +377,8 @@ func Ints(reply interface{}, err error) ([]int, error) {
 			n, err := strconv.Atoi(string(v))
 			result[i] = n
 			return err
+		case Error:
+			return v
 		default:
 			return fmt.Errorf("redigo: unexpected element type for Ints, got type %T", v)
 		}
@@ -371,79 +386,122 @@ func Ints(reply interface{}, err error) ([]int, error) {
 	return result, err
 }
 
+// mapHelper builds a map from the data in reply.
+func mapHelper(reply interface{}, err error, name string, makeMap func(int), assign func(key string, value interface{}) error) error {
+	values, err := Values(reply, err)
+	if err != nil {
+		return err
+	}
+
+	if len(values)%2 != 0 {
+		return fmt.Errorf("redigo: %s expects even number of values result, got %d", name, len(values))
+	}
+
+	makeMap(len(values) / 2)
+	for i := 0; i < len(values); i += 2 {
+		key, ok := values[i].([]byte)
+		if !ok {
+			return fmt.Errorf("redigo: %s key[%d] not a bulk string value, got %T", name, i, values[i])
+		}
+
+		if err := assign(string(key), values[i+1]); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // StringMap is a helper that converts an array of strings (alternating key, value)
 // into a map[string]string. The HGETALL and CONFIG GET commands return replies in this format.
 // Requires an even number of values in result.
-func StringMap(result interface{}, err error) (map[string]string, error) {
-	values, err := Values(result, err)
-	if err != nil {
-		return nil, err
-	}
-	if len(values)%2 != 0 {
-		return nil, errors.New("redigo: StringMap expects even number of values result")
-	}
-	m := make(map[string]string, len(values)/2)
-	for i := 0; i < len(values); i += 2 {
-		key, okKey := values[i].([]byte)
-		value, okValue := values[i+1].([]byte)
-		if !okKey || !okValue {
-			return nil, errors.New("redigo: StringMap key not a bulk string value")
-		}
-		m[string(key)] = string(value)
-	}
-	return m, nil
+func StringMap(reply interface{}, err error) (map[string]string, error) {
+	var result map[string]string
+	err = mapHelper(reply, err, "StringMap",
+		func(n int) {
+			result = make(map[string]string, n)
+		}, func(key string, v interface{}) error {
+			value, ok := v.([]byte)
+			if !ok {
+				return fmt.Errorf("redigo: StringMap for %q not a bulk string value, got %T", key, v)
+			}
+
+			result[key] = string(value)
+
+			return nil
+		},
+	)
+
+	return result, err
 }
 
 // IntMap is a helper that converts an array of strings (alternating key, value)
 // into a map[string]int. The HGETALL commands return replies in this format.
 // Requires an even number of values in result.
 func IntMap(result interface{}, err error) (map[string]int, error) {
-	values, err := Values(result, err)
-	if err != nil {
-		return nil, err
-	}
-	if len(values)%2 != 0 {
-		return nil, errors.New("redigo: IntMap expects even number of values result")
-	}
-	m := make(map[string]int, len(values)/2)
-	for i := 0; i < len(values); i += 2 {
-		key, ok := values[i].([]byte)
-		if !ok {
-			return nil, errors.New("redigo: IntMap key not a bulk string value")
-		}
-		value, err := Int(values[i+1], nil)
-		if err != nil {
-			return nil, err
-		}
-		m[string(key)] = value
-	}
-	return m, nil
+	var m map[string]int
+	err = mapHelper(result, err, "IntMap",
+		func(n int) {
+			m = make(map[string]int, n)
+		}, func(key string, v interface{}) error {
+			value, err := Int(v, nil)
+			if err != nil {
+				return err
+			}
+
+			m[key] = value
+
+			return nil
+		},
+	)
+
+	return m, err
 }
 
 // Int64Map is a helper that converts an array of strings (alternating key, value)
 // into a map[string]int64. The HGETALL commands return replies in this format.
 // Requires an even number of values in result.
 func Int64Map(result interface{}, err error) (map[string]int64, error) {
-	values, err := Values(result, err)
-	if err != nil {
-		return nil, err
-	}
-	if len(values)%2 != 0 {
-		return nil, errors.New("redigo: Int64Map expects even number of values result")
-	}
-	m := make(map[string]int64, len(values)/2)
-	for i := 0; i < len(values); i += 2 {
-		key, ok := values[i].([]byte)
-		if !ok {
-			return nil, errors.New("redigo: Int64Map key not a bulk string value")
-		}
-		value, err := Int64(values[i+1], nil)
-		if err != nil {
-			return nil, err
-		}
-		m[string(key)] = value
-	}
-	return m, nil
+	var m map[string]int64
+	err = mapHelper(result, err, "Int64Map",
+		func(n int) {
+			m = make(map[string]int64, n)
+		}, func(key string, v interface{}) error {
+			value, err := Int64(v, nil)
+			if err != nil {
+				return err
+			}
+
+			m[key] = value
+
+			return nil
+		},
+	)
+
+	return m, err
+}
+
+// Float64Map is a helper that converts an array of strings (alternating key, value)
+// into a map[string]float64. The HGETALL commands return replies in this format.
+// Requires an even number of values in result.
+func Float64Map(result interface{}, err error) (map[string]float64, error) {
+	var m map[string]float64
+	err = mapHelper(result, err, "Float64Map",
+		func(n int) {
+			m = make(map[string]float64, n)
+		}, func(key string, v interface{}) error {
+			value, err := Float64(v, nil)
+			if err != nil {
+				return err
+			}
+
+			m[key] = value
+
+			return nil
+		},
+	)
+
+	return m, err
 }
 
 // Positions is a helper that converts an array of positions (lat, long)
@@ -458,22 +516,220 @@ func Positions(result interface{}, err error) ([]*[2]float64, error) {
 		if values[i] == nil {
 			continue
 		}
+
 		p, ok := values[i].([]interface{})
 		if !ok {
 			return nil, fmt.Errorf("redigo: unexpected element type for interface slice, got type %T", values[i])
 		}
+
 		if len(p) != 2 {
 			return nil, fmt.Errorf("redigo: unexpected number of values for a member position, got %d", len(p))
 		}
+
 		lat, err := Float64(p[0], nil)
 		if err != nil {
 			return nil, err
 		}
+
 		long, err := Float64(p[1], nil)
 		if err != nil {
 			return nil, err
 		}
+
 		positions[i] = &[2]float64{lat, long}
 	}
 	return positions, nil
+}
+
+// Uint64s is a helper that converts an array command reply to a []uint64.
+// If err is not equal to nil, then Uint64s returns nil, err. Nil array
+// items are stay nil. Uint64s returns an error if an array item is not a
+// bulk string or nil.
+func Uint64s(reply interface{}, err error) ([]uint64, error) {
+	var result []uint64
+	err = sliceHelper(reply, err, "Uint64s", func(n int) { result = make([]uint64, n) }, func(i int, v interface{}) error {
+		switch v := v.(type) {
+		case uint64:
+			result[i] = v
+			return nil
+		case []byte:
+			n, err := strconv.ParseUint(string(v), 10, 64)
+			result[i] = n
+			return err
+		case Error:
+			return v
+		default:
+			return fmt.Errorf("redigo: unexpected element type for Uint64s, got type %T", v)
+		}
+	})
+	return result, err
+}
+
+// Uint64Map is a helper that converts an array of strings (alternating key, value)
+// into a map[string]uint64. The HGETALL commands return replies in this format.
+// Requires an even number of values in result.
+func Uint64Map(result interface{}, err error) (map[string]uint64, error) {
+	var m map[string]uint64
+	err = mapHelper(result, err, "Uint64Map",
+		func(n int) {
+			m = make(map[string]uint64, n)
+		}, func(key string, v interface{}) error {
+			value, err := Uint64(v, nil)
+			if err != nil {
+				return err
+			}
+
+			m[key] = value
+
+			return nil
+		},
+	)
+
+	return m, err
+}
+
+// SlowLogs is a helper that parse the SLOWLOG GET command output and
+// return the array of SlowLog
+func SlowLogs(result interface{}, err error) ([]SlowLog, error) {
+	rawLogs, err := Values(result, err)
+	if err != nil {
+		return nil, err
+	}
+	logs := make([]SlowLog, len(rawLogs))
+	for i, e := range rawLogs {
+		rawLog, ok := e.([]interface{})
+		if !ok {
+			return nil, fmt.Errorf("redigo: slowlog element is not an array, got %T", e)
+		}
+
+		var log SlowLog
+		if len(rawLog) < 4 {
+			return nil, fmt.Errorf("redigo: slowlog element has %d elements, expected at least 4", len(rawLog))
+		}
+
+		log.ID, ok = rawLog[0].(int64)
+		if !ok {
+			return nil, fmt.Errorf("redigo: slowlog element[0] not an int64, got %T", rawLog[0])
+		}
+
+		timestamp, ok := rawLog[1].(int64)
+		if !ok {
+			return nil, fmt.Errorf("redigo: slowlog element[1] not an int64, got %T", rawLog[1])
+		}
+
+		log.Time = time.Unix(timestamp, 0)
+		duration, ok := rawLog[2].(int64)
+		if !ok {
+			return nil, fmt.Errorf("redigo: slowlog element[2] not an int64, got %T", rawLog[2])
+		}
+
+		log.ExecutionTime = time.Duration(duration) * time.Microsecond
+
+		log.Args, err = Strings(rawLog[3], nil)
+		if err != nil {
+			return nil, fmt.Errorf("redigo: slowlog element[3] is not array of strings: %w", err)
+		}
+
+		if len(rawLog) >= 6 {
+			log.ClientAddr, err = String(rawLog[4], nil)
+			if err != nil {
+				return nil, fmt.Errorf("redigo: slowlog element[4] is not a string: %w", err)
+			}
+
+			log.ClientName, err = String(rawLog[5], nil)
+			if err != nil {
+				return nil, fmt.Errorf("redigo: slowlog element[5] is not a string: %w", err)
+			}
+		}
+		logs[i] = log
+	}
+	return logs, nil
+}
+
+// Latencies is a helper that parses the LATENCY LATEST command output and
+// return the slice of Latency values.
+func Latencies(result interface{}, err error) ([]Latency, error) {
+	rawLatencies, err := Values(result, err)
+	if err != nil {
+		return nil, err
+	}
+
+	latencies := make([]Latency, len(rawLatencies))
+	for i, e := range rawLatencies {
+		rawLatency, ok := e.([]interface{})
+		if !ok {
+			return nil, fmt.Errorf("redigo: latencies element is not slice, got %T", e)
+		}
+
+		var event Latency
+		if len(rawLatency) != 4 {
+			return nil, fmt.Errorf("redigo: latencies element has %d elements, expected 4", len(rawLatency))
+		}
+
+		event.Name, err = String(rawLatency[0], nil)
+		if err != nil {
+			return nil, fmt.Errorf("redigo: latencies element[0] is not a string: %w", err)
+		}
+
+		timestamp, ok := rawLatency[1].(int64)
+		if !ok {
+			return nil, fmt.Errorf("redigo: latencies element[1] not an int64, got %T", rawLatency[1])
+		}
+
+		event.Time = time.Unix(timestamp, 0)
+
+		latestDuration, ok := rawLatency[2].(int64)
+		if !ok {
+			return nil, fmt.Errorf("redigo: latencies element[2] not an int64, got %T", rawLatency[2])
+		}
+
+		event.Latest = time.Duration(latestDuration) * time.Millisecond
+
+		maxDuration, ok := rawLatency[3].(int64)
+		if !ok {
+			return nil, fmt.Errorf("redigo: latencies element[3] not an int64, got %T", rawLatency[3])
+		}
+
+		event.Max = time.Duration(maxDuration) * time.Millisecond
+
+		latencies[i] = event
+	}
+
+	return latencies, nil
+}
+
+// LatencyHistories is a helper that parse the LATENCY HISTORY command output and
+// returns a LatencyHistory slice.
+func LatencyHistories(result interface{}, err error) ([]LatencyHistory, error) {
+	rawLogs, err := Values(result, err)
+	if err != nil {
+		return nil, err
+	}
+
+	latencyHistories := make([]LatencyHistory, len(rawLogs))
+	for i, e := range rawLogs {
+		rawLog, ok := e.([]interface{})
+		if !ok {
+			return nil, fmt.Errorf("redigo: latency history element is not an slice, got %T", e)
+		}
+
+		var event LatencyHistory
+		timestamp, ok := rawLog[0].(int64)
+		if !ok {
+			return nil, fmt.Errorf("redigo: latency history element[0] not an int64, got %T", rawLog[0])
+		}
+
+		event.Time = time.Unix(timestamp, 0)
+
+		duration, ok := rawLog[1].(int64)
+		if !ok {
+			return nil, fmt.Errorf("redigo: latency history element[1] not an int64, got %T", rawLog[1])
+		}
+
+		event.ExecutionTime = time.Duration(duration) * time.Millisecond
+
+		latencyHistories[i] = event
+	}
+
+	return latencyHistories, nil
 }
