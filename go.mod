@@ -1,17 +1,17 @@
 module github.com/pivotal-cf/cf-redis-broker
 
-go 1.27.1
+go 1.27.2
 
 require (
-	code.cloudfoundry.org/lager/v3 v3.72.0
+	code.cloudfoundry.org/lager/v3 v3.91.0
 	github.com/BooleanCat/igo v1.3.0
 	github.com/cloudfoundry-incubator/candiedyaml v0.0.0-20170901234223-a41693b7b7af
-	github.com/cloudfoundry/gosigar v1.3.120
+	github.com/cloudfoundry/gosigar v1.3.128
 	github.com/goamz/goamz v0.0.0-20180131231218-8b901b531db8
 	github.com/gomodule/redigo v1.9.3
 	github.com/mitchellh/goamz v0.0.0-20150317174335-caaaea8b30ee
-	github.com/onsi/ginkgo/v2 v2.29.0
-	github.com/onsi/gomega v1.41.0
+	github.com/onsi/ginkgo/v2 v2.33.1
+	github.com/onsi/gomega v1.44.0
 	github.com/pborman/uuid v1.2.1
 	github.com/pivotal-cf/brokerapi/v10 v10.2.0
 	github.com/pivotal-cf/redisutils v0.0.0-20260608102952-66c75f4ba291
@@ -20,22 +20,22 @@ require (
 
 require (
 	github.com/Masterminds/semver/v3 v3.5.0 // indirect
-	github.com/go-chi/chi/v5 v5.3.0 // indirect
-	github.com/go-logr/logr v1.4.3 // indirect
+	github.com/go-chi/chi/v5 v5.4.0 // indirect
+	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
-	github.com/google/pprof v0.0.0-20260604005048-7023385849c0 // indirect
+	github.com/google/pprof v0.0.0-20261012231050-2af12c3f4d87 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/motain/gocheck v0.0.0-20131023154940-9beb271d26e6 // indirect
 	github.com/nxadm/tail v1.4.11 // indirect
 	github.com/openzipkin/zipkin-go v0.4.3 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/vaughan0/go-ini v0.0.0-20130923145212-a98ad7ee00ec // indirect
-	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/mod v0.41.0 // indirect
-	golang.org/x/net v0.59.0 // indirect
-	golang.org/x/sync v0.23.0 // indirect
-	golang.org/x/sys v0.48.0 // indirect
-	golang.org/x/text v0.42.0 // indirect
-	golang.org/x/tools v0.49.0 // indirect
+	go.yaml.in/yaml/v3 v3.0.5 // indirect
+	golang.org/x/mod v0.42.0 // indirect
+	golang.org/x/net v0.61.0 // indirect
+	golang.org/x/sync v0.24.0 // indirect
+	golang.org/x/sys v0.49.0 // indirect
+	golang.org/x/text v0.43.0 // indirect
+	golang.org/x/tools v0.52.0 // indirect
 )
