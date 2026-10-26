@@ -1,4 +1,4 @@
-# code.cloudfoundry.org/lager/v3 v3.91.0
+# code.cloudfoundry.org/lager/v3 v3.92.0
 ## explicit; go 1.26.0
 code.cloudfoundry.org/lager/v3
 code.cloudfoundry.org/lager/v3/internal/truncate
@@ -18,7 +18,7 @@ github.com/cloudfoundry-incubator/candiedyaml
 ## explicit; go 1.26.0
 github.com/cloudfoundry/gosigar
 github.com/cloudfoundry/gosigar/sys/windows
-# github.com/go-chi/chi/v5 v5.4.0
+# github.com/go-chi/chi/v5 v5.5.0
 ## explicit; go 1.24
 github.com/go-chi/chi/v5
 # github.com/go-logr/logr v1.4.4
@@ -42,7 +42,7 @@ github.com/google/go-cmp/cmp/internal/diff
 github.com/google/go-cmp/cmp/internal/flags
 github.com/google/go-cmp/cmp/internal/function
 github.com/google/go-cmp/cmp/internal/value
-# github.com/google/pprof v0.0.0-20261012231050-2af12c3f4d87
+# github.com/google/pprof v0.0.0-20261016150608-1facf8f91b50
 ## explicit; go 1.26.0
 github.com/google/pprof/profile
 # github.com/google/uuid v1.6.0
@@ -112,8 +112,8 @@ github.com/pivotal-cf/brokerapi/v10/domain/apiresponses
 github.com/pivotal-cf/brokerapi/v10/handlers
 github.com/pivotal-cf/brokerapi/v10/middlewares
 github.com/pivotal-cf/brokerapi/v10/utils
-# github.com/pivotal-cf/redisutils v0.0.0-20260608102952-66c75f4ba291
-## explicit; go 1.26
+# github.com/pivotal-cf/redisutils v0.0.0-20261026064817-77e510daf840
+## explicit; go 1.27.3
 github.com/pivotal-cf/redisutils/monit
 github.com/pivotal-cf/redisutils/monit/fakes
 github.com/pivotal-cf/redisutils/redis

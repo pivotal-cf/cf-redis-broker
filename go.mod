@@ -1,9 +1,9 @@
 module github.com/pivotal-cf/cf-redis-broker
 
-go 1.27.2
+go 1.27.3
 
 require (
-	code.cloudfoundry.org/lager/v3 v3.91.0
+	code.cloudfoundry.org/lager/v3 v3.92.0
 	github.com/BooleanCat/igo v1.3.0
 	github.com/cloudfoundry-incubator/candiedyaml v0.0.0-20170901234223-a41693b7b7af
 	github.com/cloudfoundry/gosigar v1.3.128
@@ -14,17 +14,17 @@ require (
 	github.com/onsi/gomega v1.44.0
 	github.com/pborman/uuid v1.2.1
 	github.com/pivotal-cf/brokerapi/v10 v10.2.0
-	github.com/pivotal-cf/redisutils v0.0.0-20260608102952-66c75f4ba291
+	github.com/pivotal-cf/redisutils v0.0.0-20261026064817-77e510daf840
 	github.com/st3v/glager v0.4.0
 )
 
 require (
 	github.com/Masterminds/semver/v3 v3.5.0 // indirect
-	github.com/go-chi/chi/v5 v5.4.0 // indirect
+	github.com/go-chi/chi/v5 v5.5.0 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
-	github.com/google/pprof v0.0.0-20261012231050-2af12c3f4d87 // indirect
+	github.com/google/pprof v0.0.0-20261016150608-1facf8f91b50 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/motain/gocheck v0.0.0-20131023154940-9beb271d26e6 // indirect
 	github.com/nxadm/tail v1.4.11 // indirect
